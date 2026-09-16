@@ -1,7 +1,7 @@
 # SsalMuk 아트·공격 이펙트 기준
 
 - 확인일: 2026-09-16
-- 상태: 사용자 제작 방향 반영 · 공급자 페이지 조사 완료 · 생성/다운로드/Unity 적용 전
+- 상태: 무기 4종·유닛 아틀라스 생성과 무료 효과 취득·원본 보관 완료 · 실제 전투 Sprite/프레임 연결은 D2에서 진행. 취득 결과는 [자산 기록](ASSET_SOURCES.md)을 따른다.
 - 연결: [게임 기획](GAME_DESIGN.md), [구조 설계](../superpowers/specs/2026-09-16-ssalmuk-architecture-design.md), [구현 계획 C](../superpowers/plans/2026-09-16-ssalmuk-c-growth-weapons.md), [구현 계획 D](../superpowers/plans/2026-09-16-ssalmuk-d-integration.md)
 
 ## 1. 캐릭터·몬스터
