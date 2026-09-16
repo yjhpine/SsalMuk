@@ -84,3 +84,5 @@ MonoBehaviour:
   experienceOrbRadius: 0.08
   blueExperienceThreshold: 5
   redExperienceThreshold: 25
+  acquisitionWeight: 1
+  upgradeWeight: 3

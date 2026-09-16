@@ -26,9 +26,12 @@ namespace SsalMuk.Unity
         [SerializeField] private double experienceOrbRadius = 0.08;
         [SerializeField] private string blueExperienceThreshold = "5";
         [SerializeField] private string redExperienceThreshold = "25";
+        [SerializeField] private double acquisitionWeight = 1;
+        [SerializeField] private double upgradeWeight = 3;
         public int InitialEnemyCount => initialEnemyCount >= 0 ? initialEnemyCount : throw new ArgumentOutOfRangeException(nameof(initialEnemyCount));
         public MapSettings CreateMapSettings() => new MapSettings(obstacleChance, maximumBodyRadius: CreateCatalog().Units.Max(unit => unit.BodyRadius));
         public MovementSettings CreateMovementSettings() => new MovementSettings(crowdIterations, navigationNodeBudget);
+        public RewardWeights CreateRewardWeights() => new RewardWeights(acquisitionWeight, upgradeWeight);
         public GrowthSettings CreateGrowthSettings()
         {
             if (!BigInteger.TryParse(firstLevelCost, NumberStyles.Integer, CultureInfo.InvariantCulture, out var first) ||
@@ -58,7 +61,7 @@ namespace SsalMuk.Unity
         {
             get
             {
-                try { CreateCatalog(); CreateGrowthSettings(); CreatePickupSettings(); return ""; }
+                try { CreateCatalog(); CreateGrowthSettings(); CreatePickupSettings(); CreateRewardWeights(); return ""; }
                 catch (ArgumentException error) { return error.Message; }
             }
         }

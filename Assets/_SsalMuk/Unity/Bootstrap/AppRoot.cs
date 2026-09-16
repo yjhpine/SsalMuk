@@ -15,11 +15,13 @@ namespace SsalMuk.Unity
         private MainMenuPresenter presenter;
         private HudPresenter hudPresenter;
         private ResultsPresenter resultsPresenter;
+        private LevelUpPresenter levelUpPresenter;
         public static AppRoot Instance => instance;
         public RunCoordinator Coordinator { get; private set; }
         public MainMenuView Menu { get; private set; }
         public HudView Hud { get; private set; }
         public ResultsView Results { get; private set; }
+        public LevelUpView LevelUp { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics() { SceneManager.sceneLoaded -= SceneLoaded; instance = null; }
@@ -60,6 +62,7 @@ namespace SsalMuk.Unity
             Menu.Initialize(font);
             var hudObject = new GameObject("Hud"); hudObject.transform.SetParent(transform, false); Hud = hudObject.AddComponent<HudView>(); Hud.Initialize(font);
             var resultsObject = new GameObject("Results"); resultsObject.transform.SetParent(transform, false); Results = resultsObject.AddComponent<ResultsView>(); Results.Initialize(font);
+            var levelUpObject = new GameObject("LevelUp"); levelUpObject.transform.SetParent(transform, false); LevelUp = levelUpObject.AddComponent<LevelUpView>(); LevelUp.Initialize(font);
             Coordinator = new RunCoordinator(new UnitySceneLoader(), () =>
             {
                 if (catalog == null) throw new System.InvalidOperationException("Game catalog is missing.");
@@ -67,11 +70,12 @@ namespace SsalMuk.Unity
             });
             presenter = new MainMenuPresenter(Coordinator, Menu);
             hudPresenter = new HudPresenter(Hud); resultsPresenter = new ResultsPresenter(Coordinator, Results);
+            levelUpPresenter = new LevelUpPresenter(LevelUp);
         }
-        private void LateUpdate() { if (Coordinator != null) hudPresenter.Refresh(Coordinator.Run); }
+        private void LateUpdate() { if (Coordinator != null) { hudPresenter.Refresh(Coordinator.Run); levelUpPresenter.Refresh(Coordinator.Run); } }
         private void OnDestroy()
         {
-            presenter?.Dispose(); resultsPresenter?.Dispose(); Coordinator?.Dispose(); if (instance == this) instance = null;
+            presenter?.Dispose(); resultsPresenter?.Dispose(); levelUpPresenter?.Dispose(); Coordinator?.Dispose(); if (instance == this) instance = null;
         }
     }
 }

@@ -92,7 +92,7 @@ BigInteger CostForLevels(BigInteger level, BigInteger count)
 
 **Interfaces:** `RewardId.Acquire(WeaponKind)`, `RewardId.Upgrade(WeaponKind,UpgradeKind)`는 값 동등성이 있는 ID이며 `IsUpgrade` 읽기 속성을 제공한다. `OfferSnapshot.Id`, `Choices`, `OwnershipVersion`은 읽기 전용. `OfferGenerator.Generate(IReadOnlyCollection<WeaponKind>,IRandomSource,RewardWeights)` → `IReadOnlyList<RewardId>` 3개. `RewardWeights.TestDefaults()`는 범주 1:3 설정을 반환한다. `IRunCommands.TryQueueChoice(Guid runId,long offerId,int slot)` → bool. RunTestRig의 CurrentOffer·Choose는 이 읽기/명령 경로를 사용한다.
 
-- [ ] 검만 보유·두 무기·네 무기 상태의 후보 구성과 3개 중복 방지를 고정 시드로 검증한다.
+- [x] 검만 보유·두 무기·네 무기 상태의 후보 구성과 3개 중복 방지를 고정 시드로 검증한다.
 
 ```csharp
 [Test]
@@ -106,10 +106,10 @@ public void OwnedWeaponsNeverAppearAsAcquisitionRewards()
 }
 ```
 
-- [ ] 후보 집합은 미보유 획득+보유 무기별 5강화다. 범주를 가중 선택한 뒤 해당 범주의 항목을 선택하고 임시 후보에서 그 항목을 제거한다. 빈 범주를 제외해 매 추출마다 정규화한다. 임시 프리셋은 획득/강화 범주 가중치 1:3, 범주 안 항목은 동일 가중치다. 서로 다른 유효 후보 3개를 만들 수 없는 설정은 전투 전 오류로 검출한다.
-- [ ] 현재 선택지는 추가 레벨업에도 유지하고 아직 표시하지 않을 선택 기회는 개수로 보관한다. PendingChoices가 양수이고 CurrentOffer가 없을 때만 새 OfferId로 생성한다.
-- [ ] 선택 명령은 주기 시작에 RunId·OfferId·소유 버전·slot을 검사해 한 번만 적용한다. 소유 상태 갱신 → 기회 1회 소비 → 다음 선택지 생성 순서로 처리한다. 이중 클릭의 나중 명령, 종료한 판, 범위를 벗어난 slot은 상태를 바꾸지 않는다.
-- [ ] LevelUpPresenter에 세 버튼과 남은 기회 수를 연결한다. 화면을 여닫아도 timeScale·RunClock·BattleRunner를 변경하지 않는다. 선택 화면이 떠 있는 동안 적의 이동·피격·경험치 수집을 관측하는 PlayMode 테스트를 작성한다.
+- [x] 후보 집합은 미보유 획득+보유 무기별 5강화다. 범주를 가중 선택한 뒤 해당 범주의 항목을 선택하고 임시 후보에서 그 항목을 제거한다. 빈 범주를 제외해 매 추출마다 정규화한다. 임시 프리셋은 획득/강화 범주 가중치 1:3, 범주 안 항목은 동일 가중치다. 서로 다른 유효 후보 3개를 만들 수 없는 설정은 전투 전 오류로 검출한다.
+- [x] 현재 선택지는 추가 레벨업에도 유지하고 아직 표시하지 않을 선택 기회는 개수로 보관한다. PendingChoices가 양수이고 CurrentOffer가 없을 때만 새 OfferId로 생성한다.
+- [x] 선택 명령은 주기 시작에 RunId·OfferId·소유 버전·slot을 검사해 한 번만 적용한다. 소유 상태 갱신 → 기회 1회 소비 → 다음 선택지 생성 순서로 처리한다. 이중 클릭의 나중 명령, 종료한 판, 범위를 벗어난 slot은 상태를 바꾸지 않는다.
+- [x] LevelUpPresenter에 세 버튼과 남은 기회 수를 연결한다. 화면을 여닫아도 timeScale·RunClock·BattleRunner를 변경하지 않는다. 선택 화면이 떠 있는 동안 적의 이동·피격·경험치 수집을 관측하는 PlayMode 테스트를 작성한다.
 
 ```csharp
 [Test]
@@ -126,7 +126,7 @@ public void ExtraLevelsPreserveTheCurrentOffer()
 }
 ```
 
-- [ ] 신규 무기를 선택한 뒤 다음 후보에 해당 무기 강화가 추가되고 획득 후보가 제거되는지 확인한다. 선택 직전 사망·동일 프레임 다중 클릭·대량 레벨업·모든 무기 보유 상태를 검증한다. 실제 전투 중 UI까지 확인한 뒤 `feat: add live level-up choices and queued rewards`로 커밋한다.
+- [x] 신규 무기를 선택한 뒤 다음 후보에 해당 무기 강화가 추가되고 획득 후보가 제거되는지 확인한다. 선택 직전 사망·동일 프레임 다중 클릭·대량 레벨업·모든 무기 보유 상태를 검증한다. 실제 전투 중 UI까지 확인한 뒤 `feat: add live level-up choices and queued rewards`로 커밋한다.
 
 ## Task C3: 창·도끼·파이어볼과 개수·연속·속도 반영
 

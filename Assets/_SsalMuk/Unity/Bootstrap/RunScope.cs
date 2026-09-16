@@ -25,7 +25,7 @@ namespace SsalMuk.Unity
             Guid id = Guid.NewGuid(); int seed = BitConverter.ToInt32(id.ToByteArray(), 0);
             var definitions = catalog.CreateDefinitions(); var streams = new SeedStreams(seed);
             Run = new RunModel(id, seed, definitions, new ChunkGenerator(streams.MapSeed, catalog.Defaults.CreateMapSettings()),
-                growthSettings: catalog.Defaults.CreateGrowthSettings(), pickupSettings: catalog.Defaults.CreatePickupSettings());
+                growthSettings: catalog.Defaults.CreateGrowthSettings(), pickupSettings: catalog.Defaults.CreatePickupSettings(), rewardWeights: catalog.Defaults.CreateRewardWeights());
             builder = new InitialRunBuilder(Run, catalog.Defaults, RefreshViews);
             ActiveCount = checked(ActiveCount + 1);
         }

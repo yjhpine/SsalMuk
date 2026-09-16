@@ -30,12 +30,14 @@ namespace SsalMuk.Core
             for (int i = 0; i < (int)Math.Round(count); i++)
             {
                 if (!run.Player.IsAlive) { Finish(); break; }
+                run.Rewards.Step();
                 double from = run.Clock.ElapsedSeconds; run.Clock.Advance(); double to = run.Clock.ElapsedSeconds;
                 if (ai != null) { ai.Tick(run.Clock.FixedStep); movement.SetMoveIntent(run.Player.Id, run.Player.MoveIntent); }
                 movement.Step(run.Clock.FixedStep);
                 Sword.Tick(from, to); death.Flush(); contact.Step(from, to);
                 if (!run.Player.IsAlive) { Finish(); break; }
                 Collector.Step(run.Clock.FixedStep);
+                run.Rewards.RefreshOffer();
             }
         }
         private void Finish() { Sword.Dispose(); run.CompleteDeath(); }

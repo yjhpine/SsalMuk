@@ -23,6 +23,8 @@ namespace SsalMuk.Tests
         public RunSimulation Simulation => scope.Simulation;
         public RunClock Clock => Run.Clock;
         public RunResult Result => coordinator.Result;
+        public OfferSnapshot CurrentOffer => Run.CurrentOffer;
+        public bool Choose(long offerId, int slot) => Run.Commands.TryQueueChoice(Run.Id, offerId, slot);
         public bool GrantExperience(BigInteger amount) => new ProgressionService(Run).AddExperience(amount);
         public void Equip(WeaponKind kind) => new GrowthService(Run).Equip(kind);
         public void Upgrade(WeaponKind kind, UpgradeKind upgrade, BigInteger? count = null) => new GrowthService(Run).Upgrade(kind, upgrade, count);

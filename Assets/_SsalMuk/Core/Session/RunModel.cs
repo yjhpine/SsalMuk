@@ -11,6 +11,9 @@ namespace SsalMuk.Core
         public DefinitionCatalog Definitions { get; }
         public GrowthSettings GrowthSettings { get; }
         public PickupSettings PickupSettings { get; }
+        public RewardService Rewards { get; }
+        public IRunCommands Commands => Rewards;
+        public OfferSnapshot CurrentOffer => Rewards.CurrentOffer;
         public WorldStore World { get; }
         public RunClock Clock { get; }
         public PlayerModel Player { get; private set; }
@@ -22,6 +25,7 @@ namespace SsalMuk.Core
             if (Phase != RunPhase.Running || Result != null || Player == null || Player.IsAlive) return;
             Result = new RunResult(Id, Clock.ElapsedSeconds, Kills, Player.Level);
             Player.ResetGrowth();
+            Rewards.Dispose();
             Clock.Stop(); Phase = RunPhase.Results; Completed?.Invoke(Result);
         }
         private long lastAttackId;
@@ -32,7 +36,7 @@ namespace SsalMuk.Core
         public IReadOnlyCollection<ExperienceRecord> Experience => World.Experience;
         public IReadOnlyCollection<ChunkData> Terrain => World.CachedTerrain;
         public RunModel(Guid id, int seed, DefinitionCatalog definitions, IChunkGenerator generator, double fixedStep = 0.02,
-            GrowthSettings growthSettings = null, PickupSettings pickupSettings = null)
+            GrowthSettings growthSettings = null, PickupSettings pickupSettings = null, RewardWeights rewardWeights = null)
         {
             if (id == Guid.Empty) throw new ArgumentException("Run identity is required.", nameof(id));
             Id = id; Seed = seed; Definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
@@ -40,6 +44,7 @@ namespace SsalMuk.Core
             PickupSettings = pickupSettings ?? PickupSettings.TestDefaults();
             PickupSettings.ValidateForPlayer(Definitions.GetUnit(UnitKind.Player).BodyRadius);
             World = new WorldStore(new UnitRegistry(id), generator); Clock = new RunClock(fixedStep);
+            Rewards = new RewardService(this, new SeedStreams(seed).Reward, rewardWeights ?? RewardWeights.TestDefaults());
         }
         public void SetPlayer(PlayerModel player)
         {
@@ -50,7 +55,7 @@ namespace SsalMuk.Core
         public void Dispose()
         {
             if (Phase == RunPhase.Disposed) return;
-            Clock.Stop(); Phase = RunPhase.Disposed; Completed = null; Player?.ResetGrowth(); World.Dispose();
+            Clock.Stop(); Phase = RunPhase.Disposed; Completed = null; Rewards.Dispose(); Player?.ResetGrowth(); World.Dispose();
         }
     }
 }
