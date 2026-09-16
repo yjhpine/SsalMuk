@@ -16,6 +16,7 @@ namespace SsalMuk.Core
         public UnitRegistry Units { get; }
         public IReadOnlyCollection<ExperienceRecord> Experience => experience.Values;
         public int CachedChunkCount => terrain.Count;
+        public IReadOnlyCollection<ChunkData> CachedTerrain => terrain.Values;
         public long TerrainRevision { get; private set; }
         public WorldQuery Query { get; }
 

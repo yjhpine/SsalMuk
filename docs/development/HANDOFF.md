@@ -1,45 +1,47 @@
 # SsalMuk 재개 지점
 
-- 갱신일: 2026-09-16. 사용자가 A3 → A4 → A5 순차 구현을 승인했다. A3와 A4 구현을 완료했다. EditMode 58개·PlayMode 1개 검증을 통과했고 다음은 A5다.
-- 작업 경로: `C:/Users/ace21/Desktop/SsalMuk`.
-- 브랜치: `codex/unit-foundation`. 이번 로컬 커밋 메시지: `feat: add shared definitions and runtime unit factories`. 원격 푸시하지 않았다.
-- 다음 범위: 승인된 A5 런타임 장면. 루트 AGENTS와 기획·구조·하네스 문서를 먼저 읽는다. 주간 사용량은 최근 확인에서 12% 남았으며 10% 이하가 되면 사용자에게 알린다.
+- 갱신일: 2026-09-16. 주간 사용량 10% 잔여를 알린 뒤 사용자가 중간 저장과 일시 정지를 요청했다. **사용자의 재개 요청 전에는 구현·수정·테스트를 이어가지 않는다.**
+- 작업 경로: `C:/Users/ace21/Desktop/SsalMuk`, 브랜치: `codex/unit-foundation`. 원본 프로젝트에서 작업하며 원격 푸시하지 않았다.
+- A1~A4는 완료했다. A5는 작업 중인 소스·테스트·폰트를 로컬 체크포인트로 저장하며, 완료 또는 검증 통과 상태가 아니다.
+- 이번 저장 커밋 메시지: `wip: save paused runtime scene implementation`. 마지막 검증된 기능 커밋은 A4 `1844d9e`다.
 
-## 현재 확인된 상태
+## 중단 시점
 
-- A4: 반경별 공유 거리장, 예산을 나눠 처리하는 가중 A*·청크 출입구 경로, 원형 벽 미끄러짐, ID 순서 군집 보정과 접선 이동, 공중 예외, 실제 이동 서비스를 사용하는 RunTestRig를 구현했다. 검증은 EditMode `ec5a765f74c044319d59ca6501555550` 58개와 PlayMode `18e90ab2876e4d3d8fa1ff489e4d8722` 1개다.
+- Unity `6000.4.6f1`, 열린 Editor 프로세스 `22536`. 중단 직전 상태는 PlayMode 종료, 실행 중인 테스트 없음, 컴파일 중 아님이다.
+- **현재 컴파일 실패:** `WorldPresentationTests.cs`가 아직 연결하지 않은 `RunTestRig.Run`을 참조한다. `CS1061` 네 건은 같은 원인이다. 새 테스트를 먼저 작성한 지점에서 사용자 요청에 따라 멈췄으며, 저장을 위해 추가 구현하지 않았다.
+- A5의 실행 순서 관리, 메뉴/월드 표시, 런타임 시작 연결, 콘텐츠 생성 도구와 테스트 초안을 작성했다. 이 묶음의 테스트와 실제 플레이 화면은 아직 검증하지 않았다.
+- `DevelopmentContentBuilder.Build()`는 아직 실행하지 않았다. `Assets/_SsalMuk/Scenes/`와 `Resources/` 및 실제 카탈로그·프리팹·재질 에셋은 아직 생성하지 않았다. 빌드 설정도 A5에서 변경하지 않았다.
+- 한글 UI용 `GowunDodum-Regular.ttf`와 OFL 라이선스·출처를 `Assets/_SsalMuk/Content/Fonts/`에 저장했다. 최종 캐릭터 스프라이트·공격 이펙트는 후속 단계다.
 
-- A3: 시드·방문 순서와 독립적인 청크/공유 출입구, 보스 반경 연결 검증과 안전 지형, 공간 색인, 원형 쓸기 충돌, 모든 몬스터와 경험치 상태 보존을 구현했다. 이동 해소와 실제 화면은 A4/A5에서 연결한다.
-- A3 검증: `Logs/Validation/14b2660c164045ba8667b3b58a54b513` EditMode 48개 통과. 시작 상태는 `a3-a5-baseline-4b5939fd9b51407584602be5a4d638a1/baseline.json`, 사용자 파일 해시 일치 확인. 아래 A2 결과는 이전 단계의 기록이다.
+## 재개할 순서
 
-- Unity `6000.4.6f1`, Test Framework `1.6.0`, URP `17.4.0` 유지.
-- Unity MCP 패키지·서버 `10.2.0`, 기존 `http://127.0.0.1:8080/mcp` 설정 재사용. MCP 프로젝트 정보 읽기로 경로와 버전을 확인했다.
-- 최종 검증: 판독기 28개, EditMode 33개, PlayMode 1개 통과. 테스트 0개 검색은 실패한다. 콘솔 오류 0개, 컴파일 오류 없음, PlayMode 종료 및 테스트 정리 완료.
-- 열린 Editor를 사용했다. 닫힌 프로젝트용 배치 분기는 아직 실제 실행하지 않았다. Smoke/Stress는 후속 단계까지 명시적으로 실패한다.
-- A2 구현: Unity에 의존하지 않는 Core, Presentation 조립 단위, 유닛 공유 정의·팩토리·등록소, 판별 ID, 검만 소유한 플레이어 초기 상태, 청크 좌표와 생존 시계, Unity 설정 카탈로그와 Inspector 오류 표시.
-- 카탈로그의 기본 능력치는 계획에 적힌 임시 프리셋이다. 생성한 Core 정의는 이후 에셋 편집과 분리되며 같은 카탈로그의 유닛들은 정의 참조를 공유한다.
-- 실제 피해 처리·AI·전투·맵 생성·플레이 화면·콘텐츠 에셋은 후속 단계다. 개별 체력의 피해 후 독립성 검증은 계획대로 B2에서 수행한다.
+1. 사용자 재개 요청을 확인하고 Git 상태, 인계와 해당 계획, Unity 대상 프로젝트·버전·연결 상태를 읽는다. 두 번째 Editor를 실행하지 않는다.
+2. `RunTestRig`의 실제 이동 테스트 환경을 `RunModel`·`RunCoordinator`와 연결하고 `Run`을 노출한다. 기존 World/Player/Clock/Movement도 같은 판을 사용하도록 유지한다. 이것이 중단 직전의 다음 작업이다.
+3. 새 파일을 포함해 Unity를 `scope: all`로 갱신하고 컴파일 및 EditMode를 검증한다.
+4. `DevelopmentContentBuilder.Build()`로 빈 메뉴·전투 씬과 개발용 콘텐츠를 생성한다. 기존 사용자 씬·설정을 보존하고, 빌드 설정을 커밋할 때는 이번에 추가한 항목만 포함한다.
+5. 실제 GameStart → 씬 로드 → 구조물 → 플레이어 → 몬스터 → 시간·이동 진행을 PlayMode와 화면으로 확인한다. 넓은 공간·좁은 통로·벽 옆 군집 이동도 실제 표시로 확인한다.
+6. Domain Reload 켜짐/꺼짐 각각에서 재시작·중복 생성 방지와 정리를 검증한다. 설정을 바꾸기 전에 원본을 보관하고 검증 후 복원한다.
+7. A5 계획의 나머지 항목을 검증하고 현재 소스에 대응하는 새 결과를 확인한 뒤 문서와 로컬 커밋을 마무리한다. A5 체크박스는 그때 완료로 바꾼다. B1 이후는 현재 범위 밖이다.
 
-## 증거
+구체적인 승인 범위와 체크리스트는 [A 단계 계획](../superpowers/plans/2026-09-16-ssalmuk-a-foundation-world.md)을 따른다. 재개 후에는 이미 승인된 A5 범위의 승인을 반복해서 묻지 않는다.
 
-모두 Git에서 제외된 `Logs/Validation/` 아래에 있다. 다른 PC로 저장소만 옮기면 원시 결과는 따라가지 않으므로 다시 실행한다.
+## 마지막 완료 단계와 검증 기록
 
-| 확인 | 실행 ID/파일 |
-| --- | --- |
-| A2 Static | `0339360d47574ea9a153c097a2b9c86d` |
-| A2 EditMode | `ea8da69f607a4212b97323e7c4647b80` |
-| A2 PlayMode | `bd5d10fed0fb4373b4ea2598d8368f98` |
-| A1 빈 검색 실패 | `5750b40408fe40fc8b05e28ba2214332` |
-| A2 MCP 프로젝트 읽기 | `a2-baseline-a67024d6f46c4c11a085ed4bb621f374/mcp-project-evidence.json` |
-| A2 작업 전 변경 보관 | `a2-baseline-a67024d6f46c4c11a085ed4bb621f374/baseline.json` |
-| A2 구현 전 예상 컴파일 실패 | `a2-baseline-a67024d6f46c4c11a085ed4bb621f374/expected-missing-types.txt` |
+현재 A5 소스의 검증 결과와 아래의 이전 완료 결과를 혼동하지 않는다. 원시 결과는 Git에서 제외된 `Logs/Validation/` 아래에 있으며 다른 PC로 저장소만 옮기면 다시 검증해야 한다.
 
-## 재개 시 주의
+| 단계 | 완료 내용 | 커밋 / 검증 실행 ID |
+| --- | --- | --- |
+| A4 | 반경별 길찾기·경로 처리 예산, 벽 미끄러짐, 지상 군집 보정과 접선 이동, 공중 예외, 실제 이동 테스트 환경 | `1844d9e`; EditMode 58개 `ec5a765f74c044319d59ca6501555550`, PlayMode 1개 `18e90ab2876e4d3d8fa1ff489e4d8722` |
+| A3 | 결정적 청크와 공유 출입구, 보스 반경 연결 검증, 공간 색인·충돌 질의, 모든 몬스터·경험치 상태 보존 | `320c843`; EditMode 48개 `14b2660c164045ba8667b3b58a54b513` |
+| A2 | 공유 정의·유닛 생성·등록소, 검 초기 상태, 좌표·시계·Unity 설정 검사 | `f5ae8ed`; Static 28개 `0339360d47574ea9a153c097a2b9c86d`, EditMode 33개 `ea8da69f607a4212b97323e7c4647b80`, PlayMode 1개 `bd5d10fed0fb4373b4ea2598d8368f98` |
 
-- 현재 서버는 관리되는 터미널에서 실행된다. 앱/PC를 닫으면 중단될 수 있다. `tools/validation/start-unity-server.ps1`, `connect-unity.ps1`로 재연결한다. 전역 설정을 추가·덮어쓰지 않는다.
-- 기존 `ProjectSettings/EditorBuildSettings.asset`, `ProjectSettings/ProjectSettings.asset`, `.vsconfig`는 사용자 설정 내용을 보존했으며 커밋에 넣지 않았다. `ProjectSettings.asset`은 Unity가 줄바꿈을 바꿨지만 줄바꿈을 제외한 내용은 시작 시 백업과 동일하다.
-- Unity가 갱신/생성한 `ProjectSettings/ShaderGraphSettings.asset`, `ProjectSettings/SceneTemplateSettings.json`도 이번 커밋에서 제외했다. 임의로 삭제·복구하지 않는다.
-- 재개 시 발견한 `Assets/_Recovery/`와 해당 `.meta`는 사용자 파일로 보존했다. A2 작업 전 백업과 위 파일들의 바이트 해시가 일치한다.
-- 테스트 조립 단위의 `optionalUnityReferences: ["TestAssemblies"]`가 Test Runner 참조를 추가한다. 같은 참조를 명시적으로 중복 추가하지 않는다.
-- PlayMode 결과는 테스트 종료 콜백 뒤 씬·설정 복원이 끝나야 확정된다. 현재 연결기는 이 복원과 도메인 재로딩을 기다린다.
-- 새 파일을 추가한 뒤 MCP로 갱신할 때는 `refresh_unity`의 `scope: all`을 사용한다. `scope: scripts`의 컴파일 요청만으로 새 파일이 import되지 않을 수 있다.
+실제 피해·자동 공격·플레이어 AI·성장과 최종 아트는 후속 단계다. Smoke/Stress도 해당 구현 전까지 명시적으로 실패한다.
+
+## 보존할 상태와 검증 주의
+
+- 작업 전 상태와 사용자 파일 SHA256: `Logs/Validation/a3-a5-baseline-4b5939fd9b51407584602be5a4d638a1/baseline.json`.
+- 사용자 변경인 `ProjectSettings/EditorBuildSettings.asset`, `ProjectSettings/ProjectSettings.asset`, `ProjectSettings/ShaderGraphSettings.asset`, `ProjectSettings/SceneTemplateSettings.json`, `.vsconfig`, `Assets/_Recovery/`와 해당 `.meta`는 체크포인트에 넣지 않고 그대로 보존한다. 임의로 삭제·복구·스테이징하지 않는다.
+- Unity MCP 패키지·서버 `10.2.0`과 기존 `http://127.0.0.1:8080/mcp`를 재사용한다. 앱/PC 종료로 연결이 끊겼으면 `tools/validation/start-unity-server.ps1`, `connect-unity.ps1`을 확인한다. 전역 설정을 덮어쓰지 않는다.
+- 검증 진입점은 PowerShell 7의 `tools/validation/validate.ps1`이다. 새 manifest·receipt·XML과 현재 소스 해시를 확인한다. 이전 성공 결과나 0개 테스트를 현재 성공으로 보고하지 않는다.
+- 새 파일은 `refresh_unity`의 `scope: all`로 가져온다. 새 `.meta` 등 소스 해시에 포함되는 파일 정리는 최종 검증 전에 마친다.
+- PlayMode 결과는 종료 콜백 뒤 씬·설정 복원과 도메인 재로딩까지 끝난 후 확정한다. Test Runner 참조를 중복 추가하지 않는다.

@@ -12,7 +12,27 @@ namespace SsalMuk.Unity
         [SerializeField] private DevelopmentDefaults unitDefinitions;
         [SerializeField] private GameObject unitViewPrefab;
         [SerializeField] private UnitVisual[] unitVisuals = Array.Empty<UnitVisual>();
+        [SerializeField] private Font uiFont;
+        [SerializeField] private Sprite solidSprite;
+        [SerializeField] private Material worldMaterial;
         public GameObject UnitViewPrefab => unitViewPrefab;
+        public Font UiFont => uiFont;
+        public Sprite SolidSprite => solidSprite;
+        public Material WorldMaterial => worldMaterial;
+        public DevelopmentDefaults Defaults => unitDefinitions;
+
+        public void ConfigurePresentation(Font font, Sprite solid, Material material)
+        {
+            if (font == null || solid == null || material == null) throw new ArgumentException("Font, solid sprite and world material are required.");
+            uiFont = font; solidSprite = solid; worldMaterial = material;
+        }
+
+        public void ValidatePresentation()
+        {
+            CreateDefinitions();
+            if (uiFont == null || solidSprite == null || worldMaterial == null || unitViewPrefab.GetComponent<UnitView>() == null)
+                throw new ArgumentException("Runtime presentation content is incomplete.");
+        }
 
         public void Configure(DevelopmentDefaults definitions, GameObject prefab, IEnumerable<UnitVisual> visuals)
         {

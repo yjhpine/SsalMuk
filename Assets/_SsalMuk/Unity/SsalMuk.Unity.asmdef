@@ -1,5 +1,5 @@
 {
   "name": "SsalMuk.Unity",
   "rootNamespace": "SsalMuk.Unity",
-  "references": ["SsalMuk.Core", "SsalMuk.Presentation"]
+  "references": ["SsalMuk.Core", "SsalMuk.Presentation", "UnityEngine.UI", "Unity.InputSystem"]
 }

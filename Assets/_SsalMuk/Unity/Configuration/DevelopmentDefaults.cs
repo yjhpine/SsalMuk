@@ -11,6 +11,13 @@ namespace SsalMuk.Unity
     public sealed class DevelopmentDefaults : ScriptableObject
     {
         [SerializeField] private UnitEntry[] units = CreatePreset();
+        [SerializeField, Range(0, 1)] private float obstacleChance = 0.2f;
+        [SerializeField, Min(0)] private int initialEnemyCount = 12;
+        [SerializeField, Min(1)] private int crowdIterations = 6;
+        [SerializeField, Min(1)] private int navigationNodeBudget = 512;
+        public int InitialEnemyCount => initialEnemyCount >= 0 ? initialEnemyCount : throw new ArgumentOutOfRangeException(nameof(initialEnemyCount));
+        public MapSettings CreateMapSettings() => new MapSettings(obstacleChance, maximumBodyRadius: CreateCatalog().Units.Max(unit => unit.BodyRadius));
+        public MovementSettings CreateMovementSettings() => new MovementSettings(crowdIterations, navigationNodeBudget);
 
         public DefinitionCatalog CreateCatalog()
         {
