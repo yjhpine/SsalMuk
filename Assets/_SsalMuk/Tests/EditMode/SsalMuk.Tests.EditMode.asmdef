@@ -1,0 +1,7 @@
+{
+  "name": "SsalMuk.Tests.EditMode",
+  "rootNamespace": "SsalMuk.Tests",
+  "references": ["SsalMuk.Editor"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

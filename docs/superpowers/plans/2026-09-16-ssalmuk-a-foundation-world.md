@@ -1,6 +1,6 @@
 # SsalMuk A: Foundation and World Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Unity 연결·검증 경로를 구축하고, 실행 중 생성된 지상 몬스터가 장애물을 돌아 군집을 이루는 장면을 만든다.
 
@@ -26,15 +26,15 @@
 
 **Interfaces:** `validate.ps1 -Mode Static|EditMode|PlayMode|Smoke|Stress -Filter <정규 테스트 이름> -Scenario <시나리오 이름>`; 결과는 실행 ID별 manifest/XML/receipt. `Test-TestXml([xml]$Result, [string[]]$ExpectedNames)`는 필수 테스트가 모두 성공했을 때만 true. `Assert-ValidationReceipt($Manifest,$Receipt)`는 ID·소스 해시·시각 불일치 시 예외.
 
-- [ ] 열린 Editor의 프로젝트 경로와 버전을 필요한 필드만 읽어 확인한다. 프로세스 명령행·전역 설정 전체는 인증값을 포함할 수 있으므로 출력하지 않는다. 기존 dirty 파일의 시작 상태와 패키지 목록을 `Logs/Validation/` 아래에 보관한다.
-- [ ] 아래 고정 버전의 Unity 패키지 항목만 추가하고 import를 확인한다. Test Framework의 프로젝트 직접 의존성 `1.6.0`을 유지하고 다른 패키지의 의도치 않은 변경 여부를 비교한다.
+- [x] 열린 Editor의 프로젝트 경로와 버전을 필요한 필드만 읽어 확인한다. 프로세스 명령행·전역 설정 전체는 인증값을 포함할 수 있으므로 출력하지 않는다. 기존 dirty 파일의 시작 상태와 패키지 목록을 `Logs/Validation/` 아래에 보관한다.
+- [x] 아래 고정 버전의 Unity 패키지 항목만 추가하고 import를 확인한다. Test Framework의 프로젝트 직접 의존성 `1.6.0`을 유지하고 다른 패키지의 의도치 않은 변경 여부를 비교한다.
 
 ```json
 "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#v10.2.0"
 ```
 
-- [ ] 공식 서버도 `mcpforunityserver==10.2.0`으로 맞춘다. 기존 HTTP 주소와 실행 중 서버를 먼저 검사하고, 서버가 없을 때만 loopback에 실행한다. Windows의 별도 실행 프로세스는 숨김으로 시작한다. 기존 Codex `unityMCP` 설정을 재사용하고 다른 MCP 항목을 덮어쓰지 않는다. Unity 프로젝트·버전 읽기까지 성공한 증거를 남긴다. 설치 경로와 서버 버전은 [공식 설치 방식](https://github.com/CoplayDev/unity-mcp/blob/main/README.md)과 [서버 정의](https://github.com/CoplayDev/unity-mcp/blob/v10.2.0/Server/pyproject.toml)에 근거한다.
-- [ ] 이 단계의 Editor asmdef는 TestRunner API만 참조하고 아직 없는 게임 조립 단위는 참조하지 않는다. 테스트 asmdef의 이름은 파일명과 일치시킨다. 결과 판독기의 실패 테스트를 작성하고 아래 입력을 거절하는지 확인한다. 아직 함수가 없을 때는 함수 미정의로 실패해야 한다.
+- [x] 공식 서버도 `mcpforunityserver==10.2.0`으로 맞춘다. 기존 HTTP 주소와 실행 중 서버를 먼저 검사하고, 서버가 없을 때만 loopback에 실행한다. Windows의 별도 실행 프로세스는 숨김으로 시작한다. 기존 Codex `unityMCP` 설정을 재사용하고 다른 MCP 항목을 덮어쓰지 않는다. Unity 프로젝트·버전 읽기까지 성공한 증거를 남긴다. 설치 경로와 서버 버전은 [공식 설치 방식](https://github.com/CoplayDev/unity-mcp/blob/main/README.md)과 [서버 정의](https://github.com/CoplayDev/unity-mcp/blob/v10.2.0/Server/pyproject.toml)에 근거한다.
+- [x] 이 단계의 Editor asmdef는 TestRunner API만 참조하고 아직 없는 게임 조립 단위는 참조하지 않는다. 테스트 asmdef의 이름은 파일명과 일치시킨다. 결과 판독기의 실패 테스트를 작성하고 아래 입력을 거절하는지 확인한다. 아직 함수가 없을 때는 함수 미정의로 실패해야 한다.
 
 ```powershell
 . ./tools/validation/read-results.ps1
@@ -46,13 +46,13 @@ $skipped = [xml]'<test-run result="Passed"><test-case fullname="Required" result
 if (Test-TestXml $skipped @('Required')) { throw 'Skipped is not passed.' }
 ```
 
-- [ ] `read-results.ps1`에서 testcase를 재귀 조회해 필수 이름 존재·Passed·오류 없음·실행 수 양수를 확인한다. manifest/receipt의 실행 ID·시작/종료 시각·소스 해시를 별도로 대조한다. 종료 코드만으로 성공하지 않는다. 정상 XML, 실패 XML, 지난 실행 ID, 다른 소스 해시, 필수 테스트 누락의 테스트를 함께 추가한다.
-- [ ] `validate.ps1`에 매번 새 실행 폴더를 만드는 로직과 경로 검증을 작성한다. 열린 Editor에는 `request.json`을 임시 파일 작성 후 이름 변경으로 전달한다. 닫힌 프로젝트에만 배치 실행을 사용한다. 제한 시간 초과·컴파일 실패·실행 실패를 각각 기록하고 종료 코드를 실패로 반환한다.
-- [ ] Editor 연결은 정해진 프로젝트의 요청 폴더만 읽는다. 허용된 모드·테스트 필터·시나리오만 처리하고, 실행 중 요청은 중복 수락하지 않는다. TestRunner API 진입은 다음 형태로 작성한다. `ValidationCallbacks(string receiptPath, string xmlPath)`가 완료 시 XML을 먼저 저장하고 receipt를 마지막에 기록한다.
+- [x] `read-results.ps1`에서 testcase를 재귀 조회해 필수 이름 존재·Passed·오류 없음·실행 수 양수를 확인한다. manifest/receipt의 실행 ID·시작/종료 시각·소스 해시를 별도로 대조한다. 종료 코드만으로 성공하지 않는다. 정상 XML, 실패 XML, 지난 실행 ID, 다른 소스 해시, 필수 테스트 누락의 테스트를 함께 추가한다.
+- [x] `validate.ps1`에 매번 새 실행 폴더를 만드는 로직과 경로 검증을 작성한다. 열린 Editor에는 `request.json`을 임시 파일 작성 후 이름 변경으로 전달한다. 닫힌 프로젝트에만 배치 실행을 사용한다. 제한 시간 초과·컴파일 실패·실행 실패를 각각 기록하고 종료 코드를 실패로 반환한다.
+- [x] Editor 연결은 정해진 프로젝트의 요청 폴더만 읽는다. 허용된 모드·테스트 필터·시나리오만 처리하고, 실행 중 요청은 중복 수락하지 않는다. TestRunner API 진입은 다음 형태로 작성한다. `ValidationCallbacks`가 EditorValidationBridge에 완료를 전달한다. XML을 먼저 저장하고 Test Runner의 씬·설정 복원 뒤 receipt를 마지막에 기록한다.
 
 ```csharp
 var api = ScriptableObject.CreateInstance<TestRunnerApi>();
-api.RegisterCallbacks(new ValidationCallbacks(receiptPath, xmlPath));
+TestRunnerApi.RegisterTestCallback(new ValidationCallbacks());
 string[] groups = string.IsNullOrEmpty(filter) ? null : new[] {
     "^" + System.Text.RegularExpressions.Regex.Escape(filter) + @"(?:\.|$)"
 };
@@ -65,8 +65,8 @@ api.Execute(new ExecutionSettings(new Filter {
 }));
 ```
 
-- [ ] `ValidationCallbacks`는 설치된 `ICallbacks`의 RunStarted/RunFinished/TestStarted/TestFinished를 구현한다. `TestRunnerApi.SaveResultToFile`을 사용한다. 활성 요청 ID는 Editor SessionState에 보존해 Domain Reload 뒤 완료 콜백을 다시 연결하고 요청 재실행을 막는다. 스크립트의 정상·실패 fixture와 실제 테스트 1개 실행으로 파일 왕복을 검증한다.
-- [ ] `AGENTS.md`에 기준 문서, 작업 경로, 승인된 범위 내 자율 진행, 사용자 변경 보존, 새 결과 판독, 작업 단위 로컬 커밋, 짧은 보고·log.md 규칙을 기록한다. 연결 성공과 검증 왕복 성공을 각각 확인한 뒤 `chore: connect Unity and add validation harness`로 해당 파일만 커밋한다.
+- [x] `ValidationCallbacks`는 설치된 `ICallbacks`의 RunStarted/RunFinished/TestStarted/TestFinished를 구현한다. `TestRunnerApi.SaveResultToFile`을 사용한다. 활성 요청 ID는 Editor SessionState에 보존해 Domain Reload 뒤 완료 콜백을 다시 연결하고 요청 재실행을 막는다. 스크립트의 정상·실패 fixture와 실제 테스트 1개 실행으로 파일 왕복을 검증한다.
+- [x] `AGENTS.md`에 기준 문서, 작업 경로, 승인된 범위 내 자율 진행, 사용자 변경 보존, 새 결과 판독, 작업 단위 로컬 커밋, 짧은 보고·log.md 규칙을 기록한다. 연결 성공과 검증 왕복 성공을 각각 확인한 뒤 `chore: connect Unity and add validation harness`로 해당 파일만 커밋한다.
 
 ## Task A2: 조립 단위·공유 정의·유닛 생성·시계
 
@@ -74,7 +74,7 @@ api.Execute(new ExecutionSettings(new Filter {
 
 **Interfaces:** `RunClock(double fixedStep)`의 `Start()`, `Stop()`, `Advance(int ticks = 1)`, `double ElapsedSeconds`; `DefinitionCatalog.GetUnit(UnitKind)`; `UnitFactory.Spawn(UnitSpawnRequest)` → `UnitModel`; `UnitSpawnRequest`는 UnitKind·WorldPosition·생성 정의와 RunId를 가진 값 객체로 `Core/Units/UnitSpawnRequest.cs`에 정의한다. WorldPosition은 크기 32인 청크 정규화·Offset·DistanceTo를 제공한다. UnitRegistry는 ID별 모델 등록·읽기·제거를 담당하고 A3 WorldStore가 이를 소유한다. PlayerModel의 `Weapons.Kinds`는 초기 검만 포함하며 `Level`은 BigInteger.One으로 시작한다. WeaponState는 무기 종류를 보관하고 강화 상태는 C1에서 추가한다.
 
-- [ ] Core·Presentation은 `noEngineReferences: true`, Unity는 두 조립 단위를 참조하도록 구성한다. A1의 Editor·테스트 asmdef에 이제 생성된 게임 조립 단위 참조를 추가한다. 테스트 asmdef는 NUnit/TestRunner 참조와 TestAssemblies 표시를 지정한다. 각 테스트 fixture 필터가 실제 발견되는지 확인한다.
+- [ ] Core·Presentation은 `noEngineReferences: true`, Unity는 두 조립 단위를 참조하도록 구성한다. A1의 Editor·테스트 asmdef에 이제 생성된 게임 조립 단위 참조를 추가한다. 테스트 asmdef는 TestAssemblies 표시가 주입하는 NUnit/TestRunner 참조를 중복 선언하지 않는다. 각 테스트 fixture 필터가 실제 발견되는지 확인한다.
 - [ ] 아래 시계 계약 테스트를 작성하고 예상 실패를 확인한다.
 
 ```csharp

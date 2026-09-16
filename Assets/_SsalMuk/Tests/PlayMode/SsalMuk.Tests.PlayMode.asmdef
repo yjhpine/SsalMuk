@@ -1,0 +1,6 @@
+{
+  "name": "SsalMuk.Tests.PlayMode",
+  "rootNamespace": "SsalMuk.Tests",
+  "references": [],
+  "optionalUnityReferences": ["TestAssemblies"]
+}
