@@ -101,7 +101,7 @@ public void LoadingDoesNotConsumeSurvivalTime()
 
 **Interfaces:** `WorldPosition.FromLocal(DVec2)`, `DistanceTo(WorldPosition)`, `Offset(DVec2)`; `ChunkGenerator(int seed, MapSettings settings).Generate(ChunkCoord)` → `ChunkData`; `MapSettings.TestDefaults(double obstacleChance = 0.2)`는 셀 1, 청크 한 변 32, 통로 최소 폭 4의 테스트 설정. `ChunkData.Fingerprint`는 동일 셀 결과의 안정 해시. `WorldStore`는 UnitRegistry와 ID별 ExperienceRecord를 보존한다. `IWorldQuery.FindNearestEnemy(WorldPosition)` → `long?`, `QueryCircle(WorldPosition,double)` → 대상 ID 목록, `SweepCircle(WorldPosition,DVec2,double)` → `SweepHit?`의 최초 구조물 충돌. SweepHit은 이동 비율·법선·충돌 위치를 담는다. `IRandomSource.NextUnit()` → double이며 `SeededRandom(int seed)`가 구현한다.
 
-- [ ] 음수 좌표 정규화와 생성 순서 독립성 테스트를 작성하고 실패를 확인한다.
+- [x] 음수 좌표 정규화와 생성 순서 독립성 테스트를 작성하고 실패를 확인한다.
 
 ```csharp
 [Test]
@@ -115,9 +115,9 @@ public void ChunkDoesNotDependOnVisitOrder()
 }
 ```
 
-- [ ] WorldPosition은 청크와 내부 좌표를 정규화해 저장한다. 몫은 floor로 계산하고 차이를 구할 때 가까운 청크 간 상대 좌표부터 계산한다. 전체 큰 좌표를 먼저 float로 변환하지 않는다. 테스트는 -0.1, -32, 32, 먼 청크 간 작은 상대 이동을 포함한다.
-- [ ] 청크 시드는 실행 시드·정수 좌표·생성 버전을 명시적 안정 해시로 조합한다. 프로세스마다 달라질 수 있는 string.GetHashCode나 UnityEngine.Random을 사용하지 않는다. 공유 경계는 방향·경계의 전역 정수 좌표·시드로 출입구 위치를 정해 양쪽 청크가 같은 값을 얻도록 한다. 출입구들을 중앙 연결 구역으로 잇고 장애물을 배치한 뒤 바닥 연결·몸 반경 여유를 flood fill로 검사한다. 실패하면 같은 출입구의 안전 통로 배치를 반환한다.
-- [ ] SeededRandom은 아래 uint 상태 전이를 사용한다. 생성자에서 seed를 uint로 변환하고 0이면 `0x6D2B79F5u`로 초기화한다. NextUnit은 반환값을 `4294967296.0`으로 나누어 0 이상 1 미만으로 만든다. SeedStreams는 Map/Spawn/Reward별 고정 태그로 초기 시드를 분리한다. 같은 시드·호출 수의 재현과 보상 난수 소비가 지형을 바꾸지 않는 테스트를 추가한다.
+- [x] WorldPosition은 청크와 내부 좌표를 정규화해 저장한다. 몫은 floor로 계산하고 차이를 구할 때 가까운 청크 간 상대 좌표부터 계산한다. 전체 큰 좌표를 먼저 float로 변환하지 않는다. 테스트는 -0.1, -32, 32, 먼 청크 간 작은 상대 이동을 포함한다.
+- [x] 청크 시드는 실행 시드·정수 좌표·생성 버전을 명시적 안정 해시로 조합한다. 프로세스마다 달라질 수 있는 string.GetHashCode나 UnityEngine.Random을 사용하지 않는다. 공유 경계는 방향·경계의 전역 정수 좌표·시드로 출입구 위치를 정해 양쪽 청크가 같은 값을 얻도록 한다. 출입구들을 중앙 연결 구역으로 잇고 장애물을 배치한 뒤 바닥 연결·몸 반경 여유를 flood fill로 검사한다. 실패하면 같은 출입구의 안전 통로 배치를 반환한다.
+- [x] SeededRandom은 아래 uint 상태 전이를 사용한다. 생성자에서 seed를 uint로 변환하고 0이면 `0x6D2B79F5u`로 초기화한다. NextUnit은 반환값을 `4294967296.0`으로 나누어 0 이상 1 미만으로 만든다. SeedStreams는 Map/Spawn/Reward별 고정 태그로 초기 시드를 분리한다. 같은 시드·호출 수의 재현과 보상 난수 소비가 지형을 바꾸지 않는 테스트를 추가한다.
 
 ```csharp
 uint NextUInt()
@@ -130,10 +130,10 @@ uint NextUInt()
     return x;
 }
 ```
-- [ ] 청크 경계의 출입구와 큰 보스 통과 폭을 여러 양수·음수 좌표에서 검증한다. 단일 청크뿐 아니라 인접 청크를 합친 연결성도 검사한다.
-- [ ] SpatialIndex는 셀별 ID 목록을 관리하고 이동 시 이전 셀에서 제거 후 새 셀에 등록한다. 최근접은 청크 밖 후보까지 확장하며 다음 영역의 최소 거리가 현재 최선보다 멀 때만 종료한다. 대상이 없는 경우 유한한 비어 있지 않은 청크 색인으로 검색을 끝낸다.
-- [ ] CircleSweep에 원의 이동 구간과 구조물 셀의 최초 접촉을 구현해 WorldQuery.SweepCircle에 연결한다. 이동 구간이 닿는 셀만 후보로 삼고 셀의 변과 모서리에 대한 최초 접촉 비율·법선을 반환한다. 이 단계에서는 위치를 이동시키지 않고 기하 결과만 반환한다.
-- [ ] ExperienceRecord는 `Id`, `Position`(WorldPosition), `Value`(BigInteger), `State`(ExperienceState)를 읽기 전용으로 노출하며 초기 상태는 Grounded다. ExperienceState는 Grounded/Attracting/Collected를 정의한다. `WorldStore.TryGetExperience(long id,out ExperienceRecord record)`로 조회하고, 상태·위치 변경과 색인 갱신은 월드가 소유한다. 논리 경험치는 실제 접촉 획득 또는 판 종료 때만 삭제한다. 몬스터 사망은 삭제가 아닌 드롭 생성 원인이다. 정적 청크 캐시 회수 뒤 동일 지형 재생성과 몬스터·경험치 ID·값·상태 유지 테스트를 작성한다. 흡수 이동·지급은 C1에서 연결한다. A2 포함 관련 테스트를 통과시킨 뒤 `feat: add deterministic chunks and persistent world data`로 커밋한다.
+- [x] 청크 경계의 출입구와 큰 보스 통과 폭을 여러 양수·음수 좌표에서 검증한다. 단일 청크뿐 아니라 인접 청크를 합친 연결성도 검사한다.
+- [x] SpatialIndex는 셀별 ID 목록을 관리하고 이동 시 이전 셀에서 제거 후 새 셀에 등록한다. 최근접은 청크 밖 후보까지 확장하며 다음 영역의 최소 거리가 현재 최선보다 멀 때만 종료한다. 대상이 없는 경우 유한한 비어 있지 않은 청크 색인으로 검색을 끝낸다.
+- [x] CircleSweep에 원의 이동 구간과 구조물 셀의 최초 접촉을 구현해 WorldQuery.SweepCircle에 연결한다. 이동 구간이 닿는 셀만 후보로 삼고 셀의 변과 모서리에 대한 최초 접촉 비율·법선을 반환한다. 이 단계에서는 위치를 이동시키지 않고 기하 결과만 반환한다.
+- [x] ExperienceRecord는 `Id`, `Position`(WorldPosition), `Value`(BigInteger), `State`(ExperienceState)를 읽기 전용으로 노출하며 초기 상태는 Grounded다. ExperienceState는 Grounded/Attracting/Collected를 정의한다. `WorldStore.TryGetExperience(long id,out ExperienceRecord record)`로 조회하고, 상태·위치 변경과 색인 갱신은 월드가 소유한다. 논리 경험치는 실제 접촉 획득 또는 판 종료 때만 삭제한다. 몬스터 사망은 삭제가 아닌 드롭 생성 원인이다. 정적 청크 캐시 회수 뒤 동일 지형 재생성과 몬스터·경험치 ID·값·상태 유지 테스트를 작성한다. 흡수 이동·지급은 C1에서 연결한다. A2 포함 관련 테스트를 통과시킨 뒤 `feat: add deterministic chunks and persistent world data`로 커밋한다.
 
 ## Task A4: 길찾기와 몬스터 밀집 이동
 

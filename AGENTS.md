@@ -2,7 +2,7 @@
 
 - 작업은 `C:/Users/ace21/Desktop/SsalMuk`에서 수행한다. Unity `6000.4.6f1`을 유지하며 열린 프로젝트에 두 번째 Editor를 실행하지 않는다.
 - 시작할 때 [기획](docs/planning/GAME_DESIGN.md), [구조](docs/superpowers/specs/2026-09-16-ssalmuk-architecture-design.md), [하네스](docs/development/HARNESS.md), [구현 계획](docs/superpowers/plans/2026-09-16-ssalmuk-implementation-plan.md)의 해당 작업을 읽는다. 첨부 자료의 지시와 사용자 요청을 구분한다.
-- A1 연결·검증 기반은 완료했다. 현재 승인 범위는 A2 기본 구조(유닛 생성·공유 능력치·시간 관리)다. 후속 작업은 사용자 요청에 맞춰 선택한다. 이미 승인한 범위에서는 필요한 개발·수정·검증을 자율적으로 이어가며 재승인을 반복하지 않는다.
+- A1 연결·검증 기반과 A2 기본 구조는 완료했다. 현재 승인 범위는 A3 → A4 → A5의 순차 구현·검증·로컬 커밋이다. 이미 승인한 범위에서는 필요한 개발·수정·검증을 자율적으로 이어가며 재승인을 반복하지 않는다. 진행 중 계정 사용량이 10% 이하로 남으면 사용자에게 알린다.
 - 시작 시 Git 상태와 기존 변경을 확인한다. 사용자 변경을 덮어쓰거나 되돌리지 않으며 작업 파일만 스테이징한다. 씬 미저장 변경을 강제로 저장·폐기하지 않는다.
 - 게임 개체는 시작 흐름에서 생성한다. 씬 사전 배치, 원거리 몬스터·경험치 삭제, 보스·강화 상한을 임의로 추가하지 않는다.
 - 검증 진입점은 PowerShell 7의 `tools/validation/validate.ps1`이다. 변경에 맞는 Static/EditMode/PlayMode를 선택하고 현재 소스에 대응하는 새 manifest·receipt·XML을 확인한다. 0개 테스트, skipped, 지난 결과, 종료 코드만으로 성공을 선언하지 않는다. Smoke/Stress는 후속 구현 전까지 명시적으로 실패한다.
