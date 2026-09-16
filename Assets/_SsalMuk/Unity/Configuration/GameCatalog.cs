@@ -15,11 +15,18 @@ namespace SsalMuk.Unity
         [SerializeField] private Font uiFont;
         [SerializeField] private Sprite solidSprite;
         [SerializeField] private Material worldMaterial;
+        [SerializeField] private VisualCatalog visualCatalog;
+        public VisualCatalog Visuals => visualCatalog;
         public GameObject UnitViewPrefab => unitViewPrefab;
         public Font UiFont => uiFont;
         public Sprite SolidSprite => solidSprite;
         public Material WorldMaterial => worldMaterial;
         public DevelopmentDefaults Defaults => unitDefinitions;
+        public void ConfigureVisualCatalog(VisualCatalog visuals)
+        {
+            visuals.Validate(); visualCatalog = visuals;
+            unitVisuals = Enum.GetValues(typeof(UnitKind)).Cast<UnitKind>().Select(kind => new UnitVisual(kind, visuals.Unit(kind).Sprite)).ToArray();
+        }
 
         public void ConfigurePresentation(Font font, Sprite solid, Material material)
         {
@@ -32,6 +39,8 @@ namespace SsalMuk.Unity
             CreateDefinitions();
             if (uiFont == null || solidSprite == null || worldMaterial == null || unitViewPrefab.GetComponent<UnitView>() == null)
                 throw new ArgumentException("Runtime presentation content is incomplete.");
+            if (visualCatalog == null) throw new ArgumentException("The final art catalog is missing.");
+            visualCatalog.Validate();
         }
 
         public void Configure(DevelopmentDefaults definitions, GameObject prefab, IEnumerable<UnitVisual> visuals)

@@ -39,7 +39,8 @@ namespace SsalMuk.Editor.Content
             if (catalog == null) { catalog = ScriptableObject.CreateInstance<GameCatalog>(); AssetDatabase.CreateAsset(catalog, catalogPath); }
             var visuals = new List<GameCatalog.UnitVisual>();
             foreach (UnitKind kind in Enum.GetValues(typeof(UnitKind))) visuals.Add(new GameCatalog.UnitVisual(kind, body));
-            catalog.Configure(defaults, prefab, visuals); catalog.ConfigurePresentation(font, solid, material); catalog.ValidatePresentation();
+            catalog.Configure(defaults, prefab, visuals); catalog.ConfigurePresentation(font, solid, material);
+            ArtContentBuilder.Apply(catalog); catalog.ValidatePresentation();
             EditorUtility.SetDirty(catalog);
             EmptyScene(AppRoot.MainMenuScenePath); EmptyScene(AppRoot.BattleScenePath);
             var scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);

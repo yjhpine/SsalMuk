@@ -37,7 +37,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -48,12 +48,12 @@ TextureImporter:
   compressionQuality: 50
   spriteMode: 2
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 128
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
-  spriteGenerateFallbackPhysicsShape: 1
+  spriteGenerateFallbackPhysicsShape: 0
   alphaUsage: 1
   alphaIsTransparency: 1
   spriteTessellationDetail: -1
@@ -72,10 +72,10 @@ TextureImporter:
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 2048
+    maxTextureSize: 4096
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -100,23 +100,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: RubyStaff_0
+      name: RubyStaff
       rect:
         serializedVersion: 2
-        x: 64
-        y: 201
-        width: 1864
-        height: 444
-      alignment: 0
-      pivot: {x: 0, y: 0}
+        x: 70
+        y: 271
+        width: 1858
+        height: 255
+      alignment: 9
+      pivot: {x: 0.015, y: 0.6392157}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData:
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 57a02ed86c6e22a70800000000000000
-      internalID: 8800850362293684853
+      spriteID: 8b5813bbf22a28445ad1304ee6e6eb66
+      internalID: -1343364552
       vertices: []
       indices:
       edges: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData:
     physicsShape: []
     bones: []
-    spriteID:
+    spriteID: 8d23e301132f4644d819d248d3e3d7ba
     internalID: 0
     vertices: []
     indices:
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      RubyStaff_0: 8800850362293684853
+      RubyStaff: -1343364552
   mipmapLimitGroupName:
   pSDRemoveMatte: 0
   userData:

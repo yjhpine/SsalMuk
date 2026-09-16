@@ -3,7 +3,7 @@
 ## 도트 무기 원본
 
 - 제작일: 2026-09-16. 제작 도구: 내장 imagegen. 사용자가 요청한 철검·철도끼·철창·루비 금색 지팡이 4종이다.
-- 상태: 4종 생성·시각 확인·프로젝트 원본 보관 완료. 투명 alpha를 확인했다. Unity의 실제 공격 표시에 연결하고 크기·중심·축을 검증하는 작업은 D2에서 진행한다.
+- 상태: 4종 생성·시각 확인·프로젝트 보관·Sprite import·실제 공격 표시 연결 완료. 투명 alpha와 크기·중심·축을 확인했다. 원본 PNG 바이트는 보존하고 Unity import 영역과 피벗만 설정했다.
 - 원본과 프로젝트 복사본을 보존한다. 지팡이는 기존 파이어볼 표시이며 새 무기 종류가 아니다.
 - 위치: `Assets/_SsalMuk/Content/Sprites/Weapons/`. 픽셀 도트 외형이며 최종 표시 크기는 Unity에서 조절한다.
 
@@ -34,17 +34,25 @@ Create one standalone pixel art magic staff sprite for a top-down 2D fantasy sur
 
 ## 캐릭터·몬스터·외부 이펙트
 
-D2에서 실제 제작·취득과 적용 후 출처·라이선스·사용 파일·검증 증거를 추가한다. [기존 조사 후보](ART_AND_VFX.md)는 아직 취득·적용된 자산을 뜻하지 않는다.
+D2의 실제 취득·적용 기록은 아래와 같다. [기존 조사 후보](ART_AND_VFX.md) 전체를 취득한 것은 아니다.
 
 
 ## 캐릭터·몬스터 원본과 효과 취득
 
 - 2026-09-17: 같은 도트 화풍의 기사·초록 슬라임·보라 박쥐·붉은 거대 오우거 아틀라스를 imagegen으로 생성했다. 출력은 1254×1254, 투명 alpha이며 무기는 본체에 포함하지 않았다. 결과를 시각 확인하고 원본과 동일한 파일을 `Assets/_SsalMuk/Content/Art/Characters/UnitsAtlas.png`에 보관했다.
-- 생성 원본: `C:/Users/ace21/.codex/generated_images/01a0a83f-e247-7640-8dd5-603e2f5206cc/exec-e194b045-f3c1-414d-a80e-37634332a6b3.png`. 사분면과 실제 그림 경계에 맞춘 Sprite 분리·바닥 축·크기 설정은 D2에서 적용한다. 현재는 원본 보관 단계다.
+- 생성 원본: `C:/Users/ace21/.codex/generated_images/01a0a83f-e247-7640-8dd5-603e2f5206cc/exec-e194b045-f3c1-414d-a80e-37634332a6b3.png`. D2에서 실제 그림 경계와 바닥 축에 맞춰 분리했다. 단순 사분면 자르기로 경계의 그림을 누락하지 않도록 불투명 영역을 측정했다.
 - [Slash Effect Collection — MetaShinryu](https://opengameart.org/content/slash-effect-collection)의 Circular·Arcing·Lunge Thrust 원본, [Fireball Spritesheet — Umplix](https://opengameart.org/content/fireball-spritesheet)의 4프레임 시트, [Explosion — BenHickling](https://opengameart.org/content/explosion-7)의 100×100 픽셀 50프레임 시트를 취득했다. 각 제작자 페이지의 CC0 표시를 확인했으며 구매는 없었다.
-- 효과 원본은 `Content/Art/ThirdParty/`의 제작자별 폴더에 있고 출처·라이선스는 같은 폴더의 `ATTRIBUTION.md`에 있다. 다운로드 직후 시각 확인과 원본/복사본 해시 일치를 확인했다. 실제 프레임 적용과 전투 표시는 D2에 남아 있다.
+- 효과 원본은 `Content/Art/ThirdParty/`의 제작자별 폴더에 있고 출처·라이선스는 같은 폴더의 `ATTRIBUTION.md`에 있다. 다운로드 직후와 D2 적용 후 원본 해시 일치를 확인했다. 근접 효과 3종, 비행 4프레임, 폭발 50프레임을 전투 모델에 연결했다.
 - 추가로 조사한 Cethiel의 Fireball Effect와 MSavioti의 Firebal 32x32는 검토용 다운로드만 `Logs/Validation/bcd-assets/`에 유지한다. 프로젝트 콘텐츠에는 선택한 Umplix 시트만 포함했다.
 - 원본 크기·해시·모서리 alpha의 취득 증거는 `Logs/Validation/bcd-baseline/unit-vfx-originals.json`에 보관한다.
+
+## Unity 적용과 화면 확인
+
+- `ArtContentBuilder`는 Sprite Data Provider로 기존 이름의 ID를 유지한다. Point 필터, 비압축, mipmap 없음, FullRect와 자동 물리 형상 없음으로 import한다. `VisualCatalog`에 유닛·무기·효과 프레임·축·크기·보행·피격 시간을 저장한다. 도입 자산에 피해 콜백이나 Collider를 추가하지 않았다.
+- Unity 좌표의 유닛 Sprite 영역: 기사 `(200,730,246,415)`, 슬라임 `(776,780,305,247)`, 박쥐 `(32,211,566,232)`, 오우거 `(624,61,607,547)`. 피벗은 각 영역의 하단 중앙이다. 표시 높이는 1.05/0.65/0.53/2.25 월드 단위이며 논리 몸 반경과 분리했다.
+- 철검·창·도끼·지팡이는 실제 손잡이 축을 피벗으로 삼고 오른쪽 끝을 전방으로 한다. Umplix 비행 프레임의 왼쪽 머리를 접촉 중심으로 잡고 진행 방향에 맞춰 180도 돌린다. 폭발은 실제 폭발 수명과 범위로 프레임을 진행한다.
+- 구슬은 별도 이미지 구매 없이 작은 원과 중심에서 투명해지는 원형 Mesh를 겹친다. 실제 1/5/25 값은 초록/파랑/빨강으로 표시한다. 원형 중심 반경 0.08과 halo 0.27/0.30/0.33은 피해·흡수 판정을 바꾸지 않는다.
+- import 읽기 검증: `Logs/Validation/bcd-baseline/d2-art-import-readback.json`. 원본 해시는 `unit-vfx-originals.json`과 일치했다. 실제 GameStart·RunSimulation을 일정한 주기로 진행해 촬영한 화면은 `Logs/Validation/Art/`에 있고 최신 실행은 [인계](../development/HANDOFF.md)에 연결한다. 흡수 중 경험치 0, 접촉 후 1, 범위 증가, 플레이어 피격, 네 유닛 원화와 세 구슬 색을 시각 확인했다. 화면 촬영 중 주기를 고정한 fixture이며 실시간 성능 증거로 쓰지 않는다.
 
 ### 유닛 아틀라스 생성 프롬프트
 

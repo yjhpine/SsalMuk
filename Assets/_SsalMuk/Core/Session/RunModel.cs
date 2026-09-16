@@ -17,6 +17,7 @@ namespace SsalMuk.Core
         public OfferSnapshot CurrentOffer => Rewards.CurrentOffer;
         public WorldStore World { get; }
         public RunClock Clock { get; }
+        public ICombatReadModel Combat { get; internal set; }
         public PlayerModel Player { get; private set; }
         public long Kills { get; internal set; }
         public RunResult Result { get; private set; }

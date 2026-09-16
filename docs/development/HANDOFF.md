@@ -1,11 +1,20 @@
 # SsalMuk 재개 지점
 
-- 갱신일: 2026-09-17. **A1~A5·B1~B4·C1~C3·D1 구현·검증 완료. 사용자가 B·C·D 전체 진행을 승인했다. 다음은 D2다.**
+- 갱신일: 2026-09-17. **A1~A5·B1~B4·C1~C3·D1~D2 구현·검증 완료. 사용자가 B·C·D 전체 진행을 승인했다. 다음은 D3다.**
 - 프로젝트: `C:/Users/ace21/Desktop/SsalMuk`, 브랜치: `codex/unit-foundation`.
 - 최신 B4 로컬 커밋 메시지: `feat: add battle HUD results and clean restart`. B3은 `34ab952`, B2는 `a90f2d0`, B1은 `3c95e28`, A5는 `0599916`이다. 원격 푸시는 하지 않는다.
 - 중간 저장 `e742523` 뒤 목표 재활성화를 확인해 재개했다. 사용량은 재개 시 주간 7%, 마무리 중 4% 잔여를 알렸다.
 
-## 현재 D1 동작과 검증
+## 현재 D2 동작과 검증
+
+- 유닛 아틀라스 4종, 철검·철창·철도끼·루비 지팡이, CC0 근접 잔상과 파이어볼/폭발을 실제 Sprite로 import했다. 원본 PNG는 변경하지 않았다. Sprite ID·피벗·투명도·Point 필터·물리 형상 없음과 실제 카탈로그 참조를 읽어 확인했다.
+- 발 축 보행과 독립 피격 팽창, Y 정렬, 공격 스냅샷과 같은 반투명 범위, 초록/파랑/빨강 경험치 중심·halo·비행 보간을 적용했다. View만 거리별로 회수하며 모든 먼 몬스터와 경험치 데이터는 유지한다. 대여 세대/판 ID로 오래된 표시 요청을 거부한다.
+- EditMode `b51b655e0aeb421db0d895fd22d4afc4`: 168개, PlayMode `8987d377c4df4121bf78c3a35512597c`: 20개, Static `cb0cf36f9a1e410e9b41befe8ca0e2c8` 통과. 소스 해시 `264682303524aef78e5069a2f23794c295fb22d195bd531f32824bc6d8592d4d`에 manifest·receipt·XML을 대조했다. 기존 사용자 파일과 6개 원본 이미지 해시를 보존했다.
+- 실제 화면은 `Logs/Validation/Art/`에 실행별로 저장했다. 검증된 `9c564ab85bbf4941b048838dfcd5cb8e` 화면 및 최종 PlayMode의 ArtPresentationTests는 같은 실제 GameStart·RunSimulation의 고정 주기 촬영이다. 흡수 진입 때 경험치 0, 접촉 후 증가, 강화된 범위, 피격, 네 유닛 그림을 확인했다. 시간 글자의 UV·실제 밝은 픽셀도 검사했으며 UI 코드 수정은 필요하지 않았다. 이 촬영 fixture는 실시간 성능 증거가 아니다.
+- RED: 보행 `7aa4c00df4694b02a335d81ce1e7e6fa`, 풀/계층 `f3aaaa255a174810ae5f27de40b28bf5`. UI 진단 중 잘못된 글꼴 크기 44를 요구한 실패는 네이티브 정수 크기 43으로 수정했으며 제품 결함 증거로 사용하지 않았다.
+- 다음 D3: EndToEnd·CrowdCorridor·PersistentWorld10m/30m·HighGrowth·RepeatedRestart, 엄격한 Smoke/Stress 결과 판독, Windows 개발 빌드와 실제 exe 실행. B/C/D 목표는 계속 활성 상태다.
+
+## 이전 D1 동작과 검증
 
 - 실제 BattleRunner의 카메라 경계와 RunClock에 일반 출현·공중 무리·300초 보스를 연결했다. 초기 12마리 뒤 일반 출현량은 시간에 따라 증가한다. 난이도는 새 개체의 생성 시점에만 반영한다. 생성 시도가 막히면 고유 ticket을 유지해 재시도하며 이전 보스 생존 여부와 새 일정은 독립적이다. 주기당 생성 예산 64는 처리량만 나누며 개체나 일정을 버리지 않는다.
 - 공중 무리의 한 방향과 간격을 출현 시 고정하고 지형·군집을 관통시킨다. 지상 Chase, 공중 FlyThrough, 실제 피격 Knockback, Dead 상태를 공유 상태 객체와 유닛별 문맥으로 연결했다. 적의 넉백 동안 일반 이동을 잠시 멈추며 공중은 남은 주기부터 원래 방향으로 복귀한다.

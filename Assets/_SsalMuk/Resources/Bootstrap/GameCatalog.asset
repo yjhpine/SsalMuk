@@ -16,13 +16,14 @@ MonoBehaviour:
   unitViewPrefab: {fileID: 2943524783615369896, guid: 2cd055d6eba507e40aa52da2a70a7f01, type: 3}
   unitVisuals:
   - kind: 0
-    sprite: {fileID: 21300000, guid: 373677fcf9f570d48b344eb4280598eb, type: 3}
+    sprite: {fileID: -384926113, guid: 915dd57155190914890475b77ddf30a5, type: 3}
   - kind: 1
-    sprite: {fileID: 21300000, guid: 373677fcf9f570d48b344eb4280598eb, type: 3}
+    sprite: {fileID: -2117013502, guid: 915dd57155190914890475b77ddf30a5, type: 3}
   - kind: 2
-    sprite: {fileID: 21300000, guid: 373677fcf9f570d48b344eb4280598eb, type: 3}
+    sprite: {fileID: 1765990361, guid: 915dd57155190914890475b77ddf30a5, type: 3}
   - kind: 3
-    sprite: {fileID: 21300000, guid: 373677fcf9f570d48b344eb4280598eb, type: 3}
+    sprite: {fileID: -2069231145, guid: 915dd57155190914890475b77ddf30a5, type: 3}
   uiFont: {fileID: 12800000, guid: 1b68e73fdc081e94fa338cc7756a1a72, type: 3}
   solidSprite: {fileID: 21300000, guid: dabd7a7c1a686004382fbd77e627957a, type: 3}
   worldMaterial: {fileID: 2100000, guid: 938e303f7ba47ff48b0619d4e0311604, type: 2}
+  visualCatalog: {fileID: 11400000, guid: 292bef56d443c29449d6b45b642f3ad7, type: 2}

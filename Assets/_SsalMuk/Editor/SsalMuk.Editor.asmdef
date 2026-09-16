@@ -1,7 +1,7 @@
 {
   "name": "SsalMuk.Editor",
   "rootNamespace": "SsalMuk.Editor",
-  "references": ["SsalMuk.Core", "SsalMuk.Unity", "UnityEditor.TestRunner", "UnityEngine.TestRunner"],
+  "references": ["SsalMuk.Core", "SsalMuk.Unity", "UnityEditor.TestRunner", "UnityEngine.TestRunner", "Unity.2D.Sprite.Editor"],
   "includePlatforms": ["Editor"],
   "autoReferenced": true
 }

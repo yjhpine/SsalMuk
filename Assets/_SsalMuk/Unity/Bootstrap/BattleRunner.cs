@@ -34,7 +34,10 @@ namespace SsalMuk.Unity
         private void LateUpdate()
         {
             if (run == null || run.Phase != RunPhase.Running) return;
-            prepareTerrain(); presenter.Refresh(run);
+            prepareTerrain();
+            double alpha = Math.Max(0, Math.Min(1, (Time.timeAsDouble - Time.fixedTimeAsDouble) / run.Clock.FixedStep));
+            double radius = battleCamera != null ? battleCamera.orthographicSize * Math.Sqrt(1 + battleCamera.aspect * battleCamera.aspect) + 1.5 : 22;
+            presenter.Refresh(run, alpha, radius);
         }
     }
 }

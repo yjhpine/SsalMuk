@@ -1,0 +1,116 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89c6b5d849352f1439aea4c0f1247417, type: 3}
+  m_Name: VisualCatalog
+  m_EditorClassIdentifier: SsalMuk.Unity::SsalMuk.Unity.VisualCatalog
+  units:
+  - Kind: 0
+    Sprite: {fileID: -384926113, guid: 915dd57155190914890475b77ddf30a5, type: 3}
+    Height: 1.05
+  - Kind: 1
+    Sprite: {fileID: -2117013502, guid: 915dd57155190914890475b77ddf30a5, type: 3}
+    Height: 0.65
+  - Kind: 2
+    Sprite: {fileID: 1765990361, guid: 915dd57155190914890475b77ddf30a5, type: 3}
+    Height: 0.53
+  - Kind: 3
+    Sprite: {fileID: -2069231145, guid: 915dd57155190914890475b77ddf30a5, type: 3}
+    Height: 2.25
+  weapons:
+  - Kind: 0
+    Sprite: {fileID: 494216434, guid: 985bcf13d614f0b4e9fc832caaad5f1c, type: 3}
+    Effect: {fileID: -1172672119, guid: 3e5388c2702e16548aabc4b2e3406fd9, type: 3}
+    EffectAxisDegrees: 90
+    ContactFraction: 1
+  - Kind: 1
+    Sprite: {fileID: 159895928, guid: 8a94e8d195665b24592c423351b54ba9, type: 3}
+    Effect: {fileID: -754585680, guid: c7b02cad131709646a549acd1456ab15, type: 3}
+    EffectAxisDegrees: 24
+    ContactFraction: 1
+  - Kind: 2
+    Sprite: {fileID: -534929738, guid: b83f71d82c27d8b48a7b669a00ae23dc, type: 3}
+    Effect: {fileID: -99921073, guid: f735bc21fea4e964187984e0b4740377, type: 3}
+    EffectAxisDegrees: 0
+    ContactFraction: 0.88
+  - Kind: 3
+    Sprite: {fileID: -1343364552, guid: 977c3c99f1c69f04987433f6138b897a, type: 3}
+    Effect: {fileID: -488696347, guid: e832e251936890f43a62dc299962334b, type: 3}
+    EffectAxisDegrees: 0
+    ContactFraction: 1
+  projectileFrames:
+  - {fileID: -65496667, guid: 177e3da9f475fa847882fe08fa09d540, type: 3}
+  - {fileID: -1822342875, guid: 177e3da9f475fa847882fe08fa09d540, type: 3}
+  - {fileID: 1372623454, guid: 177e3da9f475fa847882fe08fa09d540, type: 3}
+  - {fileID: 893523530, guid: 177e3da9f475fa847882fe08fa09d540, type: 3}
+  explosionFrames:
+  - {fileID: -488696347, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 515729802, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -860486089, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 2143620147, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 2045230867, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 989329837, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -1185998360, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 1660271118, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 63929399, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 593997767, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -7061159883300251746, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 497560801652076451, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -222035745519106718, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -5197271548307897853, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -3806839202968226997, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 1213653969873606975, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -4915350518889871028, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -966352174932169086, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 5240812164920822625, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -293603124231823741, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 6340498610658388462, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -8875219262236141736, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -3137233733933034950, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -6028636648774303401, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 7046362073872118415, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -5906555199896510693, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -880289961269940256, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -1849775667273832808, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -1830014603061617277, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 6769975227359172902, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -8074134874723915612, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -8682643973946232845, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -9201970511381369487, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 6689220360490474246, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -1984319567369924572, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 7358874606208321049, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -913679639176215067, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -8563982279895253702, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 6929221139125187415, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 4774037108973484578, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 8681596161408668260, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 1573375068230428152, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 5833101667198122125, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 5387546282071542495, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 2596183331907601646, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -6341088189386523307, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: 5931338549564934303, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -385189489659299415, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -7440698777261311257, guid: e832e251936890f43a62dc299962334b, type: 3}
+  - {fileID: -2526488593372668831, guid: e832e251936890f43a62dc299962334b, type: 3}
+  projectileFrameSeconds: 0.08
+  projectileSourceAxisDegrees: 180
+  walkAngle: 8
+  walkHeight: 0.08
+  walkCycles: 1.8
+  hitRedSeconds: 0.1
+  hitPopSeconds: 0.12
+  hitPopScale: 1.15
+  experienceColors:
+  - {r: 0.2, g: 1, b: 0.38, a: 1}
+  - {r: 0.2, g: 0.58, b: 1, a: 1}
+  - {r: 1, g: 0.22, b: 0.16, a: 1}

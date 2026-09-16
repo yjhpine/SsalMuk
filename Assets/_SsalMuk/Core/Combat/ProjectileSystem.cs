@@ -78,7 +78,7 @@ namespace SsalMuk.Core
                 damage.TryApply(new DamageRequest(shot.Key, run.Player.Id, unit.Id, shot.Stats.Damage,
                     relative == DVec2.Zero ? shot.Direction : relative.Normalized), time);
             }
-            var explosion = new ExplosionSnapshot(shot.Key, shot.Position, shot.Stats.Range, time, shot.HitTargetId.Value);
+            var explosion = new ExplosionSnapshot(shot.Key, shot.Position, shot.Stats.Range, time, shot.HitTargetId.Value, definition.ActiveSeconds);
             explosions.Add(explosion); Exploded?.Invoke(explosion);
         }
         public void Dispose()

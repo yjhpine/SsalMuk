@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 
 namespace SsalMuk.Core
 {
-    public sealed class RunSimulation : IDisposable
+    public sealed class RunSimulation : IDisposable, ICombatReadModel
     {
         private readonly RunModel run;
         private readonly MovementSystem movement;
@@ -16,6 +16,12 @@ namespace SsalMuk.Core
         private bool disposed;
         private WorldRect? viewBounds;
         public SpawnDirector Spawns { get; }
+        public IEnumerable<AttackShapeSnapshot> AttackShapes
+        {
+            get { foreach (var weapon in Weapons.Values) foreach (var attack in weapon.ActiveAttacks) yield return new AttackShapeSnapshot(attack, run.Definitions.GetWeapon(attack.Kind)); }
+        }
+        public IReadOnlyList<ProjectileModel> Projectiles => Weapons[WeaponKind.Fireball].Projectiles.Active;
+        public IReadOnlyList<ExplosionSnapshot> Explosions => Weapons[WeaponKind.Fireball].Projectiles.Explosions;
         public WeaponRuntime Sword { get; }
         public IReadOnlyDictionary<WeaponKind, WeaponRuntime> Weapons { get; }
         public ProgressionService Progression { get; }
@@ -30,6 +36,7 @@ namespace SsalMuk.Core
             Weapons = new ReadOnlyDictionary<WeaponKind, WeaponRuntime>(weapons); Sword = weapons[WeaponKind.Sword];
             damage.Accepted += ForwardHit;
             if (scheduledSpawns) Spawns = new SpawnDirector(run, spawnSettings);
+            run.Combat = this;
         }
         public void SetViewBounds(WorldRect bounds) => viewBounds = bounds;
         public void Step(double dt)
@@ -60,6 +67,7 @@ namespace SsalMuk.Core
             if (disposed) return; disposed = true;
             damage.Accepted -= ForwardHit; DamageAccepted = null;
             Spawns?.Dispose();
+            if (ReferenceEquals(run.Combat, this)) run.Combat = null;
             foreach (var weapon in Weapons.Values) weapon.Dispose();
         }
     }

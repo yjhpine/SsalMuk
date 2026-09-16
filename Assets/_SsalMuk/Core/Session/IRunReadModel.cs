@@ -12,5 +12,7 @@ namespace SsalMuk.Core
         IReadOnlyCollection<UnitModel> Units { get; }
         IReadOnlyCollection<ExperienceRecord> Experience { get; }
         IReadOnlyCollection<ChunkData> Terrain { get; }
+        PickupSettings PickupSettings { get; }
+        ICombatReadModel Combat { get; }
     }
 }
