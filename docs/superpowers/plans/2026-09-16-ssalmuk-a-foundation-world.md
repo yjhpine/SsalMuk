@@ -141,7 +141,7 @@ uint NextUInt()
 
 **Interfaces:** `INavigation.RequestPath(WorldPosition from, WorldPosition to, double radius)` → `PathRequest`; `PathRequest`는 `Status(Pending|Ready|NoPath)`, 읽기 전용 Waypoints를 가진 `Core/Navigation/PathRequest.cs`. `CrowdSolver.Resolve(WorldStore world, double dt)`와 `MovementSystem.Step(double dt)`는 논리 위치·색인을 갱신한다. RunTestRig의 A4 API는 전체 계획 표대로 구현한다. UnitModel에는 `Position`, `BodyRadius`, `Health`, `IsAlive` 읽기 속성을 제공한다.
 
-- [ ] 모서리 관통, 통로 반경, 가까운 두 몬스터의 겹침 테스트를 먼저 작성한다.
+- [x] 모서리 관통, 통로 반경, 가까운 두 몬스터의 겹침 테스트를 먼저 작성한다.
 
 ```csharp
 [Test]
@@ -159,12 +159,12 @@ public void GroundBodiesSeparateWithoutDeletingUnits()
 }
 ```
 
-- [ ] A*는 반경만큼 확장한 장애물을 사용하고 대각선 코너 잘림을 금지한다. 플레이어용 비용은 거리+음수가 아닌 위험 비용이다. 예산 내 미완료 요청은 Pending을 유지하며 직전 유효 경로만 사용한다. 도달 불가를 직선 벽 통과로 대체하지 않는다.
-- [ ] 일반·보스의 반경 등급별로 플레이어 목표 셀에서 역방향 거리장을 만든다. 목표 셀·관련 청크 버전 변경 시 갱신한다. 원거리는 청크 출입구 그래프 A*와 청크 내부 길로 연결한다. 경로가 캐시 회수로 사라지면 데이터 재생성 뒤 이어간다.
-- [ ] CircleSweep에서 이동 구간을 검사하고 충돌면을 향하는 성분을 제거해 접선 이동을 남긴다. 시작부터 벽과 겹친 입력은 안전 위치 검증 오류로 처리하고, 정상 이동·넉백·군집 보정 뒤에는 구조물 침범을 재검사한다.
-- [ ] CrowdSolver는 근처 지상 쌍만 ID 순서로 처리한다. 겹침량 `max(0, radiusA + radiusB - distance)`를 나누어 보정한다. 완전히 같은 중심은 두 ID로 정한 안정된 분리 방향을 사용한다. 접촉면의 안쪽 이동을 제거하고 옆 공간이 있을 때 접선 방향으로 진행한다. 정면 접촉으로 접선 성분도 0이면 양옆 여유를 검사해 한쪽을 유지하고, 동률은 ID로 결정한다. 반발 계수는 0이며 보행 스프라이트 크기로 몸 반경을 바꾸지 않는다.
-- [ ] 군집 반복 보정 횟수를 설정으로 두고 통로 막힘·벽 옆 압축·공중 통과·넉백 밀집 테스트를 추가한다. 분리 반경은 몸이 맞닿는 수준으로 두고 앞이 완전히 막히면 정체를 허용한다. 먼 지상 개체도 이동 계산에서 누락하지 않는다.
-- [ ] `RunTestRig.Advance`를 실제 MovementSystem에 연결하고 공간 검색·청크 경계 테스트를 함께 확인한다. 통과 후 `feat: add navigation and sliding enemy crowds`로 커밋한다.
+- [x] A*는 반경만큼 확장한 장애물을 사용하고 대각선 코너 잘림을 금지한다. 플레이어용 비용은 거리+음수가 아닌 위험 비용이다. 예산 내 미완료 요청은 Pending을 유지하며 직전 유효 경로만 사용한다. 도달 불가를 직선 벽 통과로 대체하지 않는다.
+- [x] 일반·보스의 반경 등급별로 플레이어 목표 셀에서 역방향 거리장을 만든다. 목표 셀·관련 청크 버전 변경 시 갱신한다. 원거리는 청크 출입구 그래프 A*와 청크 내부 길로 연결한다. 경로가 캐시 회수로 사라지면 데이터 재생성 뒤 이어간다.
+- [x] CircleSweep에서 이동 구간을 검사하고 충돌면을 향하는 성분을 제거해 접선 이동을 남긴다. 시작부터 벽과 겹친 입력은 안전 위치 검증 오류로 처리하고, 정상 이동·넉백·군집 보정 뒤에는 구조물 침범을 재검사한다.
+- [x] CrowdSolver는 근처 지상 쌍만 ID 순서로 처리한다. 겹침량 `max(0, radiusA + radiusB - distance)`를 나누어 보정한다. 완전히 같은 중심은 두 ID로 정한 안정된 분리 방향을 사용한다. 접촉면의 안쪽 이동을 제거하고 옆 공간이 있을 때 접선 방향으로 진행한다. 정면 접촉으로 접선 성분도 0이면 양옆 여유를 검사해 한쪽을 유지하고, 동률은 ID로 결정한다. 반발 계수는 0이며 보행 스프라이트 크기로 몸 반경을 바꾸지 않는다.
+- [x] 군집 반복 보정 횟수를 설정으로 두고 통로 막힘·벽 옆 압축·공중 통과·넉백 밀집 테스트를 추가한다. 분리 반경은 몸이 맞닿는 수준으로 두고 앞이 완전히 막히면 정체를 허용한다. 먼 지상 개체도 이동 계산에서 누락하지 않는다.
+- [x] `RunTestRig.Advance`를 실제 MovementSystem에 연결하고 공간 검색·청크 경계 테스트를 함께 확인한다. 통과 후 `feat: add navigation and sliding enemy crowds`로 커밋한다.
 
 ## Task A5: 런타임 생성 장면과 MVP 표시
 

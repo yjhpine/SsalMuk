@@ -1,0 +1,7 @@
+{
+  "name": "SsalMuk.Tests.Shared",
+  "rootNamespace": "SsalMuk.Tests",
+  "references": ["SsalMuk.Core"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "noEngineReferences": true
+}

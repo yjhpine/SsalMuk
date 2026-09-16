@@ -7,6 +7,27 @@ namespace SsalMuk.Core
     {
         private const double Epsilon = 1e-10;
 
+        public static WorldPosition MoveAndSlide(IWorldQuery query, WorldPosition start, DVec2 displacement, double radius, int maximumContacts = 4)
+        {
+            if (query == null) throw new ArgumentNullException(nameof(query));
+            if (maximumContacts <= 0) throw new ArgumentOutOfRangeException(nameof(maximumContacts));
+            if (!query.IsCircleFree(start, radius)) throw new InvalidOperationException("Movement requires a safe starting position.");
+            var position = start; var remaining = displacement;
+            for (int i = 0; i < maximumContacts && remaining.Length > 1e-9; i++)
+            {
+                var hit = query.SweepCircle(position, remaining, radius);
+                if (!hit.HasValue) { position = position.Offset(remaining); break; }
+                double fraction = Math.Max(0, hit.Value.Fraction - 1e-7 / Math.Max(remaining.Length, 1e-7));
+                position = position.Offset(remaining * fraction);
+                remaining *= 1 - fraction;
+                double inward = DVec2.Dot(remaining, hit.Value.Normal);
+                if (inward < 0) remaining -= hit.Value.Normal * inward;
+                else break;
+            }
+            if (!query.IsCircleFree(position, radius)) throw new InvalidOperationException("Obstacle penetration after movement correction.");
+            return position;
+        }
+
         public static bool OverlapsBox(DVec2 center, double radius, DVec2 min, DVec2 max)
         {
             if (center.X > min.X && center.X < max.X && center.Y > min.Y && center.Y < max.Y) return true;

@@ -16,6 +16,7 @@ namespace SsalMuk.Core
         public UnitRegistry Units { get; }
         public IReadOnlyCollection<ExperienceRecord> Experience => experience.Values;
         public int CachedChunkCount => terrain.Count;
+        public long TerrainRevision { get; private set; }
         public WorldQuery Query { get; }
 
         public WorldStore(UnitRegistry units, IChunkGenerator generator)
@@ -40,8 +41,12 @@ namespace SsalMuk.Core
             return chunk;
         }
         public bool IsBlocked(GridCell cell) => GetChunk(cell.Chunk).IsBlocked(cell.X, cell.Y);
-        public void ClearTerrainCache() { RequireActive(); terrain.Clear(); }
-        public bool EvictTerrain(ChunkCoord coord) { RequireActive(); return terrain.Remove(coord); }
+        public void ClearTerrainCache() { RequireActive(); terrain.Clear(); TerrainRevision = checked(TerrainRevision + 1); }
+        public bool EvictTerrain(ChunkCoord coord)
+        {
+            RequireActive(); if (!terrain.Remove(coord)) return false;
+            TerrainRevision = checked(TerrainRevision + 1); return true;
+        }
         public void MoveUnit(long id, WorldPosition position)
         {
             RequireActive(); var unit = Units.Get(id);
