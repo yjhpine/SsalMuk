@@ -41,6 +41,35 @@ MonoBehaviour:
     bodyRadius: 0.75
     contactDamage: 15
     experienceReward: 30
+  weapons:
+  - kind: 0
+    damage: 8
+    range: 1.6
+    periodSeconds: 1
+    activeSeconds: 0.25
+    width: 0.35
+    copySpacing: 0.25
+  - kind: 1
+    damage: 10
+    range: 2.2
+    periodSeconds: 1.2
+    activeSeconds: 0.18
+    width: 0.35
+    copySpacing: 0.25
+  - kind: 2
+    damage: 6
+    range: 1.8
+    periodSeconds: 1.6
+    activeSeconds: 0.6
+    width: 0.25
+    copySpacing: 0.25
+  - kind: 3
+    damage: 6
+    range: 0.8
+    periodSeconds: 1.4
+    activeSeconds: 0.2
+    width: 0.1
+    copySpacing: 0.25
   obstacleChance: 0.2
   initialEnemyCount: 12
   crowdIterations: 6

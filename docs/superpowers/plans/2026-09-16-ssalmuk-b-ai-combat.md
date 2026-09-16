@@ -84,7 +84,7 @@ public void InvulnerabilityRejectsTheNextHit()
 
 **Interfaces:** `RunSimulation.Step(double dt)`; `WeaponRuntime.Tick(double from,double to)`; `AttackGeometry.SwordContains(DVec2 relative,double targetRadius,double reach)`; WeaponStats에는 Damage·Range·PeriodSeconds·BigInteger Copies/Repeats·BurstFraction을 둔다. AttackInstance는 HitKey·발동 시각·방향·스탯 스냅샷·형상 진행률을 보관한다. `DefinitionCatalog.GetWeapon(WeaponKind)`를 추가한다.
 
-- [ ] 검의 60도 경계와 근접 원형 대상, 같은 휘두르기 중복 피해 테스트를 작성한다.
+- [x] 검의 60도 경계와 근접 원형 대상, 같은 휘두르기 중복 피해 테스트를 작성한다.
 
 ```csharp
 [Test]
@@ -96,10 +96,10 @@ public void SwordCoversForwardSixtyDegrees()
 }
 ```
 
-- [ ] WeaponDefinition에 기본 피해·범위·주기·휘두르기 시간과 표시 키를 정의하고 검을 초기 소유 무기에 연결한다. 목표가 없을 때 빈 공격을 적립하지 않고 준비 상태를 유지한다.
-- [ ] AttackScheduler는 다음 발동 시각을 보존한다. 한 주기에 여러 발동이 도래하면 발동별 HitKey를 만들고 모두 처리한다. 공격 주기보다 프레임이 길어도 1회로 잘라 버리지 않는다. 강화 계산기는 C1에서 연결하므로 현재는 정의에서 만든 WeaponStats를 사용한다.
-- [ ] 검은 이전·현재 진행 각도 사이의 쓸기 구간으로 적 후보를 판정한다. 원형 대상과 부채꼴의 접촉은 중심 포함뿐 아니라 양쪽 변·외곽 원호까지 검사한다. 한 휘두르기에서 이미 맞은 대상 ID를 저장하고 종료 뒤 정리한다.
-- [ ] RunSimulation의 최종 순서는 아래와 같이 정한다. 현재 존재하는 이동·공격·피해·사망 단계부터 호출하고, C1에서 수집 단계, C2에서 맨 앞의 명령 단계를 실제 서비스로 추가한다. 아직 구현하지 않은 기능을 성공 이벤트로 위장하지 않는다.
+- [x] WeaponDefinition에 기본 피해·범위·주기·휘두르기 시간과 표시 키를 정의하고 검을 초기 소유 무기에 연결한다. 목표가 없을 때 빈 공격을 적립하지 않고 준비 상태를 유지한다.
+- [x] AttackScheduler는 다음 발동 시각을 보존한다. 한 주기에 여러 발동이 도래하면 발동별 HitKey를 만들고 모두 처리한다. 공격 주기보다 프레임이 길어도 1회로 잘라 버리지 않는다. 강화 계산기는 C1에서 연결하므로 현재는 정의에서 만든 WeaponStats를 사용한다.
+- [x] 검은 이전·현재 진행 각도 사이의 쓸기 구간으로 적 후보를 판정한다. 원형 대상과 부채꼴의 접촉은 중심 포함뿐 아니라 양쪽 변·외곽 원호까지 검사한다. 한 휘두르기에서 이미 맞은 대상 ID를 저장하고 종료 뒤 정리한다.
+- [x] RunSimulation의 최종 순서는 아래와 같이 정한다. 현재 존재하는 이동·공격·피해·사망 단계부터 호출하고, C1에서 수집 단계, C2에서 맨 앞의 명령 단계를 실제 서비스로 추가한다. 아직 구현하지 않은 기능을 성공 이벤트로 위장하지 않는다.
 
 ```text
 유효한 명령 → 시계 → 스폰 예약 → AI와 이동 → 무기와 적 피해
@@ -107,8 +107,8 @@ public void SwordCoversForwardSixtyDegrees()
 → 살아 있을 때 구슬 흡수 시작·비행·몸 접촉 획득 → 표시 이벤트
 ```
 
-- [ ] BattleRunner의 FixedUpdate 하나만 RunSimulation을 호출하게 교체한다. 개별 유닛의 Update/FixedUpdate로 같은 모델을 다시 움직이지 않는다. 정지 중 공격·이동 중 공격·살아 있는 피격 중 공격을 모두 확인한다.
-- [ ] 검으로 같은 주기에 죽인 적의 접촉 피해 제외, 목표 없는 시간 뒤 공격 폭주 없음, 큰 dt에서 발동 누락 없음, 발동 후 수치·방향 스냅샷 유지 테스트를 통과시킨다. `feat: add sword attacks and ordered battle simulation`으로 커밋한다.
+- [x] BattleRunner의 FixedUpdate 하나만 RunSimulation을 호출하게 교체한다. 개별 유닛의 Update/FixedUpdate로 같은 모델을 다시 움직이지 않는다. 정지 중 공격·이동 중 공격·살아 있는 피격 중 공격을 모두 확인한다.
+- [x] 검으로 같은 주기에 죽인 적의 접촉 피해 제외, 목표 없는 시간 뒤 공격 폭주 없음, 큰 dt에서 발동 누락 없음, 발동 후 수치·방향 스냅샷 유지 테스트를 통과시킨다. `feat: add sword attacks and ordered battle simulation`으로 커밋한다.
 
 ## Task B4: 체력 HUD·사망 결과·완전한 새 판
 

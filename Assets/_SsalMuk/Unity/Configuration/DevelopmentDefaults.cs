@@ -11,6 +11,7 @@ namespace SsalMuk.Unity
     public sealed class DevelopmentDefaults : ScriptableObject
     {
         [SerializeField] private UnitEntry[] units = CreatePreset();
+        [SerializeField] private WeaponEntry[] weapons = WeaponDefinition.DevelopmentPresets().Select(definition => new WeaponEntry(definition)).ToArray();
         [SerializeField, Range(0, 1)] private float obstacleChance = 0.2f;
         [SerializeField, Min(0)] private int initialEnemyCount = 12;
         [SerializeField, Min(1)] private int crowdIterations = 6;
@@ -22,8 +23,10 @@ namespace SsalMuk.Unity
         public DefinitionCatalog CreateCatalog()
         {
             if (units == null) throw new ArgumentException("Unit definitions are missing.");
+            if (weapons == null) throw new ArgumentException("Weapon definitions are missing.");
             return new DefinitionCatalog(units.Select(entry => entry == null
-                ? throw new ArgumentException("A unit definition entry is missing.") : entry.ToDefinition()));
+                ? throw new ArgumentException("A unit definition entry is missing.") : entry.ToDefinition()),
+                weapons.Select(entry => entry == null ? throw new ArgumentException("A weapon definition entry is missing.") : entry.ToDefinition()));
         }
 
         public string ValidationError
@@ -42,6 +45,22 @@ namespace SsalMuk.Unity
             new UnitEntry("air", UnitKind.Air, 6, 6, 0.22, 5, "1"),
             new UnitEntry("boss", UnitKind.Boss, 600, 1.1, 0.75, 15, "30")
         };
+
+        [Serializable]
+        public sealed class WeaponEntry
+        {
+            [SerializeField] private WeaponKind kind;
+            [SerializeField] private double damage;
+            [SerializeField] private double range;
+            [SerializeField] private double periodSeconds;
+            [SerializeField] private double activeSeconds;
+            [SerializeField] private double width;
+            [SerializeField] private double copySpacing;
+            public WeaponEntry(WeaponDefinition definition)
+            { kind = definition.Kind; damage = definition.Damage; range = definition.Range; periodSeconds = definition.PeriodSeconds;
+                activeSeconds = definition.ActiveSeconds; width = definition.Width; copySpacing = definition.CopySpacing; }
+            internal WeaponDefinition ToDefinition() => new WeaponDefinition(kind, damage, range, periodSeconds, activeSeconds, width, copySpacing);
+        }
 
         [Serializable]
         public sealed class UnitEntry

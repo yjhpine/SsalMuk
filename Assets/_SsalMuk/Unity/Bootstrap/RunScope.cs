@@ -12,6 +12,9 @@ namespace SsalMuk.Unity
         private GameObject root;
         private WorldPresenter presenter;
         private MovementSystem movement;
+        private DamageService damage;
+        private DeathService death;
+        private RunSimulation simulation;
         private BattleRunner runner;
         private bool disposed;
         public RunModel Run { get; }
@@ -29,7 +32,10 @@ namespace SsalMuk.Unity
             builder.CreatePlayer();
             var navigation = new NavigationService(Run.World);
             movement = new MovementSystem(Run.World, navigation, Run.Player, catalog.Defaults.CreateMovementSettings());
-            runner = root.AddComponent<BattleRunner>(); runner.Configure(Run, movement, new LowAiController(Run.Player, Run.World, navigation), presenter, builder.PrepareTerrain);
+            damage = new DamageService(Run, movement); death = new DeathService(Run, damage);
+            var contact = new ContactDamageSystem(Run, movement, damage);
+            simulation = new RunSimulation(Run, movement, new LowAiController(Run.Player, Run.World, navigation), damage, death, contact);
+            runner = root.AddComponent<BattleRunner>(); runner.Configure(Run, simulation, presenter, builder.PrepareTerrain);
         }
         public void CreateInitialEnemies() => builder.CreateInitialEnemies();
         private void RefreshViews()
@@ -45,7 +51,7 @@ namespace SsalMuk.Unity
         {
             if (disposed) return; disposed = true;
             if (runner != null) runner.enabled = false;
-            movement?.Dispose(); builder.Dispose();
+            simulation?.Dispose(); death?.Dispose(); damage?.Dispose(); movement?.Dispose(); builder.Dispose();
             if (root != null) { root.SetActive(false); UnityEngine.Object.Destroy(root); }
         }
     }

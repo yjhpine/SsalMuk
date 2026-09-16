@@ -16,6 +16,8 @@ namespace SsalMuk.Core
         private readonly Dictionary<long, WorldPosition> previousPositions = new Dictionary<long, WorldPosition>();
         private bool disposed;
         public IReadOnlyDictionary<long, WorldPosition> PreviousPositions { get; }
+        public double LargestBodyRadius { get; private set; }
+        public double MaximumDisplacement { get; private set; }
         public MovementSystem(WorldStore world, NavigationService navigation, PlayerModel player, MovementSettings settings = null)
         {
             this.world = world ?? throw new ArgumentNullException(nameof(world));
@@ -25,6 +27,8 @@ namespace SsalMuk.Core
             this.settings = settings ?? new MovementSettings(); crowds = new CrowdSolver(this.settings);
             PreviousPositions = new ReadOnlyDictionary<long, WorldPosition>(previousPositions);
             world.Units.Removed += Forget;
+            world.Units.Registered += TrackRadius;
+            foreach (var unit in world.Units.Units) TrackRadius(unit);
         }
         public void SetMoveIntent(long id, DVec2 direction) { world.Units.Get(id); intents[id] = direction.Length > 1 ? direction.Normalized : direction; }
         public void ClearMoveIntent(long id) => intents.Remove(id);
@@ -73,12 +77,15 @@ namespace SsalMuk.Core
                 }
             }
             crowds.Resolve(world, dt);
+            MaximumDisplacement = 0;
+            foreach (var unit in units) MaximumDisplacement = Math.Max(MaximumDisplacement, previousPositions[unit.Id].DistanceTo(unit.Position));
         }
+        private void TrackRadius(UnitModel unit) => LargestBodyRadius = Math.Max(LargestBodyRadius, unit.BodyRadius);
         private void Forget(UnitModel unit)
         {
             intents.Remove(unit.Id); airDirections.Remove(unit.Id); previousPositions.Remove(unit.Id);
             navigation.ForgetUnit(unit.Id); crowds.Forget(unit.Id);
         }
-        public void Dispose() { if (disposed) return; disposed = true; world.Units.Removed -= Forget; }
+        public void Dispose() { if (disposed) return; disposed = true; world.Units.Removed -= Forget; world.Units.Registered -= TrackRadius; }
     }
 }

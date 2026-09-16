@@ -51,6 +51,28 @@ namespace SsalMuk.Tests
             new DamageRequest(new HitKey(rig.Run.Id, rig.Run.AllocateAttackId(), 0, 0), rig.Player.Id, target, amount, direction ?? DVec2.Zero);
 
         [Test]
+        public void CompletedAttackReleasesTargetKeysButLateReplayRemainsRejected()
+        {
+            using var rig = RunTestRig.Create(enableAi: false);
+            long enemy = rig.Spawn(UnitKind.Boss, new DVec2(5, 0), 10000);
+            var first = Request(rig, enemy, 1); var pending = Request(rig, enemy, 1);
+            Assert.That(rig.Damage.TryApply(first, 0), Is.True);
+            rig.Damage.CompleteAttack(first.Key.AttackId);
+            Assert.That(rig.Damage.CachedHitCount, Is.Zero);
+            for (int i = 0; i < 30; i++)
+            {
+                var next = Request(rig, enemy, 1); Assert.That(rig.Damage.TryApply(next, 0), Is.True);
+                rig.Damage.CompleteAttack(next.Key.AttackId);
+            }
+            Assert.That(rig.Damage.TryApply(first, 1), Is.False);
+            Assert.That(rig.Damage.TryApply(pending, 1), Is.True, "Completion must preserve an earlier attack that is still active.");
+            rig.Damage.CompleteAttack(pending.Key.AttackId);
+            Assert.That(rig.Damage.CachedHitCount, Is.Zero);
+            Assert.That(rig.Damage.TryApply(pending, 2), Is.False);
+            Assert.That(rig.Damage.CompletedRangeCount, Is.EqualTo(1));
+        }
+
+        [Test]
         public void LatestKnockbackReplacesItsDirectionAndAirKeepsItsOriginalFlight()
         {
             using var rig = RunTestRig.Create(enableAi: false);

@@ -1,11 +1,22 @@
 # SsalMuk 재개 지점
 
-- 갱신일: 2026-09-16. **A1~A5·B1·B2 구현·검증 완료. 사용자가 B·C·D 전체 진행을 승인했다. 다음은 B3다.**
+- 갱신일: 2026-09-16. **A1~A5·B1~B3 구현·검증 완료. 사용자가 B·C·D 전체 진행을 승인했다. 다음은 B4다.**
 - 프로젝트: `C:/Users/ace21/Desktop/SsalMuk`, 브랜치: `codex/unit-foundation`.
 - 최신 B2 로컬 커밋 메시지: `feat: implement damage knockback and single death drops`. B1은 `3c95e28`, A5는 `0599916`이다. 원격 푸시는 하지 않는다.
 - 중간 저장 `e742523` 뒤 목표 재활성화를 확인해 재개했다. 사용량은 재개 시 주간 7%, 마무리 중 4% 잔여를 알렸다.
 
 ## 현재 동작
+
+- B3: 실제 GameStart 이후 FixedUpdate의 RunSimulation에서 AI·이동·검·사망 드롭·접촉을 순서대로 처리한다. 60도 연속 쓸기, 발동 시 방향·능력치 보존, 공격 누락 없는 주기 처리, 완료 공격의 중복 기록 회수와 지연 재전송 거부를 연결했다. 피해·주기 등 무기 정의를 DevelopmentDefaults 에셋에서 편집한다. 검 표시·최종 아트는 D2다.
+
+## B3 검증
+
+- EditMode `ec57dee0d90b42a49f3c2c6a635d2d54`: 102개 통과.
+- PlayMode `636261f7468b4ee59a309748bd05ad93`: 8개 통과. 실제 GameStart·AI 이동·검 피해를 확인했다.
+- 두 실행의 manifest·receipt·XML을 현재 소스 해시와 대조했다. 기존 사용자 파일 해시도 유지했다.
+- RED: 전투 순서·검·스케줄 `4ef9871d42694d7aa62b90e9ed0a00d8`, 정의 연결 `3d34bb36d9f0430a944764874f5fddad`, 공격 수명 `fcdafacbcb624e1b9cfbeacdd5309aad`.
+
+## 이전 동작과 검증
 
 - B2: DamageService의 판·생존·수치·타격 키·무적 검증, 수락된 피해의 단일 이벤트, 이동 구간 접촉 순서, 짧은 무적 이후 재피격, 모델 넉백, 단일 사망 큐·처치·드롭을 구현했다. 빠른 공중 교차와 긴 접촉 주기의 무적 경계도 확인했다. 실제 BattleRunner의 공격·피해 순서는 B3 RunSimulation에서 연결할 차례다.
 

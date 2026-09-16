@@ -8,21 +8,19 @@ namespace SsalMuk.Unity
     public sealed class BattleRunner : MonoBehaviour
     {
         private RunModel run;
-        private MovementSystem movement;
-        private LowAiController ai;
+        private RunSimulation simulation;
         private WorldPresenter presenter;
         private Action prepareTerrain;
         private double accumulator;
-        public void Configure(RunModel run, MovementSystem movement, LowAiController ai, WorldPresenter presenter, Action prepareTerrain)
-        { this.run = run; this.movement = movement; this.ai = ai; this.presenter = presenter; this.prepareTerrain = prepareTerrain; }
-        private void Update()
+        public void Configure(RunModel run, RunSimulation simulation, WorldPresenter presenter, Action prepareTerrain)
+        { this.run = run; this.simulation = simulation; this.presenter = presenter; this.prepareTerrain = prepareTerrain; }
+        private void FixedUpdate()
         {
             if (run == null || run.Phase != RunPhase.Running) return;
-            accumulator += Time.deltaTime;
-            while (accumulator >= run.Clock.FixedStep)
+            accumulator += Time.fixedDeltaTime;
+            while (accumulator + 1e-8 >= run.Clock.FixedStep && run.Phase == RunPhase.Running)
             {
-                ai.Tick(run.Clock.FixedStep); movement.SetMoveIntent(run.Player.Id, run.Player.MoveIntent);
-                movement.Step(run.Clock.FixedStep); run.Clock.Advance(); accumulator -= run.Clock.FixedStep;
+                simulation.Step(run.Clock.FixedStep); accumulator -= run.Clock.FixedStep;
             }
         }
         private void LateUpdate()

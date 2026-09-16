@@ -18,8 +18,9 @@ namespace SsalMuk.Tests
         public DamageService Damage { get; }
         public DeathService Death { get; }
         public ContactDamageSystem Contact { get; }
+        public RunSimulation Simulation { get; }
         public RunClock Clock => Run.Clock;
-        private RunTestRig(int seed, IChunkGenerator terrain, bool enableAi)
+        private RunTestRig(int seed, IChunkGenerator terrain, bool enableAi, bool enableCombat)
         {
             var definitions = new DefinitionCatalog(Enum.GetValues(typeof(UnitKind)).Cast<UnitKind>()
                 .Select(kind => Definition(kind, kind == UnitKind.Player ? 100 : 10)));
@@ -31,11 +32,12 @@ namespace SsalMuk.Tests
             if (enableAi) Ai = new LowAiController(Player, World, Navigation);
             Damage = new DamageService(Run, Movement); Death = new DeathService(Run, Damage);
             Contact = new ContactDamageSystem(Run, Movement, Damage);
+            if (enableCombat) Simulation = new RunSimulation(Run, Movement, Ai, Damage, Death, Contact);
         }
-        public static RunTestRig Create(int seed = 1234, bool scheduledSpawns = false, IChunkGenerator terrain = null, bool enableAi = true)
+        public static RunTestRig Create(int seed = 1234, bool scheduledSpawns = false, IChunkGenerator terrain = null, bool enableAi = true, bool enableCombat = true)
         {
             if (scheduledSpawns) throw new NotSupportedException("Scheduled spawning belongs to phase D1.");
-            return new RunTestRig(seed, terrain, enableAi);
+            return new RunTestRig(seed, terrain, enableAi, enableCombat);
         }
         private static UnitDefinition Definition(UnitKind kind, double health)
         {
@@ -61,11 +63,12 @@ namespace SsalMuk.Tests
                 throw new ArgumentOutOfRangeException(nameof(seconds), "Use an integer multiple of the 0.02 second simulation step.");
             for (int i = 0; i < (int)Math.Round(steps); i++)
             {
+                if (Simulation != null) { Simulation.Step(0.02); continue; }
                 if (Ai != null) { Ai.Tick(0.02); Movement.SetMoveIntent(Player.Id, Player.MoveIntent); }
                 Movement.Step(0.02); Clock.Advance();
             }
         }
-        public void Dispose() { Death.Dispose(); Damage.Dispose(); Movement.Dispose(); coordinator.Dispose(); }
+        public void Dispose() { Simulation?.Dispose(); Death.Dispose(); Damage.Dispose(); Movement.Dispose(); coordinator.Dispose(); }
 
         private sealed class ImmediateSceneLoader : ISceneLoader
         {
