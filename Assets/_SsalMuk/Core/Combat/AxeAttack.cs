@@ -1,9 +1,9 @@
 namespace SsalMuk.Core
 {
-    public sealed class SwordAttack
+    public sealed class AxeAttack
     {
         private readonly MeleeAttack attack;
-        public SwordAttack(RunModel run, MovementSystem movement, DamageService damage) { attack = new MeleeAttack(run, movement, damage); }
+        public AxeAttack(RunModel run, MovementSystem movement, DamageService damage) { attack = new MeleeAttack(run, movement, damage); }
         public void Step(AttackInstance instance, double frameFrom, double frameTo, double from, double to) => attack.Step(instance, frameFrom, frameTo, from, to);
     }
 }

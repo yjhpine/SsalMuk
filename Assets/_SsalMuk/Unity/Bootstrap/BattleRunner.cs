@@ -9,6 +9,7 @@ namespace SsalMuk.Unity
     {
         private RunModel run;
         private RunSimulation simulation;
+        public RunSimulation Simulation => simulation;
         private WorldPresenter presenter;
         private Action prepareTerrain;
         private double accumulator;

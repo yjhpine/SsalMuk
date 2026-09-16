@@ -1,9 +1,60 @@
 using System;
+using System.Collections.Generic;
 
 namespace SsalMuk.Core
 {
     public static class AttackGeometry
     {
+        public static bool SpearSweepContains(DVec2 from, DVec2 to, double targetRadius, double reach, double width, double previousProgress, double progress)
+        {
+            RequireShape(targetRadius, reach, width);
+            if (!(previousProgress >= 0 && progress >= previousProgress && progress <= 1)) throw new ArgumentOutOfRangeException(nameof(progress));
+            return CircleContact.Interval(from - new DVec2(reach * previousProgress, 0),
+                to - from - new DVec2(reach * (progress - previousProgress), 0), targetRadius + width / 2, out _, out _);
+        }
+        public static bool AxeSweepContains(DVec2 from, DVec2 to, double targetRadius, double reach, double bladeRadius, double startPhase, double endPhase)
+        {
+            RequireShape(targetRadius, reach, bladeRadius);
+            if (double.IsNaN(startPhase) || double.IsNaN(endPhase) || double.IsInfinity(startPhase) || double.IsInfinity(endPhase) || endPhase < startPhase)
+                throw new ArgumentOutOfRangeException(nameof(endPhase));
+            double radius = targetRadius + bladeRadius, sweep = endPhase - startPhase;
+            if (PointSegmentDistance(DVec2.Zero, from, to) > reach + radius || Math.Max(from.Length, to.Length) < reach - radius) return false;
+            if (from == to)
+            {
+                double angle = (Math.Atan2(from.Y, from.X) - startPhase) % (Math.PI * 2); if (angle < 0) angle += Math.PI * 2;
+                if (Math.Abs(from.Length - reach) <= radius + 1e-10 && angle <= sweep + 1e-10) return true;
+                return (from - Rotate(new DVec2(reach, 0), startPhase)).Length <= radius + 1e-10 ||
+                    (from - Rotate(new DVec2(reach, 0), endPhase)).Length <= radius + 1e-10;
+            }
+            var movement = to - from; double speedBound = movement.Length + reach * sweep, time = 0;
+            // Conservative advancement bounds relative speed, so fast motion cannot jump over a contact.
+            while (time <= 1)
+            {
+                var blade = Rotate(new DVec2(reach, 0), startPhase + sweep * time);
+                double clearance = (from + movement * time - blade).Length - radius;
+                if (clearance <= 1e-9) return true;
+                double next = time + clearance / speedBound;
+                if (next <= time) throw new NumericRangeException("Rotating blade contact lost time precision.");
+                time = next;
+            }
+            return false;
+        }
+        public static long? FirstCircleHit(DVec2 from, DVec2 to, IReadOnlyList<TargetCircle> targets, double projectileRadius = 0)
+        {
+            if (targets == null) throw new ArgumentNullException(nameof(targets));
+            if (projectileRadius < 0 || double.IsNaN(projectileRadius) || double.IsInfinity(projectileRadius)) throw new ArgumentOutOfRangeException(nameof(projectileRadius));
+            long? first = null; double earliest = double.PositiveInfinity;
+            foreach (var target in targets)
+                if (CircleContact.Interval(from - target.Center, to - from, target.Radius + projectileRadius, out double enter, out _) &&
+                    (enter < earliest || (enter == earliest && (!first.HasValue || target.Id < first.Value))))
+                { first = target.Id; earliest = enter; }
+            return first;
+        }
+        private static void RequireShape(double targetRadius, double reach, double width)
+        {
+            if (targetRadius < 0 || double.IsNaN(targetRadius) || double.IsInfinity(targetRadius)) throw new ArgumentOutOfRangeException(nameof(targetRadius));
+            WeaponDefinition.RequirePositive(reach, nameof(reach)); WeaponDefinition.RequirePositive(width, nameof(width));
+        }
         public static bool SwordContains(DVec2 relative, double targetRadius, double reach) => SectorContains(relative, targetRadius, reach, Math.PI / 6);
         public static bool SwordSweepContains(DVec2 from, DVec2 to, double targetRadius, double reach, double previousProgress, double progress)
         {

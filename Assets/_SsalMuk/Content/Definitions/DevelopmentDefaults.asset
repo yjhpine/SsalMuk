@@ -49,6 +49,8 @@ MonoBehaviour:
     activeSeconds: 0.25
     width: 0.35
     copySpacing: 0.25
+    projectileSpeed: 8
+    projectileLifetime: 3
   - kind: 1
     damage: 10
     range: 2.2
@@ -56,6 +58,8 @@ MonoBehaviour:
     activeSeconds: 0.18
     width: 0.35
     copySpacing: 0.25
+    projectileSpeed: 8
+    projectileLifetime: 3
   - kind: 2
     damage: 6
     range: 1.8
@@ -63,6 +67,8 @@ MonoBehaviour:
     activeSeconds: 0.6
     width: 0.25
     copySpacing: 0.25
+    projectileSpeed: 8
+    projectileLifetime: 3
   - kind: 3
     damage: 6
     range: 0.8
@@ -70,6 +76,8 @@ MonoBehaviour:
     activeSeconds: 0.2
     width: 0.1
     copySpacing: 0.25
+    projectileSpeed: 8
+    projectileLifetime: 3
   obstacleChance: 0.2
   initialEnemyCount: 12
   crowdIterations: 6

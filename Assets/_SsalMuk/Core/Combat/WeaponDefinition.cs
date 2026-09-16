@@ -11,14 +11,18 @@ namespace SsalMuk.Core
         public double ActiveSeconds { get; }
         public double Width { get; }
         public double CopySpacing { get; }
+        public double ProjectileSpeed { get; }
+        public double ProjectileLifetime { get; }
         public string VisualKey => Kind.ToString();
         public WeaponDefinition(WeaponKind kind, double damage, double range, double periodSeconds, double activeSeconds,
-            double width = 0.35, double copySpacing = 0.25)
+            double width = 0.35, double copySpacing = 0.25, double projectileSpeed = 8, double projectileLifetime = 3)
         {
             if (!Enum.IsDefined(typeof(WeaponKind), kind)) throw new ArgumentOutOfRangeException(nameof(kind));
             RequirePositive(damage, nameof(damage)); RequirePositive(range, nameof(range));
             RequirePositive(periodSeconds, nameof(periodSeconds)); RequirePositive(activeSeconds, nameof(activeSeconds));
             RequirePositive(width, nameof(width)); RequirePositive(copySpacing, nameof(copySpacing));
+            RequirePositive(projectileSpeed, nameof(projectileSpeed)); RequirePositive(projectileLifetime, nameof(projectileLifetime));
+            ProjectileSpeed = projectileSpeed; ProjectileLifetime = projectileLifetime;
             Kind = kind; Damage = damage; Range = range; PeriodSeconds = periodSeconds; ActiveSeconds = activeSeconds; Width = width; CopySpacing = copySpacing;
         }
         internal static void RequirePositive(double value, string name)

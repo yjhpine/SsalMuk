@@ -84,10 +84,13 @@ namespace SsalMuk.Unity
             [SerializeField] private double activeSeconds;
             [SerializeField] private double width;
             [SerializeField] private double copySpacing;
+            [SerializeField] private double projectileSpeed = 8;
+            [SerializeField] private double projectileLifetime = 3;
             public WeaponEntry(WeaponDefinition definition)
             { kind = definition.Kind; damage = definition.Damage; range = definition.Range; periodSeconds = definition.PeriodSeconds;
-                activeSeconds = definition.ActiveSeconds; width = definition.Width; copySpacing = definition.CopySpacing; }
-            internal WeaponDefinition ToDefinition() => new WeaponDefinition(kind, damage, range, periodSeconds, activeSeconds, width, copySpacing);
+                activeSeconds = definition.ActiveSeconds; width = definition.Width; copySpacing = definition.CopySpacing;
+                projectileSpeed = definition.ProjectileSpeed; projectileLifetime = definition.ProjectileLifetime; }
+            internal WeaponDefinition ToDefinition() => new WeaponDefinition(kind, damage, range, periodSeconds, activeSeconds, width, copySpacing, projectileSpeed, projectileLifetime);
         }
 
         [Serializable]

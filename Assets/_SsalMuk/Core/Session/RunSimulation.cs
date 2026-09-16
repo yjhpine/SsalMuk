@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace SsalMuk.Core
 {
@@ -9,17 +11,22 @@ namespace SsalMuk.Core
         private readonly LowAiController ai;
         private readonly DeathService death;
         private readonly ContactDamageSystem contact;
+        private readonly DamageService damage;
+        public event Action<CombatEvent> DamageAccepted;
         private bool disposed;
         public WeaponRuntime Sword { get; }
+        public IReadOnlyDictionary<WeaponKind, WeaponRuntime> Weapons { get; }
         public ProgressionService Progression { get; }
         public ExperienceCollector Collector { get; }
         public RunSimulation(RunModel run, MovementSystem movement, LowAiController ai, DamageService damage, DeathService death,
             ContactDamageSystem contact)
         {
-            this.run = run; this.movement = movement; this.ai = ai; this.death = death; this.contact = contact;
+            this.run = run; this.movement = movement; this.ai = ai; this.death = death; this.contact = contact; this.damage = damage;
             Progression = new ProgressionService(run); Collector = new ExperienceCollector(run, movement, Progression);
-            Sword = new WeaponRuntime(run, WeaponKind.Sword, movement, damage, () =>
-                StatCalculator.Calculate(run.Definitions.GetWeapon(WeaponKind.Sword), run.Player.Weapons.Get(WeaponKind.Sword), run.GrowthSettings));
+            var weapons = new Dictionary<WeaponKind, WeaponRuntime>();
+            foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind))) weapons.Add(kind, new WeaponRuntime(run, kind, movement, damage));
+            Weapons = new ReadOnlyDictionary<WeaponKind, WeaponRuntime>(weapons); Sword = weapons[WeaponKind.Sword];
+            damage.Accepted += ForwardHit;
         }
         public void Step(double dt)
         {
@@ -34,13 +41,20 @@ namespace SsalMuk.Core
                 double from = run.Clock.ElapsedSeconds; run.Clock.Advance(); double to = run.Clock.ElapsedSeconds;
                 if (ai != null) { ai.Tick(run.Clock.FixedStep); movement.SetMoveIntent(run.Player.Id, run.Player.MoveIntent); }
                 movement.Step(run.Clock.FixedStep);
-                Sword.Tick(from, to); death.Flush(); contact.Step(from, to);
+                foreach (var kind in run.Player.Weapons.Kinds) Weapons[kind].Tick(from, to);
+                death.Flush(); contact.Step(from, to);
                 if (!run.Player.IsAlive) { Finish(); break; }
                 Collector.Step(run.Clock.FixedStep);
                 run.Rewards.RefreshOffer();
             }
         }
-        private void Finish() { Sword.Dispose(); run.CompleteDeath(); }
-        public void Dispose() { if (disposed) return; disposed = true; Sword.Dispose(); }
+        private void ForwardHit(CombatEvent hit) => DamageAccepted?.Invoke(hit);
+        private void Finish() { Dispose(); run.CompleteDeath(); }
+        public void Dispose()
+        {
+            if (disposed) return; disposed = true;
+            damage.Accepted -= ForwardHit; DamageAccepted = null;
+            foreach (var weapon in Weapons.Values) weapon.Dispose();
+        }
     }
 }
