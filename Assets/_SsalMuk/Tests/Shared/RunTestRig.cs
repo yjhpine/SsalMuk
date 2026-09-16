@@ -29,19 +29,19 @@ namespace SsalMuk.Tests
         public void Equip(WeaponKind kind) => new GrowthService(Run).Equip(kind);
         public void Upgrade(WeaponKind kind, UpgradeKind upgrade, BigInteger? count = null) => new GrowthService(Run).Upgrade(kind, upgrade, count);
         public Task RestartAsync() => coordinator.RestartAsync();
-        private RunTestRig(int seed, IChunkGenerator terrain, bool enableAi, bool enableCombat, ISceneLoader loader, GrowthSettings growthSettings, PickupSettings pickupSettings)
+        private RunTestRig(int seed, IChunkGenerator terrain, bool enableAi, bool enableCombat, ISceneLoader loader, GrowthSettings growthSettings, PickupSettings pickupSettings, bool scheduledSpawns, SpawnSettings spawnSettings)
         {
             int nextSeed = seed;
             coordinator = new RunCoordinator(loader ?? new ImmediateSceneLoader(), () =>
-                scope = new RigBuilder(unchecked(nextSeed++), terrain, enableAi, enableCombat, growthSettings, pickupSettings));
+                scope = new RigBuilder(unchecked(nextSeed++), terrain, enableAi, enableCombat, growthSettings, pickupSettings, scheduledSpawns, spawnSettings));
             coordinator.StartRunAsync().GetAwaiter().GetResult();
             if (coordinator.Phase != RunPhase.Running) throw new InvalidOperationException(coordinator.LastError);
         }
         public static RunTestRig Create(int seed = 1234, bool scheduledSpawns = false, IChunkGenerator terrain = null,
-            bool enableAi = true, bool enableCombat = true, ISceneLoader sceneLoader = null, GrowthSettings growthSettings = null, PickupSettings pickupSettings = null)
+            bool enableAi = true, bool enableCombat = true, ISceneLoader sceneLoader = null, GrowthSettings growthSettings = null, PickupSettings pickupSettings = null, SpawnSettings spawnSettings = null)
         {
-            if (scheduledSpawns) throw new NotSupportedException("Scheduled spawning belongs to phase D1.");
-            return new RunTestRig(seed, terrain, enableAi, enableCombat, sceneLoader, growthSettings, pickupSettings);
+            if (scheduledSpawns && !enableCombat) throw new ArgumentException("Scheduled spawning uses the full combat simulation.");
+            return new RunTestRig(seed, terrain, enableAi, enableCombat, sceneLoader, growthSettings, pickupSettings, scheduledSpawns, spawnSettings);
         }
         private static UnitDefinition Definition(UnitKind kind, double health)
         {
@@ -71,7 +71,7 @@ namespace SsalMuk.Tests
                 throw new ArgumentOutOfRangeException(nameof(seconds), "Use an integer multiple of the 0.02 second simulation step.");
             for (int i = 0; i < (int)Math.Round(steps) && Run.Phase == RunPhase.Running; i++)
             {
-                if (Simulation != null) { Simulation.Step(0.02); continue; }
+                if (Simulation != null) { Simulation.SetViewBounds(new WorldRect(Player.Position, 16, 9)); Simulation.Step(0.02); continue; }
                 if (Ai != null) { Ai.Tick(0.02); Movement.SetMoveIntent(Player.Id, Player.MoveIntent); }
                 Movement.Step(0.02); Clock.Advance();
             }
@@ -86,7 +86,8 @@ namespace SsalMuk.Tests
 
         private sealed class RigBuilder : IRunBuilder
         {
-            private readonly bool enableAi, enableCombat;
+            private readonly bool enableAi, enableCombat, scheduledSpawns;
+            private readonly SpawnSettings spawnSettings;
             private bool disposed;
             public RunModel Run { get; }
             public MovementSystem Movement { get; private set; }
@@ -96,9 +97,10 @@ namespace SsalMuk.Tests
             public DeathService Death { get; private set; }
             public ContactDamageSystem Contact { get; private set; }
             public RunSimulation Simulation { get; private set; }
-            public RigBuilder(int seed, IChunkGenerator terrain, bool enableAi, bool enableCombat, GrowthSettings growthSettings, PickupSettings pickupSettings)
+            public RigBuilder(int seed, IChunkGenerator terrain, bool enableAi, bool enableCombat, GrowthSettings growthSettings, PickupSettings pickupSettings, bool scheduledSpawns, SpawnSettings spawnSettings)
             {
                 this.enableAi = enableAi; this.enableCombat = enableCombat;
+                this.scheduledSpawns = scheduledSpawns; this.spawnSettings = spawnSettings;
                 var definitions = new DefinitionCatalog(Enum.GetValues(typeof(UnitKind)).Cast<UnitKind>()
                     .Select(kind => Definition(kind, kind == UnitKind.Player ? 100 : 10)));
                 Run = new RunModel(Guid.NewGuid(), seed, definitions, terrain ?? new ChunkGenerator(seed, MapSettings.TestDefaults(0)), growthSettings: growthSettings, pickupSettings: pickupSettings);
@@ -112,7 +114,7 @@ namespace SsalMuk.Tests
                 if (enableAi) Ai = new LowAiController(Run.Player, Run.World, Navigation, pickupSettings: Run.PickupSettings);
                 Damage = new DamageService(Run, Movement); Death = new DeathService(Run, Damage);
                 Contact = new ContactDamageSystem(Run, Movement, Damage);
-                if (enableCombat) Simulation = new RunSimulation(Run, Movement, Ai, Damage, Death, Contact);
+                if (enableCombat) Simulation = new RunSimulation(Run, Movement, Ai, Damage, Death, Contact, scheduledSpawns, spawnSettings);
             }
             public void CreateInitialEnemies() { }
             public void Dispose()

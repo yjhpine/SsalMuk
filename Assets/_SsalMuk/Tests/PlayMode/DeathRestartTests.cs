@@ -31,13 +31,19 @@ namespace SsalMuk.Tests
             for (int cycle = 0; cycle < 2; cycle++)
             {
                 var run = app.Coordinator.Run; var id = run.Id; yield return new WaitForSeconds(0.12f);
-                SpawnContact(run, 5); yield return new WaitForSeconds(0.08f);
+                var firstContact = SpawnContact(run, 5); yield return new WaitForSeconds(0.08f);
                 Assert.That(run.Player.Health, Is.LessThan(100));
                 Assert.That(app.Hud.HealthText.text, Does.StartWith(run.Player.Health.ToString("0")));
                 Assert.That(app.Hud.HealthText.cachedTextGenerator.vertexCount, Is.GreaterThan(4), "The health value must have visible text geometry.");
                 Assert.That(app.Hud.LevelText.cachedTextGenerator.vertexCount, Is.GreaterThan(4), "The level must have visible text geometry.");
                 if (cycle == 0) yield return Capture(Path.Combine(evidence, "battle-hud.png"));
-                yield return new WaitForSeconds(0.3f); SpawnContact(run, 1000);
+                // The first bat can linger after a sword knockback and renew invulnerability.
+                // Observe its departure before sending the independent lethal contact.
+                double clearDeadline = Time.realtimeSinceStartupAsDouble + 5;
+                while ((firstContact.Position.DistanceTo(run.Player.Position) < 2 || run.Clock.ElapsedSeconds < run.Player.InvulnerableUntil)
+                    && Time.realtimeSinceStartupAsDouble < clearDeadline) yield return new WaitForFixedUpdate();
+                Assert.That(firstContact.Position.DistanceTo(run.Player.Position), Is.GreaterThanOrEqualTo(2));
+                SpawnContact(run, 1000);
                 yield return WaitFor(app, RunPhase.Results); yield return null; yield return null;
                 Assert.That(app.Results.Summary.text, Does.Contain("최종 레벨"));
                 Assert.That(app.Coordinator.Result.RunId, Is.EqualTo(id)); Assert.That(app.Coordinator.Run, Is.Null);
@@ -68,10 +74,10 @@ namespace SsalMuk.Tests
             while ((!File.Exists(path) || new FileInfo(path).Length == 0) && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
             Assert.That(File.Exists(path) && new FileInfo(path).Length > 0, Is.True);
         }
-        private static void SpawnContact(RunModel run, double damage)
+        private static UnitModel SpawnContact(RunModel run, double damage)
         {
             var definition = new UnitDefinition("contact-fixture", UnitKind.Air, 10000, 6, 0.26, damage, BigInteger.One);
-            new AirEnemyFactory(run.World.Units).Spawn(new UnitSpawnRequest(run.Id, UnitKind.Air, run.Player.Position, definition));
+            return new AirEnemyFactory(run.World.Units).Spawn(new UnitSpawnRequest(run.Id, UnitKind.Air, run.Player.Position, definition));
         }
         private static IEnumerator WaitFor(AppRoot app, RunPhase phase)
         {

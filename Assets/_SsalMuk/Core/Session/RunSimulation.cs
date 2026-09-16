@@ -14,12 +14,14 @@ namespace SsalMuk.Core
         private readonly DamageService damage;
         public event Action<CombatEvent> DamageAccepted;
         private bool disposed;
+        private WorldRect? viewBounds;
+        public SpawnDirector Spawns { get; }
         public WeaponRuntime Sword { get; }
         public IReadOnlyDictionary<WeaponKind, WeaponRuntime> Weapons { get; }
         public ProgressionService Progression { get; }
         public ExperienceCollector Collector { get; }
         public RunSimulation(RunModel run, MovementSystem movement, LowAiController ai, DamageService damage, DeathService death,
-            ContactDamageSystem contact)
+            ContactDamageSystem contact, bool scheduledSpawns = false, SpawnSettings spawnSettings = null)
         {
             this.run = run; this.movement = movement; this.ai = ai; this.death = death; this.contact = contact; this.damage = damage;
             Progression = new ProgressionService(run); Collector = new ExperienceCollector(run, movement, Progression);
@@ -27,7 +29,9 @@ namespace SsalMuk.Core
             foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind))) weapons.Add(kind, new WeaponRuntime(run, kind, movement, damage));
             Weapons = new ReadOnlyDictionary<WeaponKind, WeaponRuntime>(weapons); Sword = weapons[WeaponKind.Sword];
             damage.Accepted += ForwardHit;
+            if (scheduledSpawns) Spawns = new SpawnDirector(run, spawnSettings);
         }
+        public void SetViewBounds(WorldRect bounds) => viewBounds = bounds;
         public void Step(double dt)
         {
             if (disposed || run.Phase != RunPhase.Running) return;
@@ -39,6 +43,7 @@ namespace SsalMuk.Core
                 if (!run.Player.IsAlive) { Finish(); break; }
                 run.Rewards.Step();
                 double from = run.Clock.ElapsedSeconds; run.Clock.Advance(); double to = run.Clock.ElapsedSeconds;
+                Spawns?.Tick(to, viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
                 if (ai != null) { ai.Tick(run.Clock.FixedStep); movement.SetMoveIntent(run.Player.Id, run.Player.MoveIntent); }
                 movement.Step(run.Clock.FixedStep);
                 foreach (var kind in run.Player.Weapons.Kinds) Weapons[kind].Tick(from, to);
@@ -54,6 +59,7 @@ namespace SsalMuk.Core
         {
             if (disposed) return; disposed = true;
             damage.Accepted -= ForwardHit; DamageAccepted = null;
+            Spawns?.Dispose();
             foreach (var weapon in Weapons.Values) weapon.Dispose();
         }
     }

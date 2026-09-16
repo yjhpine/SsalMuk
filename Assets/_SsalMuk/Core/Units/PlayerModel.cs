@@ -7,7 +7,6 @@ namespace SsalMuk.Core
         public WeaponInventory Weapons { get; private set; } = new WeaponInventory();
         public GrowthState Growth { get; private set; } = new GrowthState();
         public BigInteger Level => Growth.Level;
-        public DVec2 MoveIntent { get; internal set; }
         public BrainState BrainState { get; internal set; }
         public long? TargetId { get; internal set; }
         public long? CollectionTargetId { get; internal set; }

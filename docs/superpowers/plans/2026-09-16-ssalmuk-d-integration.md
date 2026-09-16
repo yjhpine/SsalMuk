@@ -26,7 +26,7 @@
 
 **Interfaces:** `BossSchedule(double interval).CollectDueTimes(double now)` → IReadOnlyList<double>; `SpawnDirector.Tick(double now,WorldRect viewBounds)`; WorldRect는 WorldPosition 중심과 double 반너비·반높이를 가진다. BattleRunner가 카메라 사각형을 변환해 `RunSimulation.SetViewBounds(WorldRect)`로 전달하고 다음 주기에 사용한다. SpawnTicket은 RunId·종류·고유 일정 ID·예정 시각·미완료 생성 수를 가진다. `EnemyFsm.Tick(double dt)`는 `Chase/FlyThrough/Knockback/Dead`를 전환한다. AirEnemyModel은 `OriginalDirection`과 비행 속도를 보존한다. UnitSpawnRequest에 공중의 초기 방향을 추가한다.
 
-- [ ] 보스 경계·긴 갱신·재호출의 테스트를 작성하고 실패를 확인한다.
+- [x] 보스 경계·긴 갱신·재호출의 테스트를 작성하고 실패를 확인한다.
 
 ```csharp
 [Test]
@@ -39,12 +39,12 @@ public void BossDeadlinesAreNeverSkippedOrRepeated()
 }
 ```
 
-- [ ] 도래한 일정은 고유 ticket으로 발급한다. 생성 가능한 위치가 없으면 ticket을 남기고 재시도하며 새 보스 일정 진행과 분리한다. 위치 후보는 카메라 밖 바닥에서 검사하고 몸 반경·구조물·기존 지상 개체 겹침을 피한다. 같은 ticket의 성공을 두 번 기록하지 않는다.
-- [ ] 일반·공중·보스의 일정을 분리하고 RunClock의 Running 시간만 사용한다. DifficultyCurve는 생성 시점 체력·피해·출현량을 반환한다. 기존 적의 현재 체력을 난이도 상승 때 다시 계산하거나 회복시키지 않는다.
-- [ ] 공중 무리는 시드 난수로 화면 한쪽을 고른 뒤 출현 당시 플레이어 기준 방향 하나를 고정한다. 개체 시작점은 그 방향의 수직 축으로 벌리고 같은 방향으로 직진시킨다. 구조물·지상·공중끼리 밀집 보정에 참여시키지 않되 플레이어 이동과의 구간 접촉은 계산한다.
-- [ ] EnemyFsm을 A4 지상 추적에 연결하고 실제 피격의 넉백 시각 동안 KnockedBackBehavior를 실행한다. 공중은 종료 뒤 OriginalDirection으로 복귀한다. 보스는 GroundChaseBehavior에 큰 반경·높은 스펙을 사용하고 패턴 실행기를 추가하지 않는다.
-- [ ] 두 보스가 동시에 살아 있는 상태, 일반·공중·보스 동시 접촉, 공중의 구조물 관통·넉백 복귀·화면 밖 보존을 검증한다. 개체 보존 때문에 신규 스폰이 취소되지 않는지도 확인한다.
-- [ ] TestRig의 기본값은 명시적 배치만 사용해 다른 테스트에 스폰 난수가 섞이지 않게 한다. 일정 통합 테스트는 `RunTestRig.Create(scheduledSpawns: true)`로 실제 SpawnDirector를 연결한다. 실제 플레이에서는 항상 연결한다. 통과 후 `feat: add timed air waves and overlapping bosses`로 커밋한다.
+- [x] 도래한 일정은 고유 ticket으로 발급한다. 생성 가능한 위치가 없으면 ticket을 남기고 재시도하며 새 보스 일정 진행과 분리한다. 위치 후보는 카메라 밖 바닥에서 검사하고 몸 반경·구조물·기존 지상 개체 겹침을 피한다. 같은 ticket의 성공을 두 번 기록하지 않는다.
+- [x] 일반·공중·보스의 일정을 분리하고 RunClock의 Running 시간만 사용한다. DifficultyCurve는 생성 시점 체력·피해·출현량을 반환한다. 기존 적의 현재 체력을 난이도 상승 때 다시 계산하거나 회복시키지 않는다.
+- [x] 공중 무리는 시드 난수로 화면 한쪽을 고른 뒤 출현 당시 플레이어 기준 방향 하나를 고정한다. 개체 시작점은 그 방향의 수직 축으로 벌리고 같은 방향으로 직진시킨다. 구조물·지상·공중끼리 밀집 보정에 참여시키지 않되 플레이어 이동과의 구간 접촉은 계산한다.
+- [x] EnemyFsm을 A4 지상 추적에 연결하고 실제 피격의 넉백 시각 동안 KnockedBackBehavior를 실행한다. 공중은 종료 뒤 OriginalDirection으로 복귀한다. 보스는 GroundChaseBehavior에 큰 반경·높은 스펙을 사용하고 패턴 실행기를 추가하지 않는다.
+- [x] 두 보스가 동시에 살아 있는 상태, 일반·공중·보스 동시 접촉, 공중의 구조물 관통·넉백 복귀·화면 밖 보존을 검증한다. 개체 보존 때문에 신규 스폰이 취소되지 않는지도 확인한다.
+- [x] TestRig의 기본값은 명시적 배치만 사용해 다른 테스트에 스폰 난수가 섞이지 않게 한다. 일정 통합 테스트는 `RunTestRig.Create(scheduledSpawns: true)`로 실제 SpawnDirector를 연결한다. 실제 플레이에서는 항상 연결한다. 통과 후 `feat: add timed air waves and overlapping bosses`로 커밋한다.
 
 ## Task D2: AI 스프라이트·공격 에셋·경험치 발광과 풀
 

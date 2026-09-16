@@ -16,6 +16,7 @@ namespace SsalMuk.Core
         public double LastHitAt { get; internal set; } = double.NegativeInfinity;
         public long HitSequence { get; internal set; }
         public WorldPosition Position { get; internal set; }
+        public DVec2 MoveIntent { get; internal set; }
 
         internal UnitModel(UnitSpawnRequest request)
         {

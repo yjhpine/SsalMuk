@@ -8,6 +8,7 @@ namespace SsalMuk.Core
         public Guid Id { get; }
         public Guid RunId => Id;
         public int Seed { get; }
+        public SeedStreams Streams { get; }
         public DefinitionCatalog Definitions { get; }
         public GrowthSettings GrowthSettings { get; }
         public PickupSettings PickupSettings { get; }
@@ -39,12 +40,12 @@ namespace SsalMuk.Core
             GrowthSettings growthSettings = null, PickupSettings pickupSettings = null, RewardWeights rewardWeights = null)
         {
             if (id == Guid.Empty) throw new ArgumentException("Run identity is required.", nameof(id));
-            Id = id; Seed = seed; Definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
+            Id = id; Seed = seed; Streams = new SeedStreams(seed); Definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
             GrowthSettings = growthSettings ?? new GrowthSettings();
             PickupSettings = pickupSettings ?? PickupSettings.TestDefaults();
             PickupSettings.ValidateForPlayer(Definitions.GetUnit(UnitKind.Player).BodyRadius);
             World = new WorldStore(new UnitRegistry(id), generator); Clock = new RunClock(fixedStep);
-            Rewards = new RewardService(this, new SeedStreams(seed).Reward, rewardWeights ?? RewardWeights.TestDefaults());
+            Rewards = new RewardService(this, Streams.Reward, rewardWeights ?? RewardWeights.TestDefaults());
         }
         public void SetPlayer(PlayerModel player)
         {

@@ -2,6 +2,7 @@ namespace SsalMuk.Core
 {
     public sealed class AirEnemyModel : UnitModel
     {
-        internal AirEnemyModel(UnitSpawnRequest request) : base(request) { }
+        public DVec2 OriginalDirection { get; internal set; }
+        internal AirEnemyModel(UnitSpawnRequest request) : base(request) { OriginalDirection = request.AirDirection; }
     }
 }

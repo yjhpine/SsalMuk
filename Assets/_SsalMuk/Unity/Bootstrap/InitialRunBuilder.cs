@@ -11,7 +11,7 @@ namespace SsalMuk.Unity
         private bool worldBuilt, playerCreated, enemiesCreated;
         public RunModel Run { get; }
         public InitialRunBuilder(RunModel run, DevelopmentDefaults defaults, Action stageReady)
-        { Run = run; this.defaults = defaults; this.stageReady = stageReady; spawnRandom = new SeedStreams(run.Seed).Spawn; }
+        { Run = run; this.defaults = defaults; this.stageReady = stageReady; spawnRandom = run.Streams.Spawn; }
         public void BuildWorld()
         {
             if (worldBuilt) throw new InvalidOperationException("World has already been built.");

@@ -37,7 +37,8 @@ namespace SsalMuk.Unity
             movement = new MovementSystem(Run.World, navigation, Run.Player, catalog.Defaults.CreateMovementSettings());
             damage = new DamageService(Run, movement); death = new DeathService(Run, damage);
             var contact = new ContactDamageSystem(Run, movement, damage);
-            simulation = new RunSimulation(Run, movement, new LowAiController(Run.Player, Run.World, navigation, pickupSettings: Run.PickupSettings), damage, death, contact);
+            simulation = new RunSimulation(Run, movement, new LowAiController(Run.Player, Run.World, navigation, pickupSettings: Run.PickupSettings), damage, death, contact,
+                scheduledSpawns: true, spawnSettings: catalog.Defaults.CreateSpawnSettings());
             runner = root.AddComponent<BattleRunner>(); runner.Configure(Run, simulation, presenter, builder.PrepareTerrain);
         }
         public void CreateInitialEnemies() => builder.CreateInitialEnemies();

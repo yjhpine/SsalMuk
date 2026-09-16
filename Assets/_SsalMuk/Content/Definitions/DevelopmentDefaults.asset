@@ -94,3 +94,13 @@ MonoBehaviour:
   redExperienceThreshold: 25
   acquisitionWeight: 1
   upgradeWeight: 3
+  normalBaseRate: 1
+  normalRateGrowth: 0.008333333333333333
+  airInterval: 20
+  airBaseCount: 8
+  airCountGrowthSeconds: 120
+  airSpacing: 0.65
+  groundSpawnMargin: 1.2
+  groundSpawnBand: 5
+  spawnPositionAttempts: 32
+  spawnCreationBudget: 64

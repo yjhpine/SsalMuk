@@ -12,12 +12,13 @@ namespace SsalMuk.Core
         private readonly CrowdSolver crowds;
         private readonly MovementSettings settings;
         private readonly Dictionary<long, DVec2> intents = new Dictionary<long, DVec2>();
-        private readonly Dictionary<long, DVec2> airDirections = new Dictionary<long, DVec2>();
+        private readonly Dictionary<long, EnemyFsm> enemies = new Dictionary<long, EnemyFsm>();
         private readonly Dictionary<long, WorldPosition> previousPositions = new Dictionary<long, WorldPosition>();
         private bool disposed;
         public IReadOnlyDictionary<long, WorldPosition> PreviousPositions { get; }
         public double LargestBodyRadius { get; private set; }
         public double MaximumDisplacement { get; private set; }
+        public EnemyFsm GetEnemyFsm(long id) => enemies.TryGetValue(id, out var fsm) ? fsm : throw new ArgumentException("No enemy FSM for this ID.");
         public MovementSystem(WorldStore world, NavigationService navigation, PlayerModel player, MovementSettings settings = null)
         {
             this.world = world ?? throw new ArgumentNullException(nameof(world));
@@ -35,7 +36,7 @@ namespace SsalMuk.Core
         public void SetAirDirection(long id, DVec2 direction)
         {
             if (world.Units.Get(id).Kind != UnitKind.Air || direction.Length == 0) throw new ArgumentException("Air travel needs an air unit and a nonzero direction.");
-            airDirections[id] = direction.Normalized;
+            ((AirEnemyModel)world.Units.Get(id)).OriginalDirection = direction.Normalized;
         }
         public void AddKnockback(long id, DVec2 displacement, double seconds)
         {
@@ -57,17 +58,24 @@ namespace SsalMuk.Core
             }
             foreach (var unit in units)
             {
-                if (!unit.IsAlive) continue;
+                enemies.TryGetValue(unit.Id, out var fsm); fsm?.Tick(dt);
+                if (!unit.IsAlive) { unit.MoveIntent = DVec2.Zero; continue; }
                 DVec2 direction;
-                if (unit.Kind == UnitKind.Air) direction = airDirections.TryGetValue(unit.Id, out var air) ? air : new DVec2(1, 0);
+                if (unit.Kind == UnitKind.Air) direction = fsm.MoveIntent;
                 else if (intents.TryGetValue(unit.Id, out var input)) direction = input;
-                else direction = unit.Kind == UnitKind.Player || !player.IsAlive ? DVec2.Zero : navigation.ChaseDirection(unit, player.Position);
-                var displacement = direction * (unit.Definition.MoveSpeed * dt);
+                else direction = fsm?.MoveIntent ?? DVec2.Zero;
                 var knockback = unit.Knockback;
+                double pushedSeconds = knockback.IsActive ? Math.Min(dt, knockback.RemainingSeconds) : 0;
+                double movementSeconds = unit.Kind == UnitKind.Player ? dt : dt - pushedSeconds;
+                if (fsm != null && knockback.IsActive && movementSeconds > 0)
+                    direction = unit.Kind != UnitKind.Air && intents.TryGetValue(unit.Id, out var resumeInput) ? resumeInput : fsm.NormalDirection();
+                unit.MoveIntent = movementSeconds > 0 ? direction : DVec2.Zero;
+                var displacement = direction * (unit.Definition.MoveSpeed * movementSeconds);
                 if (knockback.IsActive)
                 {
-                    displacement += knockback.Velocity * Math.Min(dt, knockback.RemainingSeconds);
+                    displacement += knockback.Velocity * pushedSeconds;
                     unit.Knockback = new KnockbackState(knockback.Velocity, Math.Max(0, knockback.RemainingSeconds - dt));
+                    if (!unit.Knockback.IsActive) fsm?.Tick(0);
                 }
                 if (unit.Kind == UnitKind.Air) world.MoveUnit(unit.Id, unit.Position.Offset(displacement));
                 else
@@ -80,12 +88,17 @@ namespace SsalMuk.Core
             MaximumDisplacement = 0;
             foreach (var unit in units) MaximumDisplacement = Math.Max(MaximumDisplacement, previousPositions[unit.Id].DistanceTo(unit.Position));
         }
-        private void TrackRadius(UnitModel unit) => LargestBodyRadius = Math.Max(LargestBodyRadius, unit.BodyRadius);
+        private void TrackRadius(UnitModel unit)
+        {
+            LargestBodyRadius = Math.Max(LargestBodyRadius, unit.BodyRadius);
+            if (unit.Kind != UnitKind.Player) enemies.Add(unit.Id, new EnemyFsm(unit, player, world, navigation));
+        }
         private void Forget(UnitModel unit)
         {
-            intents.Remove(unit.Id); airDirections.Remove(unit.Id); previousPositions.Remove(unit.Id);
+            if (!unit.IsAlive && enemies.TryGetValue(unit.Id, out var fsm)) fsm.Tick(0);
+            intents.Remove(unit.Id); enemies.Remove(unit.Id); previousPositions.Remove(unit.Id);
             navigation.ForgetUnit(unit.Id); crowds.Forget(unit.Id);
         }
-        public void Dispose() { if (disposed) return; disposed = true; world.Units.Removed -= Forget; world.Units.Registered -= TrackRadius; }
+        public void Dispose() { if (disposed) return; disposed = true; world.Units.Removed -= Forget; world.Units.Registered -= TrackRadius; enemies.Clear(); }
     }
 }
