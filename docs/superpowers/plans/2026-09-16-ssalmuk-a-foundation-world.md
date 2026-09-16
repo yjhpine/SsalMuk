@@ -97,7 +97,7 @@ public void LoadingDoesNotConsumeSurvivalTime()
 
 ## Task A3: 좌표·청크 생성·공간 검색·보존 저장소
 
-**Files:** 수정 `Core/World/WorldPosition.cs`; 생성 `Core/World/ChunkData.cs`, `MapSettings.cs`, `ChunkGenerator.cs`, `WorldStore.cs`, `ExperienceRecord.cs`, `SpatialIndex.cs`, `IWorldQuery.cs`, `WorldQuery.cs`, `SweepHit.cs`, `Core/Movement/CircleSweep.cs`; 생성 `Core/Random/IRandomSource.cs`, `SeededRandom.cs`, `SeedStreams.cs`, `Tests/EditMode/WorldPositionTests.cs`, `WorldGenerationTests.cs`, `WorldQueryTests.cs`.
+**Files:** 수정 `Core/World/WorldPosition.cs`; 생성 `Core/World/ChunkData.cs`, `MapSettings.cs`, `ChunkGenerator.cs`, `WorldStore.cs`, `ExperienceRecord.cs`, `ExperienceState.cs`, `SpatialIndex.cs`, `IWorldQuery.cs`, `WorldQuery.cs`, `SweepHit.cs`, `Core/Movement/CircleSweep.cs`; 생성 `Core/Random/IRandomSource.cs`, `SeededRandom.cs`, `SeedStreams.cs`, `Tests/EditMode/WorldPositionTests.cs`, `WorldGenerationTests.cs`, `WorldQueryTests.cs`.
 
 **Interfaces:** `WorldPosition.FromLocal(DVec2)`, `DistanceTo(WorldPosition)`, `Offset(DVec2)`; `ChunkGenerator(int seed, MapSettings settings).Generate(ChunkCoord)` → `ChunkData`; `MapSettings.TestDefaults(double obstacleChance = 0.2)`는 셀 1, 청크 한 변 32, 통로 최소 폭 4의 테스트 설정. `ChunkData.Fingerprint`는 동일 셀 결과의 안정 해시. `WorldStore`는 UnitRegistry와 ID별 ExperienceRecord를 보존한다. `IWorldQuery.FindNearestEnemy(WorldPosition)` → `long?`, `QueryCircle(WorldPosition,double)` → 대상 ID 목록, `SweepCircle(WorldPosition,DVec2,double)` → `SweepHit?`의 최초 구조물 충돌. SweepHit은 이동 비율·법선·충돌 위치를 담는다. `IRandomSource.NextUnit()` → double이며 `SeededRandom(int seed)`가 구현한다.
 
@@ -133,7 +133,7 @@ uint NextUInt()
 - [ ] 청크 경계의 출입구와 큰 보스 통과 폭을 여러 양수·음수 좌표에서 검증한다. 단일 청크뿐 아니라 인접 청크를 합친 연결성도 검사한다.
 - [ ] SpatialIndex는 셀별 ID 목록을 관리하고 이동 시 이전 셀에서 제거 후 새 셀에 등록한다. 최근접은 청크 밖 후보까지 확장하며 다음 영역의 최소 거리가 현재 최선보다 멀 때만 종료한다. 대상이 없는 경우 유한한 비어 있지 않은 청크 색인으로 검색을 끝낸다.
 - [ ] CircleSweep에 원의 이동 구간과 구조물 셀의 최초 접촉을 구현해 WorldQuery.SweepCircle에 연결한다. 이동 구간이 닿는 셀만 후보로 삼고 셀의 변과 모서리에 대한 최초 접촉 비율·법선을 반환한다. 이 단계에서는 위치를 이동시키지 않고 기하 결과만 반환한다.
-- [ ] ExperienceRecord는 ID·WorldPosition·BigInteger 값을 보존한다. 수집·사망·판 종료 외에는 논리 레코드 삭제 경로를 두지 않는다. 정적 청크 캐시 회수 뒤 동일 지형 재생성과 몬스터·경험치 ID 유지 테스트를 작성한다. A2 포함 관련 테스트를 통과시킨 뒤 `feat: add deterministic chunks and persistent world data`로 커밋한다.
+- [ ] ExperienceRecord는 `Id`, `Position`(WorldPosition), `Value`(BigInteger), `State`(ExperienceState)를 읽기 전용으로 노출하며 초기 상태는 Grounded다. ExperienceState는 Grounded/Attracting/Collected를 정의한다. `WorldStore.TryGetExperience(long id,out ExperienceRecord record)`로 조회하고, 상태·위치 변경과 색인 갱신은 월드가 소유한다. 논리 경험치는 실제 접촉 획득 또는 판 종료 때만 삭제한다. 몬스터 사망은 삭제가 아닌 드롭 생성 원인이다. 정적 청크 캐시 회수 뒤 동일 지형 재생성과 몬스터·경험치 ID·값·상태 유지 테스트를 작성한다. 흡수 이동·지급은 C1에서 연결한다. A2 포함 관련 테스트를 통과시킨 뒤 `feat: add deterministic chunks and persistent world data`로 커밋한다.
 
 ## Task A4: 길찾기와 몬스터 밀집 이동
 

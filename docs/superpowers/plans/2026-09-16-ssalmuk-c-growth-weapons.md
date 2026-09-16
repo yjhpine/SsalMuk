@@ -6,6 +6,8 @@
 
 **Architecture:** ProgressionService가 레벨과 선택 기회를 소유하고 RewardService가 유효한 선택만 적용한다. WeaponRuntime은 정의·강화에서 계산한 수치를 발동 시 스냅샷으로 사용한다.
 
+경험치는 반경 진입 즉시 지급하지 않는다. ExperienceCollector가 월드의 구슬을 흡수 상태로 이동시키고 실제 몸 접촉 때만 성장 서비스에 전달한다.
+
 **Tech Stack:** Unity `6000.4.6f1`, C#, System.Numerics.BigInteger, NUnit, MVP/uGUI.
 
 **Spec:** [구조 설계](../specs/2026-09-16-ssalmuk-architecture-design.md) 10~11절, [전체 계획](2026-09-16-ssalmuk-implementation-plan.md), [선행 B](2026-09-16-ssalmuk-b-ai-combat.md).
@@ -22,9 +24,11 @@
 
 ## Task C1: 경험치·레벨·무한 강화 데이터
 
-**Files:** 생성 `Core/Progression/UpgradeKind.cs`, `GrowthState.cs`, `ProgressionService.cs`, `ExperienceCollector.cs`, `GrowthService.cs`, `StatCalculator.cs`, `NumericRangeException.cs`, `NumberFormatter.cs`; 수정 `Core/Progression/WeaponState.cs`, `WeaponInventory.cs`, `Core/Units/PlayerModel.cs`, `Core/Session/RunSimulation.cs`, `Unity/Configuration/DevelopmentDefaults.cs`, `Tests/Shared/RunTestRig.cs`; 생성 `Tests/EditMode/ProgressionTests.cs`, `WeaponGrowthTests.cs`, `NumericRangeTests.cs`.
+**Files:** 생성 `Core/Progression/UpgradeKind.cs`, `GrowthState.cs`, `ProgressionService.cs`, `ExperienceCollector.cs`, `PickupSettings.cs`, `ExperienceTier.cs`, `GrowthService.cs`, `StatCalculator.cs`, `NumericRangeException.cs`, `NumberFormatter.cs`; 수정 `Core/Progression/WeaponState.cs`, `WeaponInventory.cs`, `Core/World/WorldStore.cs`, `ExperienceRecord.cs`, `Core/AI/CollectState.cs`, `AiContext.cs`, `Core/Units/PlayerModel.cs`, `Core/Session/RunSimulation.cs`, `Unity/Configuration/DevelopmentDefaults.cs`, `Tests/Shared/RunTestRig.cs`; 생성 `Tests/EditMode/ProgressionTests.cs`, `ExperiencePickupTests.cs`, `WeaponGrowthTests.cs`, `NumericRangeTests.cs`.
 
 **Interfaces:** `ProgressionService.AddExperience(BigInteger)`; GrowthState의 `Level`, `ExperienceIntoLevel`, `PendingChoices`는 BigInteger. `GrowthService.Upgrade(WeaponKind,UpgradeKind)`는 소유 무기만 변경한다. `WeaponInventory.Get(WeaponKind)` → WeaponState, `WeaponState.GetLevel(UpgradeKind)` → BigInteger. `StatCalculator.Calculate(WeaponDefinition,WeaponState)` → WeaponStats. `RunTestRig.GrantExperience`, `Equip`, `Upgrade`는 실제 서비스 경로를 사용한다.
+
+**Pickup interfaces:** `ExperienceCollector.Step(double dt)`는 RunSimulation의 생존 확인 뒤 호출한다. `PickupSettings.TestDefaults()`는 전체 계획의 임시 반경·속도·값 구분선을 반환한다. `PickupSettings.TierFor(BigInteger value)` → ExperienceTier(Green/Blue/Red). `WorldStore.TryBeginAttraction(Guid runId,long id)`, `TryCollectExperience(Guid runId,long id,out BigInteger value)` → bool은 해당 판의 유효한 상태 전환만 허용하고, `MoveExperience(Guid runId,long id,WorldPosition position)`은 흡수 레코드 위치·공간 색인을 함께 갱신한다. 이 메서드는 C1에서 작성하며 Collected 지급 후 레코드를 제거한다. AI 설정 전달에는 같은 PickupSettings를 사용한다.
 
 - [ ] 한 번의 큰 경험치 입력에서 여러 레벨과 선택 기회가 생기는 테스트, 비소유 무기 강화 거절, 아래 좌우 개수 테스트를 작성한다.
 
@@ -42,7 +46,31 @@ public void EachCopyUpgradeAddsOneWeaponOnEachSide()
 }
 ```
 
-- [ ] ExperienceCollector는 플레이어 수집 반경에 들어온 레코드를 ID당 한 번 제거하고 실제 ProgressionService에 값을 전달한다. 사망한 플레이어는 수집하지 않는다. 공중이 구조물 내부에서 사망한 경우 드롭 생성 시 가장 가까운 이동 가능한 바닥으로 위치를 정한 뒤 그 위치를 보존한다. 드롭 값이나 개수를 줄이지 않는다.
+- [ ] 근접 시작과 실제 지급을 분리하는 아래 테스트를 먼저 작성하고 실패를 확인한다. 기본 Rig의 플레이어 시작 위치는 (0,0), PickupSettings는 전체 계획의 테스트 프리셋을 사용한다.
+
+```csharp
+[Test]
+public void XpIsGrantedOnceOnContactNotWhenAttractionStarts()
+{
+    using var rig = RunTestRig.Create();
+    long id = rig.DropXp(new DVec2(1.2, 0), BigInteger.One);
+    rig.Advance(0.02);
+    Assert.That(rig.Run.World.TryGetExperience(id, out var orb), Is.True);
+    Assert.That(orb.State, Is.EqualTo(ExperienceState.Attracting));
+    Assert.That(rig.Player.Growth.ExperienceIntoLevel, Is.EqualTo(BigInteger.Zero));
+    rig.Advance(1);
+    Assert.That(rig.Run.World.TryGetExperience(id, out _), Is.False);
+    Assert.That(rig.Player.Growth.ExperienceIntoLevel, Is.EqualTo(BigInteger.One));
+    rig.Advance(1);
+    Assert.That(rig.Player.Growth.ExperienceIntoLevel, Is.EqualTo(BigInteger.One));
+}
+```
+
+- [ ] ExperienceCollector는 Grounded 구슬이 흡수 반경에 들어오면 Attracting으로 전환하고 현재 플레이어 위치를 향해 이동시킨다. 접촉 거리(플레이어 몸 반경+구슬 반경)는 흡수 시작 거리와 분리한다. 값은 유지하고 반경 진입만으로 지급하지 않는다. 한 번 흡수를 시작하면 반경을 다시 벗어나도 따라오며 구조물·몬스터에 막히지 않는다.
+- [ ] 흡수 시작과 실제 접촉은 플레이어·구슬의 이동 전후 구간을 사용해 고속 교차를 검사한다. 이번 주기에 생성되거나 흡수를 시작한 구슬은 생성/시작 이후 구간만 판정한다. 접촉이 확인된 ID만 TryCollectExperience 성공 후 실제 ProgressionService에 전달한다. 이미 수집됨·잘못된 RunId·사망/종료 상태는 지급하지 않는다. 표시 애니메이션 완료는 지급 경로로 사용하지 않는다.
+- [ ] 이동하는 구슬의 WorldPosition과 청크/공간 색인을 함께 갱신한다. 흡수 중 표시가 사라져도 월드에서 비행을 계속한다. CollectState는 대기 구슬의 흡수 반경 안에서 도달 가능한 바닥 지점을 찾고, 목표가 Attracting이 되면 해제해 이미 날아오는 구슬을 쫓지 않는다.
+- [ ] 공중이 구조물 내부에서 사망한 경우 드롭 생성 시 가장 가까운 이동 가능한 바닥으로 위치를 정한 뒤 대기 위치를 보존한다. 드롭 값이나 개수를 줄이지 않는다. 색은 실제 값으로 구분하며 임시 구분선은 5·25다. 양수 값·증가하는 구분선·양수 속도·양수 구슬 반경·접촉 거리보다 큰 흡수 반경을 설정 검증에 포함한다.
+- [ ] 이동하는 플레이어 추적, 흡수 반경 재이탈, 구조물 가로지르기, 고속 통과, 사망과 접촉이 같은 주기인 경우, 중복 접촉, 청크 경계 통과, 이전 RunId 지급 거절을 확인한다. 값 1/5/25와 경계값 4/24의 색 등급을 검사하고 큰 값도 원본 경험치 양을 유지하는지 확인한다. EditMode의 ExperiencePickupTests·ProgressionTests를 실행해 성공을 확인한 뒤 다음 성장 단계로 진행한다.
 - [ ] 임시 성장 프리셋의 다음 레벨 비용은 현재 레벨 L에서 `5 + 3 * (L - 1)`로 둔다. n회 레벨업 누적 비용은 아래 식으로 계산하고 지수 탐색+이진 탐색으로 가능한 n을 찾는다. 큰 경험치 입력을 레벨 수만큼 반복하는 루프로 처리하지 않는다.
 
 ```csharp
