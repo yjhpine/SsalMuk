@@ -1,6 +1,6 @@
 # SsalMuk B: AI and Combat Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** low AI의 수집·회피·돌파 판단과 검 자동 전투, 피격·사망·재시작을 연결한다.
 
@@ -116,7 +116,7 @@ public void SwordCoversForwardSixtyDegrees()
 
 **Interfaces:** `RunResult`는 immutable RunId·SurvivalSeconds·KillCount·BigInteger FinalLevel. `RunCoordinator.RestartAsync()` → Task, `ReturnToMenuAsync()` → Task. `ISceneLoader.LoadMainMenuAsync()`를 추가하고 UnitySceneLoader와 테스트 대역에 함께 구현한다. `RunTestRig.Result`는 종료 스냅샷이며 `RestartAsync()`는 실제 coordinator에 테스트용 scene loader를 주입해 호출한다. HudPresenter.Refresh는 읽기 모델만 받는다.
 
-- [ ] 사망 뒤 결과 스냅샷이 성장 초기화와 독립적인 테스트와 아래 새 판 테스트를 작성한다.
+- [x] 사망 뒤 결과 스냅샷이 성장 초기화와 독립적인 테스트와 아래 새 판 테스트를 작성한다.
 
 ```csharp
 [Test]
@@ -133,14 +133,14 @@ public async System.Threading.Tasks.Task RestartCreatesANewRun()
 }
 ```
 
-- [ ] 치명 피해 뒤 RunSimulation이 추가 접촉·수집·공격을 중지하도록 한다. RunCoordinator는 결과를 복사하고 살아 있는 판의 명령·예약·구독·View를 종료한다. 화면이 읽을 Result는 scope와 함께 지우지 않는다.
-- [ ] MVP HUD에서 실제 체력·경험치 자리·레벨·시간·처치 수를 표시한다. 레벨은 이 단계에서 1이며 성장 연결은 C1이다. 적 체력 표시도 모델을 읽어 두 종류 이상의 유닛이 실제 피해를 받는지 확인한다.
-- [ ] ResultsView에 생존 시간·처치 수·최종 레벨, Restart·MainMenu 버튼을 연결한다. 버튼 중복을 잠그고 다시 시작은 새로운 scope·시드·ID·검 상태로 A5 생성 순서를 다시 수행한다.
-- [ ] 늦게 완료된 이전 씬 요청·피격 이벤트가 새 RunId에 적용되지 않는 테스트를 추가한다. 로드 실패 시 기존 결과를 보존하고 메뉴에서 다시 시작할 수 있게 한다.
-- [ ] Editor에서 검 전투 → 사망 결과 → 다시 시작 → 메인 메뉴 → GameStart를 실제 반복한다. Domain Reload 설정 변화와 구독·scope 수를 확인한다. 통과 후 `feat: add battle HUD results and clean restart`로 커밋한다.
+- [x] 치명 피해 뒤 RunSimulation이 추가 접촉·수집·공격을 중지하도록 한다. RunCoordinator는 결과를 복사하고 살아 있는 판의 명령·예약·구독·View를 종료한다. 화면이 읽을 Result는 scope와 함께 지우지 않는다.
+- [x] MVP HUD에서 실제 체력·경험치 자리·레벨·시간·처치 수를 표시한다. 레벨은 이 단계에서 1이며 성장 연결은 C1이다. 적 체력 표시도 모델을 읽어 두 종류 이상의 유닛이 실제 피해를 받는지 확인한다.
+- [x] ResultsView에 생존 시간·처치 수·최종 레벨, Restart·MainMenu 버튼을 연결한다. 버튼 중복을 잠그고 다시 시작은 새로운 scope·시드·ID·검 상태로 A5 생성 순서를 다시 수행한다.
+- [x] 늦게 완료된 이전 씬 요청·피격 이벤트가 새 RunId에 적용되지 않는 테스트를 추가한다. 로드 실패 시 기존 결과를 보존하고 메뉴에서 다시 시작할 수 있게 한다.
+- [x] Editor에서 검 전투 → 사망 결과 → 다시 시작 → 메인 메뉴 → GameStart를 실제 반복한다. Domain Reload 설정 변화와 구독·scope 수를 확인한다. 통과 후 `feat: add battle HUD results and clean restart`로 커밋한다.
 
 ## 단계 B 완료
 
-- [ ] AI 판단·검 피해·짧은 무적·넉백·사망과 재시작을 실제 연결했다.
-- [ ] 수집 판단용 경험치가 존재하고, 성장 선택은 C 단계의 남은 작업으로 명시한다.
-- [ ] 관련 테스트와 실제 검 전투 확인 후 C1로 진행한다.
+- [x] AI 판단·검 피해·짧은 무적·넉백·사망과 재시작을 실제 연결했다.
+- [x] 수집 판단용 경험치가 존재하고, 성장 선택은 C 단계의 남은 작업으로 명시한다.
+- [x] 관련 테스트와 실제 검 전투 확인 후 C1로 진행한다.

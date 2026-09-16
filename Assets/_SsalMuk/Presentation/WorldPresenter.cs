@@ -28,7 +28,7 @@ namespace SsalMuk.Presentation
                 if (unit.Kind != UnitKind.Player) enemies++;
                 var relative = origin.DisplacementTo(unit.Position);
                 if (relative.Length > (visible.Contains(unit.Id) ? 24 : 22)) continue;
-                nextVisible.Add(unit.Id); view.ShowUnit(unit.Id, unit.Kind, relative, unit.BodyRadius);
+                nextVisible.Add(unit.Id); view.ShowUnit(unit, relative);
             }
             visible.Clear(); visible.UnionWith(nextVisible); view.EndFrame(model.Clock.ElapsedSeconds, enemies);
         }

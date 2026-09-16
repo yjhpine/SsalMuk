@@ -1,11 +1,25 @@
 # SsalMuk 재개 지점
 
-- 갱신일: 2026-09-16. **A1~A5·B1~B3 구현·검증 완료. 사용자가 B·C·D 전체 진행을 승인했다. 다음은 B4다.**
+- 갱신일: 2026-09-16. **A1~A5·B1~B4 구현·검증 완료. 사용자가 B·C·D 전체 진행을 승인했다. 다음은 C1이다.**
 - 프로젝트: `C:/Users/ace21/Desktop/SsalMuk`, 브랜치: `codex/unit-foundation`.
-- 최신 B2 로컬 커밋 메시지: `feat: implement damage knockback and single death drops`. B1은 `3c95e28`, A5는 `0599916`이다. 원격 푸시는 하지 않는다.
+- 최신 B4 로컬 커밋 메시지: `feat: add battle HUD results and clean restart`. B3은 `34ab952`, B2는 `a90f2d0`, B1은 `3c95e28`, A5는 `0599916`이다. 원격 푸시는 하지 않는다.
 - 중간 저장 `e742523` 뒤 목표 재활성화를 확인해 재개했다. 사용량은 재개 시 주간 7%, 마무리 중 4% 잔여를 알렸다.
 
 ## 현재 동작
+
+- B4: 체력·레벨·시간·처치 HUD, 적 체력 표시, 사망 시 결과 복사와 scope 종료, Results의 다시 시작·메인 메뉴 버튼을 연결했다. 새 판의 ID·시드·검 상태를 새로 생성하며 이전 피해와 늦은 씬 요청을 거부한다. 로드 실패 시 기존 결과를 보존하고 메뉴에서 재시도한다. 경험치와 레벨 증가는 C1에 남아 있다.
+
+## B4 검증
+
+- EditMode `e1025a2f48e14d26ad0d2ce0cd89fa0d`: 106개 통과.
+- PlayMode `4fd0b0abccdc413fbf36176de3f3e174`: 9개 통과.
+- 현재 소스 해시 `99b11704e9927152d699dba3e1fa3449b9662674de6a487802d1ff292ef04798`에 두 실행의 manifest·receipt·XML을 대조했다.
+- 실제 접촉 피해 → 결과 → 재시작 2회 → 메뉴 → GameStart를 확인했다. `Logs/Validation/DeathRestart/`에 HUD·결과 화면을 남겼다. 체력과 레벨 텍스트가 잘리던 문제는 화면과 실제 텍스트 정점 검사로 발견·수정했다.
+- `Logs/Validation/bcd-baseline/b4-domain-*.json`: Domain Reload 켜짐에서 실제 재로딩 1회, 꺼짐의 재생 2회에서 0회를 관측했다. 실행 중 AppRoot·WorldView·EventSystem·scope 각 1개, 사망·재생 종료 시 scope·View 0개를 확인했다. 원래 Editor 설정과 기존 사용자 파일의 바이트 해시를 복원·대조했다.
+- RED: 결과·초기화 `d3941062e07f42bdaca298e2b9db02c7`, UI 연결 `f9c84e0ca0834a5b8f454dc996b90faa`, 텍스트 잘림 `8a63817e592b4354afd409416303b42f`.
+- `40a6a65d0de24fe19e1376627a47df3d`는 Unity가 EditorSettings 줄바꿈을 뒤늦게 저장해 SourceChanged로 거절했다. 의미 있는 설정 변경이 아님을 비교하고 원본 복원·안정화 후 위 최종 실행을 다시 수행했다.
+
+## 이전 B3 동작
 
 - B3: 실제 GameStart 이후 FixedUpdate의 RunSimulation에서 AI·이동·검·사망 드롭·접촉을 순서대로 처리한다. 60도 연속 쓸기, 발동 시 방향·능력치 보존, 공격 누락 없는 주기 처리, 완료 공격의 중복 기록 회수와 지연 재전송 거부를 연결했다. 피해·주기 등 무기 정의를 DevelopmentDefaults 에셋에서 편집한다. 검 표시·최종 아트는 D2다.
 

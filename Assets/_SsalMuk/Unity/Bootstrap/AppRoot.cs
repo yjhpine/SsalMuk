@@ -13,9 +13,13 @@ namespace SsalMuk.Unity
         public const string BattleScenePath = "Assets/_SsalMuk/Scenes/Battle.unity";
         private static AppRoot instance;
         private MainMenuPresenter presenter;
+        private HudPresenter hudPresenter;
+        private ResultsPresenter resultsPresenter;
         public static AppRoot Instance => instance;
         public RunCoordinator Coordinator { get; private set; }
         public MainMenuView Menu { get; private set; }
+        public HudView Hud { get; private set; }
+        public ResultsView Results { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics() { SceneManager.sceneLoaded -= SceneLoaded; instance = null; }
@@ -24,13 +28,14 @@ namespace SsalMuk.Unity
         private static void SceneLoaded(Scene scene, LoadSceneMode mode)
         {
             if (scene.path != MainMenuScenePath && scene.path != BattleScenePath) return;
-            if (instance == null)
+            bool created = instance == null;
+            if (created)
             {
                 var existing = FindAnyObjectByType<AppRoot>();
                 if (existing != null) instance = existing;
                 else new GameObject("SsalMuk App").AddComponent<AppRoot>();
             }
-            if (scene.path == BattleScenePath && instance != null && instance.Coordinator.Phase == RunPhase.MainMenu)
+            if (created && scene.path == BattleScenePath && instance != null && instance.Coordinator.Phase == RunPhase.MainMenu)
                 _ = instance.Coordinator.StartRunAsync();
         }
         private void Awake()
@@ -51,17 +56,22 @@ namespace SsalMuk.Unity
             }
             var menuObject = new GameObject("MainMenu"); menuObject.transform.SetParent(transform, false);
             Menu = menuObject.AddComponent<MainMenuView>();
-            Menu.Initialize(catalog != null && catalog.UiFont != null ? catalog.UiFont : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"));
+            var font = catalog != null && catalog.UiFont != null ? catalog.UiFont : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Menu.Initialize(font);
+            var hudObject = new GameObject("Hud"); hudObject.transform.SetParent(transform, false); Hud = hudObject.AddComponent<HudView>(); Hud.Initialize(font);
+            var resultsObject = new GameObject("Results"); resultsObject.transform.SetParent(transform, false); Results = resultsObject.AddComponent<ResultsView>(); Results.Initialize(font);
             Coordinator = new RunCoordinator(new UnitySceneLoader(), () =>
             {
                 if (catalog == null) throw new System.InvalidOperationException("Game catalog is missing.");
                 return new RunScope(catalog);
             });
             presenter = new MainMenuPresenter(Coordinator, Menu);
+            hudPresenter = new HudPresenter(Hud); resultsPresenter = new ResultsPresenter(Coordinator, Results);
         }
+        private void LateUpdate() { if (Coordinator != null) hudPresenter.Refresh(Coordinator.Run); }
         private void OnDestroy()
         {
-            presenter?.Dispose(); Coordinator?.Dispose(); if (instance == this) instance = null;
+            presenter?.Dispose(); resultsPresenter?.Dispose(); Coordinator?.Dispose(); if (instance == this) instance = null;
         }
     }
 }

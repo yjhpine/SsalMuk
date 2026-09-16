@@ -40,9 +40,9 @@ namespace SsalMuk.Tests
             var simulation = new RunSimulation(rig.Run, rig.Movement, null, rig.Damage, rig.Death, rig.Contact);
             var position = rig.Player.Position; simulation.Step(0.2);
             Assert.That(rig.Unit(enemy).Health, Is.EqualTo(92)); Assert.That(rig.Player.Position, Is.EqualTo(position));
-            rig.Hit(rig.Player.Id, 1000); double time = rig.Clock.ElapsedSeconds; simulation.Step(1);
-            Assert.That(rig.Run.Phase, Is.EqualTo(RunPhase.Results)); Assert.That(rig.Clock.ElapsedSeconds, Is.EqualTo(time));
-            Assert.That(rig.Unit(enemy).Health, Is.EqualTo(92));
+            var target = rig.Unit(enemy); rig.Hit(rig.Player.Id, 1000); double time = rig.Clock.ElapsedSeconds; simulation.Step(1);
+            Assert.That(rig.Coordinator.Phase, Is.EqualTo(RunPhase.Results)); Assert.That(rig.Clock.ElapsedSeconds, Is.EqualTo(time));
+            Assert.That(target.Health, Is.EqualTo(92));
         }
     }
 }

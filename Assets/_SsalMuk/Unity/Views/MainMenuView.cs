@@ -27,7 +27,7 @@ namespace SsalMuk.Unity
             UiFactory.Label(buttonRect, "Caption", font, "GameStart", 27, UiFactory.Ink, new Vector2(300, 60), new Vector2(0.5f, 0.5f), Vector2.zero);
             StartButton.onClick.AddListener(Submit);
             status = UiFactory.Label(canvas.transform, "Status", font, "", 17, UiFactory.Muted, new Vector2(920, 60), new Vector2(0.5f, 0.5f), new Vector2(0, -198));
-            UiFactory.Label(canvas.transform, "DevelopmentNotice", font, "개발용 임시 그래픽 · 이동 미리보기", 16, UiFactory.Muted, new Vector2(900, 40), new Vector2(0.5f, 0), new Vector2(0, 32));
+            UiFactory.Label(canvas.transform, "PlayGuide", font, "이동과 공격은 자동으로 진행됩니다.", 16, UiFactory.Muted, new Vector2(900, 40), new Vector2(0.5f, 0), new Vector2(0, 32));
         }
         private void Submit() { if (StartButton != null && StartButton.interactable) StartRequested?.Invoke(); }
         public void Show(bool visible, bool canStart, string message)

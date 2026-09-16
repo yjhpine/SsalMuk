@@ -56,6 +56,20 @@ namespace SsalMuk.Tests
         }
 
         [Test]
+        public async Task ACancelledOldSceneCompletionCannotReplaceTheNewRun()
+        {
+            var loader = new GateLoader(); var first = new ObservedBuilder(); var second = new ObservedBuilder(); int attempts = 0;
+            using var coordinator = new RunCoordinator(loader, () => attempts++ == 0 ? first : second);
+            Task late = coordinator.StartRunAsync(); await coordinator.ReturnToMenuAsync();
+            Assert.That(first.DisposeCount, Is.EqualTo(1));
+            loader.Immediate = true; await coordinator.StartRunAsync(); var current = coordinator.Run.Id;
+            loader.Release(); await late;
+            Assert.That(coordinator.Run.Id, Is.EqualTo(current)); Assert.That(coordinator.Run, Is.SameAs(second.Run));
+            Assert.That(coordinator.Phase, Is.EqualTo(RunPhase.Running)); Assert.That(first.Stages, Is.Empty);
+            Assert.That(second.Stages.Count, Is.EqualTo(3)); Assert.That(first.DisposeCount, Is.EqualTo(1));
+        }
+
+        [Test]
         public async Task RetryUsesFreshRunIdentityAndDefinitionsStayUnchanged()
         {
             var loader = new GateLoader(); var first = new ObservedBuilder { Failure = "player" }; var second = new ObservedBuilder();
@@ -71,7 +85,9 @@ namespace SsalMuk.Tests
         private sealed class GateLoader : ISceneLoader
         {
             private readonly TaskCompletionSource<bool> completion = new TaskCompletionSource<bool>();
-            public Task LoadBattleAsync() => completion.Task;
+            public bool Immediate;
+            public Task LoadBattleAsync() => Immediate ? Task.CompletedTask : completion.Task;
+            public Task LoadMainMenuAsync() => Task.CompletedTask;
             public void Release() => completion.TrySetResult(true);
             public void Fail() => completion.TrySetException(new InvalidOperationException("Scene load failed."));
         }

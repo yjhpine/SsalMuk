@@ -13,6 +13,14 @@ namespace SsalMuk.Core
         public RunClock Clock { get; }
         public PlayerModel Player { get; private set; }
         public long Kills { get; internal set; }
+        public RunResult Result { get; private set; }
+        public event Action<RunResult> Completed;
+        internal void CompleteDeath()
+        {
+            if (Phase != RunPhase.Running || Result != null || Player == null || Player.IsAlive) return;
+            Result = new RunResult(Id, Clock.ElapsedSeconds, Kills, Player.Level);
+            Clock.Stop(); Phase = RunPhase.Results; Completed?.Invoke(Result);
+        }
         private long lastAttackId;
         public long AllocateAttackId() => lastAttackId = checked(lastAttackId + 1);
         public RunPhase Phase { get; internal set; } = RunPhase.MainMenu;
@@ -35,7 +43,7 @@ namespace SsalMuk.Core
         public void Dispose()
         {
             if (Phase == RunPhase.Disposed) return;
-            Clock.Stop(); Phase = RunPhase.Disposed; World.Dispose();
+            Clock.Stop(); Phase = RunPhase.Disposed; Completed = null; World.Dispose();
         }
     }
 }

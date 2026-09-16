@@ -30,5 +30,23 @@ namespace SsalMuk.Unity
             label.raycastTarget = false; label.horizontalOverflow = HorizontalWrapMode.Wrap; label.verticalOverflow = VerticalWrapMode.Truncate;
             return label;
         }
+        internal static Button Button(Transform parent, string name, Font font, string text, Vector2 offset)
+        {
+            var rect = Rect(parent, name, new Vector2(290, 62), new Vector2(0.5f, 0.5f), offset);
+            var background = rect.gameObject.AddComponent<Image>(); background.color = Mint;
+            var button = rect.gameObject.AddComponent<Button>(); button.targetGraphic = background;
+            var colors = button.colors; colors.highlightedColor = new Color(0.9f, 1, 0.95f); colors.pressedColor = new Color(0.65f, 0.85f, 0.75f);
+            colors.disabledColor = new Color(0.4f, 0.5f, 0.45f); button.colors = colors;
+            Label(rect, "Caption", font, text, 23, Ink, new Vector2(280, 58), new Vector2(0.5f, 0.5f), Vector2.zero);
+            return button;
+        }
+        internal static RectTransform Bar(Transform parent, string name, Vector2 dimensions, Vector2 anchor, Vector2 offset, Color color)
+        {
+            var back = Rect(parent, name, dimensions, anchor, offset); back.gameObject.AddComponent<Image>().color = new Color(1, 1, 1, 0.14f);
+            var fill = Rect(back, "Fill", Vector2.zero, Vector2.zero, Vector2.zero);
+            fill.anchorMax = Vector2.one; fill.offsetMin = fill.offsetMax = Vector2.zero;
+            fill.gameObject.AddComponent<Image>().color = color; return fill;
+        }
+        internal static void Fill(RectTransform rect, double value) => rect.anchorMax = new Vector2(Mathf.Clamp01((float)value), 1);
     }
 }

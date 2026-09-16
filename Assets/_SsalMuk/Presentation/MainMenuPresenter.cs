@@ -17,7 +17,7 @@ namespace SsalMuk.Presentation
         private void Refresh(RunPhase phase)
         {
             bool menu = phase == RunPhase.MainMenu;
-            view.Show(phase != RunPhase.Running && phase != RunPhase.Disposed, menu,
+            view.Show(phase != RunPhase.Running && phase != RunPhase.Results && phase != RunPhase.Disposed, menu,
                 !string.IsNullOrEmpty(coordinator.LastError) ? "시작 준비에 실패했습니다. 다시 시도해 주세요." : menu ? "준비가 되면 시작하세요." : "월드를 준비하고 있습니다…");
         }
         public void Dispose() { view.StartRequested -= Start; coordinator.PhaseChanged -= Refresh; }

@@ -33,7 +33,7 @@ namespace SsalMuk.Tests
             public readonly Dictionary<long, DVec2> Positions = new Dictionary<long, DVec2>(); public int EnemyCount;
             public void BeginFrame(Guid runId) => Positions.Clear();
             public void ShowTerrain(ChunkData chunk, DVec2 origin) { }
-            public void ShowUnit(long id, UnitKind kind, DVec2 position, double radius) => Positions[id] = position;
+            public void ShowUnit(UnitModel unit, DVec2 position) => Positions[unit.Id] = position;
             public void EndFrame(double seconds, int count) => EnemyCount = count;
         }
     }

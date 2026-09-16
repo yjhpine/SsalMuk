@@ -10,8 +10,29 @@ namespace SsalMuk.Core
         private IRunBuilder builder;
         private Task pending;
         private long generation;
+        private bool returningToMenu;
         public RunPhase Phase { get; private set; } = RunPhase.MainMenu;
         public RunModel Run => builder?.Run;
+        public RunResult Result { get; private set; }
+        public Task RestartAsync()
+        {
+            if (Phase == RunPhase.Disposed) throw new ObjectDisposedException(nameof(RunCoordinator));
+            return Phase == RunPhase.Results ? BeginStart() : pending ?? Task.CompletedTask;
+        }
+        public Task ReturnToMenuAsync()
+        {
+            if (Phase == RunPhase.Disposed) throw new ObjectDisposedException(nameof(RunCoordinator));
+            if (Phase == RunPhase.MainMenu || returningToMenu) return pending ?? Task.CompletedTask;
+            long attempt = checked(++generation); returningToMenu = true; LastError = "";
+            Cleanup(); SetPhase(RunPhase.Loading); return pending = ReturnCoreAsync(attempt);
+        }
+        private async Task ReturnCoreAsync(long attempt)
+        {
+            try { await sceneLoader.LoadMainMenuAsync(); }
+            catch (Exception error) { if (attempt == generation) LastError = error.Message; }
+            if (attempt != generation || Phase == RunPhase.Disposed) return;
+            returningToMenu = false; SetPhase(RunPhase.MainMenu);
+        }
         public string LastError { get; private set; } = "";
         public event Action<RunPhase> PhaseChanged;
         public RunCoordinator(ISceneLoader sceneLoader, Func<IRunBuilder> createBuilder)
@@ -20,6 +41,10 @@ namespace SsalMuk.Core
         {
             if (Phase == RunPhase.Disposed) throw new ObjectDisposedException(nameof(RunCoordinator));
             if (Phase != RunPhase.MainMenu) return pending ?? Task.CompletedTask;
+            return BeginStart();
+        }
+        private Task BeginStart()
+        {
             LastError = ""; long attempt = checked(++generation); SetPhase(RunPhase.Loading);
             return pending = StartCoreAsync(attempt);
         }
@@ -28,19 +53,27 @@ namespace SsalMuk.Core
             try
             {
                 builder = createBuilder() ?? throw new InvalidOperationException("Run builder is missing.");
-                builder.Run.Clock.Stop(); builder.Run.Phase = RunPhase.Loading;
+                builder.Run.Clock.Stop(); builder.Run.Phase = RunPhase.Loading; builder.Run.Completed += OnCompleted;
                 await sceneLoader.LoadBattleAsync();
                 if (attempt != generation || Phase == RunPhase.Disposed) return;
                 SetPhase(RunPhase.BuildingWorld); builder.BuildWorld();
                 SetPhase(RunPhase.CreatingPlayer); builder.CreatePlayer();
                 SetPhase(RunPhase.CreatingEnemies); builder.CreateInitialEnemies();
-                builder.Run.Clock.Start(); SetPhase(RunPhase.Running);
+                Result = null; builder.Run.Clock.Start(); SetPhase(RunPhase.Running);
             }
             catch (Exception error)
             {
                 if (attempt != generation || Phase == RunPhase.Disposed) return;
-                LastError = error.Message; Cleanup(); SetPhase(RunPhase.MainMenu);
+                LastError = error.Message; Cleanup();
+                try { await sceneLoader.LoadMainMenuAsync(); }
+                catch (Exception menuError) { LastError += " / " + menuError.Message; }
+                if (attempt == generation && Phase != RunPhase.Disposed) SetPhase(RunPhase.MainMenu);
             }
+        }
+        private void OnCompleted(RunResult result)
+        {
+            if (Phase != RunPhase.Running || builder == null || result.RunId != builder.Run.Id) return;
+            Result = result; Cleanup(); SetPhase(RunPhase.Results);
         }
         private void SetPhase(RunPhase phase)
         {
@@ -49,7 +82,7 @@ namespace SsalMuk.Core
         private void Cleanup()
         {
             if (builder == null) return;
-            var old = builder; builder = null; old.Run.Clock.Stop(); old.Dispose();
+            var old = builder; builder = null; old.Run.Completed -= OnCompleted; old.Run.Clock.Stop(); old.Dispose();
         }
         public void Dispose()
         {

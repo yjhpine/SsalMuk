@@ -33,7 +33,7 @@ namespace SsalMuk.Core
                 if (!run.Player.IsAlive) { Finish(); break; }
             }
         }
-        private void Finish() { run.Clock.Stop(); run.Phase = RunPhase.Results; Sword.Dispose(); }
+        private void Finish() { Sword.Dispose(); run.CompleteDeath(); }
         public void Dispose() { if (disposed) return; disposed = true; Sword.Dispose(); }
     }
 }

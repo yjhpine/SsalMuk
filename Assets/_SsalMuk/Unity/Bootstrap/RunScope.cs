@@ -17,6 +17,7 @@ namespace SsalMuk.Unity
         private RunSimulation simulation;
         private BattleRunner runner;
         private bool disposed;
+        public static int ActiveCount { get; private set; }
         public RunModel Run { get; }
         public RunScope(GameCatalog catalog)
         {
@@ -25,6 +26,7 @@ namespace SsalMuk.Unity
             var definitions = catalog.CreateDefinitions(); var streams = new SeedStreams(seed);
             Run = new RunModel(id, seed, definitions, new ChunkGenerator(streams.MapSeed, catalog.Defaults.CreateMapSettings()));
             builder = new InitialRunBuilder(Run, catalog.Defaults, RefreshViews);
+            ActiveCount = checked(ActiveCount + 1);
         }
         public void BuildWorld() => builder.BuildWorld();
         public void CreatePlayer()
@@ -50,6 +52,7 @@ namespace SsalMuk.Unity
         public void Dispose()
         {
             if (disposed) return; disposed = true;
+            ActiveCount--;
             if (runner != null) runner.enabled = false;
             simulation?.Dispose(); death?.Dispose(); damage?.Dispose(); movement?.Dispose(); builder.Dispose();
             if (root != null) { root.SetActive(false); UnityEngine.Object.Destroy(root); }
