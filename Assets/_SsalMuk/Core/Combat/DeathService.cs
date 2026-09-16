@@ -26,7 +26,11 @@ namespace SsalMuk.Core
             {
                 if (!run.World.Units.TryGet(id, out var enemy) || enemy.IsAlive || enemy.Kind == UnitKind.Player) continue;
                 long nextKills = checked(run.Kills + 1);
-                if (enemy.Definition.ExperienceReward.Sign > 0) run.World.AddExperience(enemy.Position, enemy.Definition.ExperienceReward);
+                if (enemy.Definition.ExperienceReward.Sign > 0)
+                {
+                    var position = enemy.Kind == UnitKind.Air ? DropPlacement.NearestFreeFloor(run.World, enemy.Position, run.Player.BodyRadius) : enemy.Position;
+                    run.World.AddExperience(position, enemy.Definition.ExperienceReward, run.Clock.ElapsedSeconds);
+                }
                 run.World.Units.Remove(id); run.Kills = nextKills;
             }
         }

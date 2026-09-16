@@ -21,7 +21,7 @@ namespace SsalMuk.Presentation
             var result = coordinator.Result;
             bool visible = phase == RunPhase.Results && result != null;
             view.Show(visible, visible, result == null ? "" : HudPresenter.FormatTime(result.SurvivalSeconds),
-                result?.KillCount.ToString() ?? "", result?.FinalLevel.ToString() ?? "");
+                result == null ? "" : NumberFormatter.Format(result.KillCount), result == null ? "" : NumberFormatter.Format(result.FinalLevel));
         }
         public void Dispose()
         { view.RestartRequested -= Restart; view.MenuRequested -= Menu; coordinator.PhaseChanged -= Refresh; }

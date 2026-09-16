@@ -11,11 +11,15 @@ namespace SsalMuk.Core
         private readonly ContactDamageSystem contact;
         private bool disposed;
         public WeaponRuntime Sword { get; }
+        public ProgressionService Progression { get; }
+        public ExperienceCollector Collector { get; }
         public RunSimulation(RunModel run, MovementSystem movement, LowAiController ai, DamageService damage, DeathService death,
             ContactDamageSystem contact)
         {
             this.run = run; this.movement = movement; this.ai = ai; this.death = death; this.contact = contact;
-            Sword = new WeaponRuntime(run, WeaponKind.Sword, movement, damage);
+            Progression = new ProgressionService(run); Collector = new ExperienceCollector(run, movement, Progression);
+            Sword = new WeaponRuntime(run, WeaponKind.Sword, movement, damage, () =>
+                StatCalculator.Calculate(run.Definitions.GetWeapon(WeaponKind.Sword), run.Player.Weapons.Get(WeaponKind.Sword), run.GrowthSettings));
         }
         public void Step(double dt)
         {
@@ -31,6 +35,7 @@ namespace SsalMuk.Core
                 movement.Step(run.Clock.FixedStep);
                 Sword.Tick(from, to); death.Flush(); contact.Step(from, to);
                 if (!run.Player.IsAlive) { Finish(); break; }
+                Collector.Step(run.Clock.FixedStep);
             }
         }
         private void Finish() { Sword.Dispose(); run.CompleteDeath(); }

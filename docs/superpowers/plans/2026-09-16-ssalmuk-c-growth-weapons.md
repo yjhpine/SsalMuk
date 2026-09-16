@@ -1,6 +1,6 @@
 # SsalMuk C: Growth and Weapons Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 경험치 수집·레벨업 선택 기회 누적·무기별 5종 강화와 4종 동시 전투를 구현한다.
 
@@ -30,7 +30,7 @@
 
 **Pickup interfaces:** `ExperienceCollector.Step(double dt)`는 RunSimulation의 생존 확인 뒤 호출한다. `PickupSettings.TestDefaults()`는 전체 계획의 임시 반경·속도·값 구분선을 반환한다. `PickupSettings.TierFor(BigInteger value)` → ExperienceTier(Green/Blue/Red). `WorldStore.TryBeginAttraction(Guid runId,long id)`, `TryCollectExperience(Guid runId,long id,out BigInteger value)` → bool은 해당 판의 유효한 상태 전환만 허용하고, `MoveExperience(Guid runId,long id,WorldPosition position)`은 흡수 레코드 위치·공간 색인을 함께 갱신한다. 이 메서드는 C1에서 작성하며 Collected 지급 후 레코드를 제거한다. AI 설정 전달에는 같은 PickupSettings를 사용한다.
 
-- [ ] 한 번의 큰 경험치 입력에서 여러 레벨과 선택 기회가 생기는 테스트, 비소유 무기 강화 거절, 아래 좌우 개수 테스트를 작성한다.
+- [x] 한 번의 큰 경험치 입력에서 여러 레벨과 선택 기회가 생기는 테스트, 비소유 무기 강화 거절, 아래 좌우 개수 테스트를 작성한다.
 
 ```csharp
 [Test]
@@ -46,7 +46,7 @@ public void EachCopyUpgradeAddsOneWeaponOnEachSide()
 }
 ```
 
-- [ ] 근접 시작과 실제 지급을 분리하는 아래 테스트를 먼저 작성하고 실패를 확인한다. 기본 Rig의 플레이어 시작 위치는 (0,0), PickupSettings는 전체 계획의 테스트 프리셋을 사용한다.
+- [x] 근접 시작과 실제 지급을 분리하는 아래 테스트를 먼저 작성하고 실패를 확인한다. 기본 Rig의 플레이어 시작 위치는 (0,0), PickupSettings는 전체 계획의 테스트 프리셋을 사용한다.
 
 ```csharp
 [Test]
@@ -66,12 +66,12 @@ public void XpIsGrantedOnceOnContactNotWhenAttractionStarts()
 }
 ```
 
-- [ ] ExperienceCollector는 Grounded 구슬이 흡수 반경에 들어오면 Attracting으로 전환하고 현재 플레이어 위치를 향해 이동시킨다. 접촉 거리(플레이어 몸 반경+구슬 반경)는 흡수 시작 거리와 분리한다. 값은 유지하고 반경 진입만으로 지급하지 않는다. 한 번 흡수를 시작하면 반경을 다시 벗어나도 따라오며 구조물·몬스터에 막히지 않는다.
-- [ ] 흡수 시작과 실제 접촉은 플레이어·구슬의 이동 전후 구간을 사용해 고속 교차를 검사한다. 이번 주기에 생성되거나 흡수를 시작한 구슬은 생성/시작 이후 구간만 판정한다. 접촉이 확인된 ID만 TryCollectExperience 성공 후 실제 ProgressionService에 전달한다. 이미 수집됨·잘못된 RunId·사망/종료 상태는 지급하지 않는다. 표시 애니메이션 완료는 지급 경로로 사용하지 않는다.
-- [ ] 이동하는 구슬의 WorldPosition과 청크/공간 색인을 함께 갱신한다. 흡수 중 표시가 사라져도 월드에서 비행을 계속한다. CollectState는 대기 구슬의 흡수 반경 안에서 도달 가능한 바닥 지점을 찾고, 목표가 Attracting이 되면 해제해 이미 날아오는 구슬을 쫓지 않는다.
-- [ ] 공중이 구조물 내부에서 사망한 경우 드롭 생성 시 가장 가까운 이동 가능한 바닥으로 위치를 정한 뒤 대기 위치를 보존한다. 드롭 값이나 개수를 줄이지 않는다. 색은 실제 값으로 구분하며 임시 구분선은 5·25다. 양수 값·증가하는 구분선·양수 속도·양수 구슬 반경·접촉 거리보다 큰 흡수 반경을 설정 검증에 포함한다.
-- [ ] 이동하는 플레이어 추적, 흡수 반경 재이탈, 구조물 가로지르기, 고속 통과, 사망과 접촉이 같은 주기인 경우, 중복 접촉, 청크 경계 통과, 이전 RunId 지급 거절을 확인한다. 값 1/5/25와 경계값 4/24의 색 등급을 검사하고 큰 값도 원본 경험치 양을 유지하는지 확인한다. EditMode의 ExperiencePickupTests·ProgressionTests를 실행해 성공을 확인한 뒤 다음 성장 단계로 진행한다.
-- [ ] 임시 성장 프리셋의 다음 레벨 비용은 현재 레벨 L에서 `5 + 3 * (L - 1)`로 둔다. n회 레벨업 누적 비용은 아래 식으로 계산하고 지수 탐색+이진 탐색으로 가능한 n을 찾는다. 큰 경험치 입력을 레벨 수만큼 반복하는 루프로 처리하지 않는다.
+- [x] ExperienceCollector는 Grounded 구슬이 흡수 반경에 들어오면 Attracting으로 전환하고 현재 플레이어 위치를 향해 이동시킨다. 접촉 거리(플레이어 몸 반경+구슬 반경)는 흡수 시작 거리와 분리한다. 값은 유지하고 반경 진입만으로 지급하지 않는다. 한 번 흡수를 시작하면 반경을 다시 벗어나도 따라오며 구조물·몬스터에 막히지 않는다.
+- [x] 흡수 시작과 실제 접촉은 플레이어·구슬의 이동 전후 구간을 사용해 고속 교차를 검사한다. 이번 주기에 생성되거나 흡수를 시작한 구슬은 생성/시작 이후 구간만 판정한다. 접촉이 확인된 ID만 TryCollectExperience 성공 후 실제 ProgressionService에 전달한다. 이미 수집됨·잘못된 RunId·사망/종료 상태는 지급하지 않는다. 표시 애니메이션 완료는 지급 경로로 사용하지 않는다.
+- [x] 이동하는 구슬의 WorldPosition과 청크/공간 색인을 함께 갱신한다. 흡수 중 표시가 사라져도 월드에서 비행을 계속한다. CollectState는 대기 구슬의 흡수 반경 안에서 도달 가능한 바닥 지점을 찾고, 목표가 Attracting이 되면 해제해 이미 날아오는 구슬을 쫓지 않는다.
+- [x] 공중이 구조물 내부에서 사망한 경우 드롭 생성 시 가장 가까운 이동 가능한 바닥으로 위치를 정한 뒤 대기 위치를 보존한다. 드롭 값이나 개수를 줄이지 않는다. 색은 실제 값으로 구분하며 임시 구분선은 5·25다. 양수 값·증가하는 구분선·양수 속도·양수 구슬 반경·접촉 거리보다 큰 흡수 반경을 설정 검증에 포함한다.
+- [x] 이동하는 플레이어 추적, 흡수 반경 재이탈, 구조물 가로지르기, 고속 통과, 사망과 접촉이 같은 주기인 경우, 중복 접촉, 청크 경계 통과, 이전 RunId 지급 거절을 확인한다. 값 1/5/25와 경계값 4/24의 색 등급을 검사하고 큰 값도 원본 경험치 양을 유지하는지 확인한다. EditMode의 ExperiencePickupTests·ProgressionTests를 실행해 성공을 확인한 뒤 다음 성장 단계로 진행한다.
+- [x] 임시 성장 프리셋의 다음 레벨 비용은 현재 레벨 L에서 `5 + 3 * (L - 1)`로 둔다. n회 레벨업 누적 비용은 아래 식으로 계산하고 지수 탐색+이진 탐색으로 가능한 n을 찾는다. 큰 경험치 입력을 레벨 수만큼 반복하는 루프로 처리하지 않는다.
 
 ```csharp
 BigInteger CostForLevels(BigInteger level, BigInteger count)
@@ -80,11 +80,11 @@ BigInteger CostForLevels(BigInteger level, BigInteger count)
 }
 ```
 
-- [ ] 수집 경험치에서 정확한 비용을 차감하고 Level과 PendingChoices에 n을 더한다. PlayerModel.Level은 Growth.Level을 읽도록 연결해 HUD·사망 결과가 별도 레벨 값을 갖지 않게 한다. 임시 계수는 DevelopmentDefaults에서 편집할 수 있게 구성하고 함수는 전달된 계수를 사용한다. 위 코드는 테스트 프리셋의 계산 예다.
-- [ ] 강화 단계를 BigInteger로 보관하고 기본 정의는 변경하지 않는다. 임시 성장식은 Damage=`base*(1+0.10*level)`, Copies=`1+2*level`, Repeats=`1+level`, Period=`base/(1+0.10*level)`, Range=`base*(1+0.08*level)`로 지정한다. 이 계수는 최종 밸런스가 아니며 정의 에셋에서 조정한다.
-- [ ] 정수 단계→double 계산을 한 곳으로 모으고 NaN·Infinity·0 이하 주기·강화 후 증가 소실을 NumericRangeException으로 검출한다. 예외를 게임 속 최대 레벨로 바꾸지 않는다. 큰 단계에서 계산기와 실제 스케줄러의 처리량은 각각 D3에서 확인한다.
-- [ ] 표시 문자열은 BigInteger 원본으로 생성한다. 짧은 값은 정수, 긴 값은 앞자리와 자릿수로 표현하되 실제 저장값은 줄이지 않는다. 사망과 새 판에서 GrowthState·WeaponState를 새로 만드는 테스트를 추가한다.
-- [ ] 5종 강화 각각의 독립성, 모든 무기별 범위 해석, 큰 경험치 입력, 큰 단계의 범위 오류 검출을 확인한다. `feat: add experience progression and uncapped weapon growth`로 커밋한다.
+- [x] 수집 경험치에서 정확한 비용을 차감하고 Level과 PendingChoices에 n을 더한다. PlayerModel.Level은 Growth.Level을 읽도록 연결해 HUD·사망 결과가 별도 레벨 값을 갖지 않게 한다. 임시 계수는 DevelopmentDefaults에서 편집할 수 있게 구성하고 함수는 전달된 계수를 사용한다. 위 코드는 테스트 프리셋의 계산 예다.
+- [x] 강화 단계를 BigInteger로 보관하고 기본 정의는 변경하지 않는다. 임시 성장식은 Damage=`base*(1+0.10*level)`, Copies=`1+2*level`, Repeats=`1+level`, Period=`base/(1+0.10*level)`, Range=`base*(1+0.08*level)`로 지정한다. 이 계수는 최종 밸런스가 아니며 정의 에셋에서 조정한다.
+- [x] 정수 단계→double 계산을 한 곳으로 모으고 NaN·Infinity·0 이하 주기·강화 후 증가 소실을 NumericRangeException으로 검출한다. 예외를 게임 속 최대 레벨로 바꾸지 않는다. 큰 단계에서 계산기와 실제 스케줄러의 처리량은 각각 D3에서 확인한다.
+- [x] 표시 문자열은 BigInteger 원본으로 생성한다. 짧은 값은 정수, 긴 값은 앞자리와 자릿수로 표현하되 실제 저장값은 줄이지 않는다. 사망과 새 판에서 GrowthState·WeaponState를 새로 만드는 테스트를 추가한다.
+- [x] 5종 강화 각각의 독립성, 모든 무기별 범위 해석, 큰 경험치 입력, 큰 단계의 범위 오류 검출을 확인한다. `feat: add experience progression and uncapped weapon growth`로 커밋한다.
 
 ## Task C2: 가중 선택지·누적 기회·전투 중 UI
 

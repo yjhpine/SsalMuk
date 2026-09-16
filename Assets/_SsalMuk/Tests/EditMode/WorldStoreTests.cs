@@ -16,8 +16,8 @@ namespace SsalMuk.Tests
             foreach (UnitKind kind in new[] { UnitKind.Normal, UnitKind.Air, UnitKind.Boss }) Spawn(world, kind, positions[0]);
             long a = world.AddExperience(positions[0], BigInteger.Pow(10, 30));
             long b = world.AddExperience(positions[1], 5);
-            world.BeginAttracting(a);
-            world.MoveExperience(a, positions[0].Offset(new DVec2(1, 0)));
+            world.TryBeginAttraction(world.Units.RunId, a);
+            world.MoveExperience(world.Units.RunId, a, positions[0].Offset(new DVec2(1, 0)));
             string terrain = world.GetChunk(positions[0].Chunk).Fingerprint;
             world.ClearTerrainCache();
             Assert.That(world.CachedChunkCount, Is.Zero);
@@ -72,10 +72,12 @@ namespace SsalMuk.Tests
         {
             using var world = new WorldStore(new UnitRegistry(Guid.NewGuid()), new ChunkGenerator(2, MapSettings.TestDefaults(0)));
             long id = world.AddExperience(default, 10);
-            world.BeginAttracting(id);
-            Assert.That(world.TryCollectExperience(id, out var record), Is.True);
+            world.TryBeginAttraction(world.Units.RunId, id);
+            world.TryGetExperience(id, out var record);
+            Assert.That(world.TryCollectExperience(world.Units.RunId, id, out var value), Is.True);
+            Assert.That(value, Is.EqualTo(new BigInteger(10)));
             Assert.That(record.State, Is.EqualTo(ExperienceState.Collected));
-            Assert.That(world.TryCollectExperience(id, out _), Is.False);
+            Assert.That(world.TryCollectExperience(world.Units.RunId, id, out _), Is.False);
             Assert.That(world.Experience, Is.Empty);
             Assert.That(world.Query.QueryExperienceCircle(default, 1), Is.Empty);
             Assert.That(world.AddExperience(default, 1), Is.GreaterThan(id));

@@ -13,8 +13,11 @@ namespace SsalMuk.Presentation
             if (run == null || run.Phase != RunPhase.Running || run.Player == null)
             { view.Show(false, "", 0, "", "", 0, "", ""); return; }
             var player = run.Player;
+            var growth = player.Growth; var nextCost = run.GrowthSettings.CostForLevels(player.Level, 1);
             view.Show(true, player.Health.ToString("0", CultureInfo.InvariantCulture) + " / " + player.Definition.MaxHealth.ToString("0", CultureInfo.InvariantCulture),
-                player.Health / player.Definition.MaxHealth, "Lv. " + player.Level, "경험치 0", 0, FormatTime(run.Clock.ElapsedSeconds), "처치 " + run.Kills);
+                player.Health / player.Definition.MaxHealth, "Lv. " + NumberFormatter.Format(player.Level),
+                "경험치 " + NumberFormatter.Format(growth.ExperienceIntoLevel) + " / " + NumberFormatter.Format(nextCost),
+                NumberFormatter.Fraction(growth.ExperienceIntoLevel, nextCost), FormatTime(run.Clock.ElapsedSeconds), "처치 " + NumberFormatter.Format(run.Kills));
         }
         public static string FormatTime(double elapsed)
         {

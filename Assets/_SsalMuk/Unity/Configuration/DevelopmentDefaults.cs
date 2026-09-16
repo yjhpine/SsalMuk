@@ -16,9 +16,34 @@ namespace SsalMuk.Unity
         [SerializeField, Min(0)] private int initialEnemyCount = 12;
         [SerializeField, Min(1)] private int crowdIterations = 6;
         [SerializeField, Min(1)] private int navigationNodeBudget = 512;
+        [SerializeField] private string firstLevelCost = "5";
+        [SerializeField] private string levelCostStep = "3";
+        [SerializeField] private double damageGrowth = 0.1;
+        [SerializeField] private double speedGrowth = 0.1;
+        [SerializeField] private double rangeGrowth = 0.08;
+        [SerializeField] private double attractionRadius = 1.5;
+        [SerializeField] private double experienceFlightSpeed = 6;
+        [SerializeField] private double experienceOrbRadius = 0.08;
+        [SerializeField] private string blueExperienceThreshold = "5";
+        [SerializeField] private string redExperienceThreshold = "25";
         public int InitialEnemyCount => initialEnemyCount >= 0 ? initialEnemyCount : throw new ArgumentOutOfRangeException(nameof(initialEnemyCount));
         public MapSettings CreateMapSettings() => new MapSettings(obstacleChance, maximumBodyRadius: CreateCatalog().Units.Max(unit => unit.BodyRadius));
         public MovementSettings CreateMovementSettings() => new MovementSettings(crowdIterations, navigationNodeBudget);
+        public GrowthSettings CreateGrowthSettings()
+        {
+            if (!BigInteger.TryParse(firstLevelCost, NumberStyles.Integer, CultureInfo.InvariantCulture, out var first) ||
+                !BigInteger.TryParse(levelCostStep, NumberStyles.Integer, CultureInfo.InvariantCulture, out var step))
+                throw new ArgumentException("Level costs must be integers.");
+            return new GrowthSettings(first, step, damageGrowth, speedGrowth, rangeGrowth);
+        }
+        public PickupSettings CreatePickupSettings()
+        {
+            if (!BigInteger.TryParse(blueExperienceThreshold, NumberStyles.Integer, CultureInfo.InvariantCulture, out var blue) ||
+                !BigInteger.TryParse(redExperienceThreshold, NumberStyles.Integer, CultureInfo.InvariantCulture, out var red))
+                throw new ArgumentException("Experience thresholds must be integers.");
+            var settings = new PickupSettings(attractionRadius, experienceFlightSpeed, experienceOrbRadius, blue, red);
+            settings.ValidateForPlayer(CreateCatalog().GetUnit(UnitKind.Player).BodyRadius); return settings;
+        }
 
         public DefinitionCatalog CreateCatalog()
         {
@@ -33,7 +58,7 @@ namespace SsalMuk.Unity
         {
             get
             {
-                try { CreateCatalog(); return ""; }
+                try { CreateCatalog(); CreateGrowthSettings(); CreatePickupSettings(); return ""; }
                 catch (ArgumentException error) { return error.Message; }
             }
         }

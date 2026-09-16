@@ -9,12 +9,14 @@ namespace SsalMuk.Core
         private readonly IChunkGenerator generator;
         private readonly Dictionary<ChunkCoord, ChunkData> terrain = new Dictionary<ChunkCoord, ChunkData>();
         private readonly Dictionary<long, ExperienceRecord> experience = new Dictionary<long, ExperienceRecord>();
+        private readonly HashSet<long> attractingIds = new HashSet<long>();
         private readonly SpatialIndex unitIndex = new SpatialIndex();
         private readonly SpatialIndex experienceIndex = new SpatialIndex();
         private long lastExperienceId;
         private bool disposed;
         public UnitRegistry Units { get; }
         public IReadOnlyCollection<ExperienceRecord> Experience => experience.Values;
+        public IReadOnlyCollection<long> AttractingExperienceIds => attractingIds;
         public int CachedChunkCount => terrain.Count;
         public IReadOnlyCollection<ChunkData> CachedTerrain => terrain.Values;
         public long TerrainRevision { get; private set; }
@@ -53,31 +55,35 @@ namespace SsalMuk.Core
             RequireActive(); var unit = Units.Get(id);
             unit.Position = position; unitIndex.Upsert(id, position);
         }
-        public long AddExperience(WorldPosition position, BigInteger value)
+        public long AddExperience(WorldPosition position, BigInteger value, double createdAt = 0)
         {
             RequireActive(); if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value));
+            if (createdAt < 0 || double.IsNaN(createdAt) || double.IsInfinity(createdAt)) throw new ArgumentOutOfRangeException(nameof(createdAt));
             long id = checked(lastExperienceId + 1);
-            experience.Add(id, new ExperienceRecord(id, position, value));
+            experience.Add(id, new ExperienceRecord(id, position, value, createdAt));
             experienceIndex.Upsert(id, position); lastExperienceId = id; return id;
         }
         public bool TryGetExperience(long id, out ExperienceRecord record) => experience.TryGetValue(id, out record);
-        public bool BeginAttracting(long id)
+        public bool TryBeginAttraction(Guid runId, long id, double startedAt = 0)
         {
-            RequireActive();
+            if (disposed || runId != Units.RunId) return false;
+            if (startedAt < 0 || double.IsNaN(startedAt) || double.IsInfinity(startedAt)) throw new ArgumentOutOfRangeException(nameof(startedAt));
             if (!experience.TryGetValue(id, out var record) || record.State != ExperienceState.Grounded) return false;
-            record.State = ExperienceState.Attracting; return true;
+            record.State = ExperienceState.Attracting; record.AttractionStartedAt = Math.Max(startedAt, record.CreatedAt);
+            attractingIds.Add(id); return true;
         }
-        public void MoveExperience(long id, WorldPosition position)
+        public bool MoveExperience(Guid runId, long id, WorldPosition position)
         {
-            RequireActive(); var record = experience[id];
-            record.Position = position; experienceIndex.Upsert(id, position);
+            if (disposed || runId != Units.RunId || !experience.TryGetValue(id, out var record) || record.State != ExperienceState.Attracting) return false;
+            record.PreviousPosition = record.Position; record.Position = position; experienceIndex.Upsert(id, position); return true;
         }
         // Called by the contact-collection service; proximity alone never grants or removes a record.
-        public bool TryCollectExperience(long id, out ExperienceRecord record)
+        public bool TryCollectExperience(Guid runId, long id, out BigInteger value)
         {
-            RequireActive();
-            if (!experience.TryGetValue(id, out record)) return false;
-            record.State = ExperienceState.Collected; experience.Remove(id); experienceIndex.Remove(id); return true;
+            value = BigInteger.Zero;
+            if (disposed || runId != Units.RunId || !experience.TryGetValue(id, out var record) || record.State != ExperienceState.Attracting) return false;
+            record.State = ExperienceState.Collected; value = record.Value;
+            experience.Remove(id); attractingIds.Remove(id); experienceIndex.Remove(id); return true;
         }
         private void RequireActive() { if (disposed) throw new ObjectDisposedException(nameof(WorldStore)); }
         public void Dispose()
@@ -85,7 +91,7 @@ namespace SsalMuk.Core
             if (disposed) return; disposed = true;
             Units.Registered -= OnRegistered; Units.Removed -= OnRemoved;
             foreach (var unit in new List<UnitModel>(Units.Units)) Units.Remove(unit.Id);
-            terrain.Clear(); experience.Clear(); unitIndex.Clear(); experienceIndex.Clear();
+            terrain.Clear(); experience.Clear(); attractingIds.Clear(); unitIndex.Clear(); experienceIndex.Clear();
         }
     }
 }

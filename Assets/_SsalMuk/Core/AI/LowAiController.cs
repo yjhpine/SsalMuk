@@ -11,10 +11,10 @@ namespace SsalMuk.Core
         private readonly List<AiTransition> transitions = new List<AiTransition>();
         private double enteredAt, stableFor;
         public IReadOnlyList<AiTransition> Transitions { get; }
-        public LowAiController(PlayerModel player, WorldStore world, NavigationService navigation, AiSettings settings = null)
+        public LowAiController(PlayerModel player, WorldStore world, NavigationService navigation, AiSettings settings = null, PickupSettings pickupSettings = null)
         {
             this.player = player ?? throw new ArgumentNullException(nameof(player));
-            context = new AiContext(player, world, navigation, settings ?? new AiSettings());
+            context = new AiContext(player, world, navigation, settings ?? new AiSettings(), pickupSettings);
             Transitions = transitions.AsReadOnly(); states[0].Enter(context);
         }
         public void Tick(double dt)

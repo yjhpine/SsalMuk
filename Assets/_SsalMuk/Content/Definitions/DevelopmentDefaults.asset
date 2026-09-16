@@ -74,3 +74,13 @@ MonoBehaviour:
   initialEnemyCount: 12
   crowdIterations: 6
   navigationNodeBudget: 512
+  firstLevelCost: 5
+  levelCostStep: 3
+  damageGrowth: 0.1
+  speedGrowth: 0.1
+  rangeGrowth: 0.08
+  attractionRadius: 1.5
+  experienceFlightSpeed: 6
+  experienceOrbRadius: 0.08
+  blueExperienceThreshold: 5
+  redExperienceThreshold: 25

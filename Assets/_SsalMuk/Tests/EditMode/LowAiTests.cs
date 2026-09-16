@@ -55,7 +55,7 @@ namespace SsalMuk.Tests
             long next = rig.DropXp(new DVec2(-3, 0), BigInteger.Pow(10, 400) - 100);
             rig.Ai.Tick(0.02);
             Assert.That(rig.Player.CollectionTargetId, Is.EqualTo(best));
-            rig.World.BeginAttracting(best); rig.Ai.Tick(0.02);
+            rig.World.TryBeginAttraction(rig.Run.Id, best); rig.Ai.Tick(0.02);
             Assert.That(rig.Player.CollectionTargetId, Is.EqualTo(next));
             Assert.That(rig.Player.MoveIntent.X, Is.LessThan(0));
         }

@@ -23,20 +23,23 @@ namespace SsalMuk.Tests
         public RunSimulation Simulation => scope.Simulation;
         public RunClock Clock => Run.Clock;
         public RunResult Result => coordinator.Result;
+        public bool GrantExperience(BigInteger amount) => new ProgressionService(Run).AddExperience(amount);
+        public void Equip(WeaponKind kind) => new GrowthService(Run).Equip(kind);
+        public void Upgrade(WeaponKind kind, UpgradeKind upgrade, BigInteger? count = null) => new GrowthService(Run).Upgrade(kind, upgrade, count);
         public Task RestartAsync() => coordinator.RestartAsync();
-        private RunTestRig(int seed, IChunkGenerator terrain, bool enableAi, bool enableCombat, ISceneLoader loader)
+        private RunTestRig(int seed, IChunkGenerator terrain, bool enableAi, bool enableCombat, ISceneLoader loader, GrowthSettings growthSettings, PickupSettings pickupSettings)
         {
             int nextSeed = seed;
             coordinator = new RunCoordinator(loader ?? new ImmediateSceneLoader(), () =>
-                scope = new RigBuilder(unchecked(nextSeed++), terrain, enableAi, enableCombat));
+                scope = new RigBuilder(unchecked(nextSeed++), terrain, enableAi, enableCombat, growthSettings, pickupSettings));
             coordinator.StartRunAsync().GetAwaiter().GetResult();
             if (coordinator.Phase != RunPhase.Running) throw new InvalidOperationException(coordinator.LastError);
         }
         public static RunTestRig Create(int seed = 1234, bool scheduledSpawns = false, IChunkGenerator terrain = null,
-            bool enableAi = true, bool enableCombat = true, ISceneLoader sceneLoader = null)
+            bool enableAi = true, bool enableCombat = true, ISceneLoader sceneLoader = null, GrowthSettings growthSettings = null, PickupSettings pickupSettings = null)
         {
             if (scheduledSpawns) throw new NotSupportedException("Scheduled spawning belongs to phase D1.");
-            return new RunTestRig(seed, terrain, enableAi, enableCombat, sceneLoader);
+            return new RunTestRig(seed, terrain, enableAi, enableCombat, sceneLoader, growthSettings, pickupSettings);
         }
         private static UnitDefinition Definition(UnitKind kind, double health)
         {
@@ -51,7 +54,7 @@ namespace SsalMuk.Tests
             return factory.Spawn(new UnitSpawnRequest(World.Units.RunId, kind, WorldPosition.FromLocal(position), Definition(kind, health))).Id;
         }
         public void PlacePlayer(DVec2 position) => World.MoveUnit(Player.Id, WorldPosition.FromLocal(position));
-        public long DropXp(DVec2 position, BigInteger value) => World.AddExperience(WorldPosition.FromLocal(position), value);
+        public long DropXp(DVec2 position, BigInteger value) => World.AddExperience(WorldPosition.FromLocal(position), value, Clock.ElapsedSeconds);
         public bool Hit(long targetId, double amount)
         {
             long attack = Run.AllocateAttackId();
@@ -91,12 +94,12 @@ namespace SsalMuk.Tests
             public DeathService Death { get; private set; }
             public ContactDamageSystem Contact { get; private set; }
             public RunSimulation Simulation { get; private set; }
-            public RigBuilder(int seed, IChunkGenerator terrain, bool enableAi, bool enableCombat)
+            public RigBuilder(int seed, IChunkGenerator terrain, bool enableAi, bool enableCombat, GrowthSettings growthSettings, PickupSettings pickupSettings)
             {
                 this.enableAi = enableAi; this.enableCombat = enableCombat;
                 var definitions = new DefinitionCatalog(Enum.GetValues(typeof(UnitKind)).Cast<UnitKind>()
                     .Select(kind => Definition(kind, kind == UnitKind.Player ? 100 : 10)));
-                Run = new RunModel(Guid.NewGuid(), seed, definitions, terrain ?? new ChunkGenerator(seed, MapSettings.TestDefaults(0)));
+                Run = new RunModel(Guid.NewGuid(), seed, definitions, terrain ?? new ChunkGenerator(seed, MapSettings.TestDefaults(0)), growthSettings: growthSettings, pickupSettings: pickupSettings);
             }
             public void BuildWorld() => Run.World.GetChunk(default);
             public void CreatePlayer()
@@ -104,7 +107,7 @@ namespace SsalMuk.Tests
                 Run.SetPlayer((PlayerModel)new PlayerFactory(Run.World.Units).Spawn(
                     new UnitSpawnRequest(Run.Id, UnitKind.Player, default, Run.Definitions.GetUnit(UnitKind.Player))));
                 Navigation = new NavigationService(Run.World); Movement = new MovementSystem(Run.World, Navigation, Run.Player);
-                if (enableAi) Ai = new LowAiController(Run.Player, Run.World, Navigation);
+                if (enableAi) Ai = new LowAiController(Run.Player, Run.World, Navigation, pickupSettings: Run.PickupSettings);
                 Damage = new DamageService(Run, Movement); Death = new DeathService(Run, Damage);
                 Contact = new ContactDamageSystem(Run, Movement, Damage);
                 if (enableCombat) Simulation = new RunSimulation(Run, Movement, Ai, Damage, Death, Contact);

@@ -60,9 +60,9 @@ namespace SsalMuk.Core
         {
             intent = DVec2.Zero; var actor = context.Actor;
             var delta = actor.Position.DisplacementTo(xp.Position);
-            if (delta.Length <= context.Settings.PickupApproachRadius * 0.9) return true;
+            if (delta.Length <= context.PickupSettings.AttractionRadius * 0.9) return true;
             // Aim just inside the pickup radius. Orbs on walls can be collected from a safe edge.
-            var target = xp.Position.Offset(-delta.Normalized * (context.Settings.PickupApproachRadius * 0.85));
+            var target = xp.Position.Offset(-delta.Normalized * (context.PickupSettings.AttractionRadius * 0.85));
             if (!context.World.Query.IsCircleFree(target, actor.BodyRadius)) return false;
             var direct = actor.Position.DisplacementTo(target);
             if (!context.World.Query.SweepCircle(actor.Position, direct, actor.BodyRadius).HasValue)

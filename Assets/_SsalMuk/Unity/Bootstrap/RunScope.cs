@@ -24,7 +24,8 @@ namespace SsalMuk.Unity
             this.catalog = catalog; catalog.ValidatePresentation();
             Guid id = Guid.NewGuid(); int seed = BitConverter.ToInt32(id.ToByteArray(), 0);
             var definitions = catalog.CreateDefinitions(); var streams = new SeedStreams(seed);
-            Run = new RunModel(id, seed, definitions, new ChunkGenerator(streams.MapSeed, catalog.Defaults.CreateMapSettings()));
+            Run = new RunModel(id, seed, definitions, new ChunkGenerator(streams.MapSeed, catalog.Defaults.CreateMapSettings()),
+                growthSettings: catalog.Defaults.CreateGrowthSettings(), pickupSettings: catalog.Defaults.CreatePickupSettings());
             builder = new InitialRunBuilder(Run, catalog.Defaults, RefreshViews);
             ActiveCount = checked(ActiveCount + 1);
         }
@@ -36,7 +37,7 @@ namespace SsalMuk.Unity
             movement = new MovementSystem(Run.World, navigation, Run.Player, catalog.Defaults.CreateMovementSettings());
             damage = new DamageService(Run, movement); death = new DeathService(Run, damage);
             var contact = new ContactDamageSystem(Run, movement, damage);
-            simulation = new RunSimulation(Run, movement, new LowAiController(Run.Player, Run.World, navigation), damage, death, contact);
+            simulation = new RunSimulation(Run, movement, new LowAiController(Run.Player, Run.World, navigation, pickupSettings: Run.PickupSettings), damage, death, contact);
             runner = root.AddComponent<BattleRunner>(); runner.Configure(Run, simulation, presenter, builder.PrepareTerrain);
         }
         public void CreateInitialEnemies() => builder.CreateInitialEnemies();

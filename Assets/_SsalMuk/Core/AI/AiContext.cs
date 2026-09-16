@@ -13,18 +13,20 @@ namespace SsalMuk.Core
         public WorldStore World { get; }
         public NavigationService Navigation { get; }
         public AiSettings Settings { get; }
+        public PickupSettings PickupSettings { get; }
         public IReadOnlyList<UnitModel> Enemies => enemies;
         public double Time { get; internal set; }
         public DVec2 MoveIntent { get; internal set; }
         public DVec2 BreakoutDirection { get; internal set; }
         public long? CollectionTargetId { get; internal set; }
 
-        public AiContext(UnitModel actor, WorldStore world, NavigationService navigation, AiSettings settings)
+        public AiContext(UnitModel actor, WorldStore world, NavigationService navigation, AiSettings settings, PickupSettings pickupSettings = null)
         {
             Actor = actor ?? throw new ArgumentNullException(nameof(actor));
             World = world ?? throw new ArgumentNullException(nameof(world));
             Navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
             Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            PickupSettings = pickupSettings ?? PickupSettings.TestDefaults(); PickupSettings.ValidateForPlayer(actor.BodyRadius);
             if (actor.RunId != world.Units.RunId) throw new ArgumentException("Actor belongs to a different world.");
         }
 
