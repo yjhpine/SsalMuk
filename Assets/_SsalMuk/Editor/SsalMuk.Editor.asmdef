@@ -1,7 +1,7 @@
 {
   "name": "SsalMuk.Editor",
   "rootNamespace": "SsalMuk.Editor",
-  "references": ["UnityEditor.TestRunner", "UnityEngine.TestRunner"],
+  "references": ["SsalMuk.Core", "SsalMuk.Unity", "UnityEditor.TestRunner", "UnityEngine.TestRunner"],
   "includePlatforms": ["Editor"],
   "autoReferenced": true
 }

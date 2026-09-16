@@ -1,7 +1,7 @@
 # SsalMuk 구조 설계
 
 - 작성일: 2026-09-16
-- 상태: 구조 설계 승인 완료 · 구현 계획 작성 완료 · 실행 전
+- 상태: 구조 설계 승인 완료 · A1 연결·검증 기반 및 A2 기본 모델 구현 완료 · 나머지는 후속 구현
 - 기준: [게임 기획서](../../planning/GAME_DESIGN.md), [개발 하네스 설계](../../development/HARNESS.md)
 - 적용 프로젝트: `C:/Users/ace21/Desktop/SsalMuk`, Unity `6000.4.6f1`
 

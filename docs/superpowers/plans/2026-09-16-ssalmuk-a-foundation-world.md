@@ -1,6 +1,6 @@
 # SsalMuk A: Foundation and World Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Unity 연결·검증 경로를 구축하고, 실행 중 생성된 지상 몬스터가 장애물을 돌아 군집을 이루는 장면을 만든다.
 
@@ -74,8 +74,8 @@ api.Execute(new ExecutionSettings(new Filter {
 
 **Interfaces:** `RunClock(double fixedStep)`의 `Start()`, `Stop()`, `Advance(int ticks = 1)`, `double ElapsedSeconds`; `DefinitionCatalog.GetUnit(UnitKind)`; `UnitFactory.Spawn(UnitSpawnRequest)` → `UnitModel`; `UnitSpawnRequest`는 UnitKind·WorldPosition·생성 정의와 RunId를 가진 값 객체로 `Core/Units/UnitSpawnRequest.cs`에 정의한다. WorldPosition은 크기 32인 청크 정규화·Offset·DistanceTo를 제공한다. UnitRegistry는 ID별 모델 등록·읽기·제거를 담당하고 A3 WorldStore가 이를 소유한다. PlayerModel의 `Weapons.Kinds`는 초기 검만 포함하며 `Level`은 BigInteger.One으로 시작한다. WeaponState는 무기 종류를 보관하고 강화 상태는 C1에서 추가한다.
 
-- [ ] Core·Presentation은 `noEngineReferences: true`, Unity는 두 조립 단위를 참조하도록 구성한다. A1의 Editor·테스트 asmdef에 이제 생성된 게임 조립 단위 참조를 추가한다. 테스트 asmdef는 TestAssemblies 표시가 주입하는 NUnit/TestRunner 참조를 중복 선언하지 않는다. 각 테스트 fixture 필터가 실제 발견되는지 확인한다.
-- [ ] 아래 시계 계약 테스트를 작성하고 예상 실패를 확인한다.
+- [x] Core·Presentation은 `noEngineReferences: true`, Unity는 두 조립 단위를 참조하도록 구성한다. A1의 Editor·테스트 asmdef에 이제 생성된 게임 조립 단위 참조를 추가한다. 테스트 asmdef는 TestAssemblies 표시가 주입하는 NUnit/TestRunner 참조를 중복 선언하지 않는다. 각 테스트 fixture 필터가 실제 발견되는지 확인한다.
+- [x] 아래 시계 계약 테스트를 작성하고 예상 실패를 확인한다.
 
 ```csharp
 [Test]
@@ -90,10 +90,10 @@ public void LoadingDoesNotConsumeSurvivalTime()
 }
 ```
 
-- [ ] 시계는 `running`일 때만 정수 tick을 증가시키고 `tick * fixedStep`으로 시간을 계산한다. 생성 정의에는 양수 체력·몸 반경·속도, 접촉 피해, BigInteger 경험치 보상을 둔다. `DVec2`는 영벡터 정규화 시 영벡터를 반환하고 NaN을 만들지 않게 한다.
-- [ ] 읽기 전용 정의를 종류별 공유하고 유닛마다 현재 체력·위치·이동·피격 상태를 분리한다. 같은 정의로 서로 다른 위치에 두 적을 생성해 정의 참조는 같고 ID·개별 위치는 분리되는지 확인한다. 실제 피해 뒤 다른 개체와 정의의 체력이 변하지 않는 검증은 DamageService를 만드는 B2에 포함한다.
-- [ ] Factory Method의 공통 검증·ID 발급·등록은 UnitFactory에 두고 `protected abstract UnitModel CreateUnit(UnitSpawnRequest request)`만 하위 팩토리가 재정의한다. Normal과 Boss는 GroundEnemyModel을 사용하고 스펙·반경만 다르게 한다. 무작위 분기 함수에 Factory Method라는 이름만 붙이지 않는다.
-- [ ] `GameCatalog`가 정의와 표시 에셋을 참조하도록 만들고 중복 ID·누락 정의·잘못된 반경을 Editor와 실행 시작에서 검출한다. 정의 에셋에는 현재 체력·RunId를 직렬화하지 않는다. 관련 테스트를 통과시킨 뒤 `feat: add shared definitions and runtime unit factories`로 커밋한다.
+- [x] 시계는 `running`일 때만 정수 tick을 증가시키고 `tick * fixedStep`으로 시간을 계산한다. 생성 정의에는 양수 체력·몸 반경·속도, 접촉 피해, BigInteger 경험치 보상을 둔다. `DVec2`는 영벡터 정규화 시 영벡터를 반환하고 NaN을 만들지 않게 한다.
+- [x] 읽기 전용 정의를 종류별 공유하고 유닛마다 현재 체력·위치·이동·피격 상태를 분리한다. 같은 정의로 서로 다른 위치에 두 적을 생성해 정의 참조는 같고 ID·개별 위치는 분리되는지 확인한다. 실제 피해 뒤 다른 개체와 정의의 체력이 변하지 않는 검증은 DamageService를 만드는 B2에 포함한다.
+- [x] Factory Method의 공통 검증·ID 발급·등록은 UnitFactory에 두고 `protected abstract UnitModel CreateUnit(UnitSpawnRequest request)`만 하위 팩토리가 재정의한다. Normal과 Boss는 GroundEnemyModel을 사용하고 스펙·반경만 다르게 한다. 무작위 분기 함수에 Factory Method라는 이름만 붙이지 않는다.
+- [x] `GameCatalog`가 정의와 표시 에셋을 참조하도록 만들고 중복 ID·누락 정의·잘못된 반경을 Editor와 실행 시작에서 검출한다. 정의 에셋에는 현재 체력·RunId를 직렬화하지 않는다. 관련 테스트를 통과시킨 뒤 `feat: add shared definitions and runtime unit factories`로 커밋한다.
 
 ## Task A3: 좌표·청크 생성·공간 검색·보존 저장소
 

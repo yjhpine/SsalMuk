@@ -1,0 +1,6 @@
+{
+  "name": "SsalMuk.Presentation",
+  "rootNamespace": "SsalMuk.Presentation",
+  "references": ["SsalMuk.Core"],
+  "noEngineReferences": true
+}

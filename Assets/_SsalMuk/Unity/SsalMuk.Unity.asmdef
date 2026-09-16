@@ -1,0 +1,5 @@
+{
+  "name": "SsalMuk.Unity",
+  "rootNamespace": "SsalMuk.Unity",
+  "references": ["SsalMuk.Core", "SsalMuk.Presentation"]
+}
