@@ -27,8 +27,9 @@ namespace SsalMuk.Unity
         public void CreatePlayer()
         {
             builder.CreatePlayer();
-            movement = new MovementSystem(Run.World, new NavigationService(Run.World), Run.Player, catalog.Defaults.CreateMovementSettings());
-            runner = root.AddComponent<BattleRunner>(); runner.Configure(Run, movement, presenter, builder.PrepareTerrain);
+            var navigation = new NavigationService(Run.World);
+            movement = new MovementSystem(Run.World, navigation, Run.Player, catalog.Defaults.CreateMovementSettings());
+            runner = root.AddComponent<BattleRunner>(); runner.Configure(Run, movement, new LowAiController(Run.Player, Run.World, navigation), presenter, builder.PrepareTerrain);
         }
         public void CreateInitialEnemies() => builder.CreateInitialEnemies();
         private void RefreshViews()

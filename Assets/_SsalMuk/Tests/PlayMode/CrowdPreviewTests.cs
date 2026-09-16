@@ -38,7 +38,7 @@ namespace SsalMuk.Tests
             yield return null;
             Assert.That(AppRoot.Instance, Is.Not.Null);
             AppRoot.Instance.Coordinator.Dispose();
-            rig = RunTestRig.Create(terrain: new PreviewTerrain(layout));
+            rig = RunTestRig.Create(terrain: new PreviewTerrain(layout), enableAi: false);
             rig.PlacePlayer(layout == "wall" ? new DVec2(15.4, 23) : new DVec2(22, 16.5));
             for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) rig.World.GetChunk(new ChunkCoord(x, y));
             for (int i = 0; i < 12; i++)

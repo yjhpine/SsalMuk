@@ -14,8 +14,9 @@ namespace SsalMuk.Tests
         public PlayerModel Player => Run.Player;
         public MovementSystem Movement { get; }
         public NavigationService Navigation { get; }
+        public LowAiController Ai { get; }
         public RunClock Clock => Run.Clock;
-        private RunTestRig(int seed, IChunkGenerator terrain)
+        private RunTestRig(int seed, IChunkGenerator terrain, bool enableAi)
         {
             var definitions = new DefinitionCatalog(Enum.GetValues(typeof(UnitKind)).Cast<UnitKind>()
                 .Select(kind => Definition(kind, kind == UnitKind.Player ? 100 : 10)));
@@ -24,11 +25,12 @@ namespace SsalMuk.Tests
             coordinator.StartRunAsync().GetAwaiter().GetResult();
             if (coordinator.Phase != RunPhase.Running) throw new InvalidOperationException(coordinator.LastError);
             Navigation = new NavigationService(World); Movement = new MovementSystem(World, Navigation, Player);
+            if (enableAi) Ai = new LowAiController(Player, World, Navigation);
         }
-        public static RunTestRig Create(int seed = 1234, bool scheduledSpawns = false, IChunkGenerator terrain = null)
+        public static RunTestRig Create(int seed = 1234, bool scheduledSpawns = false, IChunkGenerator terrain = null, bool enableAi = true)
         {
             if (scheduledSpawns) throw new NotSupportedException("Scheduled spawning belongs to phase D1.");
-            return new RunTestRig(seed, terrain);
+            return new RunTestRig(seed, terrain, enableAi);
         }
         private static UnitDefinition Definition(UnitKind kind, double health)
         {
@@ -43,13 +45,18 @@ namespace SsalMuk.Tests
             return factory.Spawn(new UnitSpawnRequest(World.Units.RunId, kind, WorldPosition.FromLocal(position), Definition(kind, health))).Id;
         }
         public void PlacePlayer(DVec2 position) => World.MoveUnit(Player.Id, WorldPosition.FromLocal(position));
+        public long DropXp(DVec2 position, BigInteger value) => World.AddExperience(WorldPosition.FromLocal(position), value);
         public UnitModel Unit(long id) => World.Units.Get(id);
         public void Advance(double seconds)
         {
             double steps = seconds / 0.02;
             if (seconds < 0 || double.IsNaN(seconds) || double.IsInfinity(seconds) || Math.Abs(steps - Math.Round(steps)) > 1e-8 || steps > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(seconds), "Use an integer multiple of the 0.02 second simulation step.");
-            for (int i = 0; i < (int)Math.Round(steps); i++) { Movement.Step(0.02); Clock.Advance(); }
+            for (int i = 0; i < (int)Math.Round(steps); i++)
+            {
+                if (Ai != null) { Ai.Tick(0.02); Movement.SetMoveIntent(Player.Id, Player.MoveIntent); }
+                Movement.Step(0.02); Clock.Advance();
+            }
         }
         public void Dispose() { Movement.Dispose(); coordinator.Dispose(); }
 

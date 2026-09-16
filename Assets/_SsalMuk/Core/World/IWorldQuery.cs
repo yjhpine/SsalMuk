@@ -4,6 +4,7 @@ namespace SsalMuk.Core
 {
     public interface IWorldQuery
     {
+        bool TryGetUnit(long id, out UnitModel unit);
         long? FindNearestEnemy(WorldPosition position);
         IReadOnlyList<long> QueryCircle(WorldPosition position, double radius);
         IReadOnlyList<long> QueryExperienceCircle(WorldPosition position, double radius);

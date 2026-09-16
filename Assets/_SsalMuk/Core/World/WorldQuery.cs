@@ -9,6 +9,7 @@ namespace SsalMuk.Core
         private readonly SpatialIndex units, experience;
         internal WorldQuery(WorldStore world, SpatialIndex units, SpatialIndex experience)
         { this.world = world; this.units = units; this.experience = experience; }
+        public bool TryGetUnit(long id, out UnitModel unit) => world.Units.TryGet(id, out unit);
         public long? FindNearestEnemy(WorldPosition position) => units.FindNearest(position,
             id => world.Units.TryGet(id, out var unit) && unit.IsAlive && unit.Kind != UnitKind.Player);
         public IReadOnlyList<long> QueryCircle(WorldPosition position, double radius) => units.QueryCircle(position, radius);

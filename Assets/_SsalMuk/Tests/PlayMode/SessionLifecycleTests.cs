@@ -45,6 +45,11 @@ namespace SsalMuk.Tests
             Assert.That(run.Clock.ElapsedSeconds, Is.GreaterThan(time));
             Assert.That(run.Units.Any(unit => positions.TryGetValue(unit.Id, out var old) && old.DistanceTo(unit.Position) > 0.02), Is.True);
             foreach (var unit in run.Units) Assert.That(run.World.Query.IsCircleFree(unit.Position, unit.BodyRadius), Is.True);
+            var start = run.Player.Position;
+            long loot = run.World.AddExperience(start.Offset(new DVec2(2, 0)), 100);
+            yield return new WaitForSeconds(0.4f);
+            Assert.That(run.Player.CollectionTargetId, Is.EqualTo(loot));
+            Assert.That(run.Player.Position.DistanceTo(start), Is.GreaterThan(0.25));
         }
 
         [UnityTest]

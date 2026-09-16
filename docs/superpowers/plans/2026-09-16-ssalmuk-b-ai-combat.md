@@ -26,8 +26,8 @@
 
 **Interfaces:** `BrainState.Collect/Evade/Breakout`; `IBehaviorState.Enter(AiContext)`, `Tick(AiContext,double)`, `Exit(AiContext)`; AiContext는 Actor(UnitModel)·월드 조회·길찾기·설정을 제공하고 PlayerModel로 고정하지 않는다. `LowAiController.Tick(double dt)`; `PlayerModel.MoveIntent`, `BrainState`, `TargetId`, `BreakoutDirection`은 읽기 속성. `TargetResolver.Resolve(PlayerModel,IWorldQuery)` → `long?`. `RunTestRig.DropXp(DVec2,BigInteger)`는 A3 WorldStore에 실제 레코드를 추가한다.
 
-- [ ] 가까운 적이 화면 밖/다른 청크에 있는 경우, 거리 동률, 목표 사망 후 교체 테스트를 작성한다. 거리와 ID 순서가 같은 입력에서 같은 목표를 만드는지 확인한다.
-- [ ] 다음 포위 테스트와 위험한 경험치·긴급 충돌을 구분하는 테스트를 작성하고 실패를 확인한다.
+- [x] 가까운 적이 화면 밖/다른 청크에 있는 경우, 거리 동률, 목표 사망 후 교체 테스트를 작성한다. 거리와 ID 순서가 같은 입력에서 같은 목표를 만드는지 확인한다.
+- [x] 다음 포위 테스트와 위험한 경험치·긴급 충돌을 구분하는 테스트를 작성하고 실패를 확인한다.
 
 ```csharp
 [Test]
@@ -45,12 +45,12 @@ public void EncirclementCommitsToAnEscapeDirection()
 }
 ```
 
-- [ ] AiSettings에 탐색 거리·긴급 접촉 시간·포위 판단 방향 수·차단 비율·목표 유지 시간·해제 안정 시간·진행 없음 시간을 둔다. 테스트 프리셋은 위 반경 1의 16방향 배치를 포위로 분류하게 명시한다. 실제 밸런스 에셋과 테스트용 수치를 혼동하지 않는다.
-- [ ] Collect는 Grounded 경험치의 실제 값에서 이동 거리와 위험 비용을 차감해 목표를 고른다. Attracting/Collected는 새 수집 목표에서 제외하고 기존 목표가 그 상태가 되면 해제한다. 공격적 운영의 위험 가중치는 양수로 두되 위험 지역을 모두 금지하지 않는다. 가장 높은 점수 목표가 이동 불가이면 다음 유효 후보를 선택한다. 대기 경험치가 없으면 가까운 위협과 간격을 유지하거나 정지한다. 흡수 반경까지 접근하는 목표 지점은 C1의 PickupSettings와 연결한다.
-- [ ] Evade는 이웃 적의 상대 위치·접근 속도로 예상 접촉을 평가하고, 이동 가능한 방향 후보 중 위험을 낮추는 방향을 고른다. 앞에 구조물이 있으면 sweep 검사 결과로 후보를 배제한다.
-- [ ] Breakout은 방향별 장애물·적 밀도·앞을 막는 체력·통과 거리를 평가하고 방향을 보존한다. 진행 없음이나 구조물 차단만 재선정 조건으로 삼는다. 일반 상태로 돌아가기 위한 낮은 차단 임계값과 안정 시간을 분리한다.
-- [ ] 목표 resolver는 Breakout 통로를 막는 살아 있는 적을 우선하고 없으면 가장 가까운 적을 반환한다. 상태 진입·종료와 전환 이유를 기록한다. 공격 실행기나 Unity Transform을 FSM에서 호출하지 않는다.
-- [ ] RunTestRig와 BattleRunner에서 AI → MovementSystem 순서로 연결한다. 포위 해제 뒤 기본 목표 복귀·긴급 회피·위험 경험치 접근·방향 진동 없는 시나리오를 확인한 뒤 `feat: add aggressive collection and breakout AI`로 커밋한다.
+- [x] AiSettings에 탐색 거리·긴급 접촉 시간·포위 판단 방향 수·차단 비율·목표 유지 시간·해제 안정 시간·진행 없음 시간을 둔다. 테스트 프리셋은 위 반경 1의 16방향 배치를 포위로 분류하게 명시한다. 실제 밸런스 에셋과 테스트용 수치를 혼동하지 않는다.
+- [x] Collect는 Grounded 경험치의 실제 값에서 이동 거리와 위험 비용을 차감해 목표를 고른다. Attracting/Collected는 새 수집 목표에서 제외하고 기존 목표가 그 상태가 되면 해제한다. 공격적 운영의 위험 가중치는 양수로 두되 위험 지역을 모두 금지하지 않는다. 가장 높은 점수 목표가 이동 불가이면 다음 유효 후보를 선택한다. 대기 경험치가 없으면 가까운 위협과 간격을 유지하거나 정지한다. 흡수 반경까지 접근하는 목표 지점은 C1의 PickupSettings와 연결한다.
+- [x] Evade는 이웃 적의 상대 위치·접근 속도로 예상 접촉을 평가하고, 이동 가능한 방향 후보 중 위험을 낮추는 방향을 고른다. 앞에 구조물이 있으면 sweep 검사 결과로 후보를 배제한다.
+- [x] Breakout은 방향별 장애물·적 밀도·앞을 막는 체력·통과 거리를 평가하고 방향을 보존한다. 진행 없음이나 구조물 차단만 재선정 조건으로 삼는다. 일반 상태로 돌아가기 위한 낮은 차단 임계값과 안정 시간을 분리한다.
+- [x] 목표 resolver는 Breakout 통로를 막는 살아 있는 적을 우선하고 없으면 가장 가까운 적을 반환한다. 상태 진입·종료와 전환 이유를 기록한다. 공격 실행기나 Unity Transform을 FSM에서 호출하지 않는다.
+- [x] RunTestRig와 BattleRunner에서 AI → MovementSystem 순서로 연결한다. 포위 해제 뒤 기본 목표 복귀·긴급 회피·위험 경험치 접근·방향 진동 없는 시나리오를 확인한 뒤 `feat: add aggressive collection and breakout AI`로 커밋한다.
 
 ## Task B2: 피해·접촉·넉백·경험치 드롭
 
