@@ -15,6 +15,9 @@ namespace SsalMuk.Tests
         public MovementSystem Movement { get; }
         public NavigationService Navigation { get; }
         public LowAiController Ai { get; }
+        public DamageService Damage { get; }
+        public DeathService Death { get; }
+        public ContactDamageSystem Contact { get; }
         public RunClock Clock => Run.Clock;
         private RunTestRig(int seed, IChunkGenerator terrain, bool enableAi)
         {
@@ -26,6 +29,8 @@ namespace SsalMuk.Tests
             if (coordinator.Phase != RunPhase.Running) throw new InvalidOperationException(coordinator.LastError);
             Navigation = new NavigationService(World); Movement = new MovementSystem(World, Navigation, Player);
             if (enableAi) Ai = new LowAiController(Player, World, Navigation);
+            Damage = new DamageService(Run, Movement); Death = new DeathService(Run, Damage);
+            Contact = new ContactDamageSystem(Run, Movement, Damage);
         }
         public static RunTestRig Create(int seed = 1234, bool scheduledSpawns = false, IChunkGenerator terrain = null, bool enableAi = true)
         {
@@ -46,6 +51,8 @@ namespace SsalMuk.Tests
         }
         public void PlacePlayer(DVec2 position) => World.MoveUnit(Player.Id, WorldPosition.FromLocal(position));
         public long DropXp(DVec2 position, BigInteger value) => World.AddExperience(WorldPosition.FromLocal(position), value);
+        public bool Hit(long targetId, double amount) => Damage.TryApply(new DamageRequest(
+            new HitKey(Run.Id, Run.AllocateAttackId(), 0, 0), Player.Id, targetId, amount, new DVec2(1, 0)), Clock.ElapsedSeconds);
         public UnitModel Unit(long id) => World.Units.Get(id);
         public void Advance(double seconds)
         {
@@ -58,7 +65,7 @@ namespace SsalMuk.Tests
                 Movement.Step(0.02); Clock.Advance();
             }
         }
-        public void Dispose() { Movement.Dispose(); coordinator.Dispose(); }
+        public void Dispose() { Death.Dispose(); Damage.Dispose(); Movement.Dispose(); coordinator.Dispose(); }
 
         private sealed class ImmediateSceneLoader : ISceneLoader
         {

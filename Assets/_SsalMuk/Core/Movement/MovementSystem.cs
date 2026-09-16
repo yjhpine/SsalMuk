@@ -13,7 +13,6 @@ namespace SsalMuk.Core
         private readonly MovementSettings settings;
         private readonly Dictionary<long, DVec2> intents = new Dictionary<long, DVec2>();
         private readonly Dictionary<long, DVec2> airDirections = new Dictionary<long, DVec2>();
-        private readonly Dictionary<long, Knockback> knockbacks = new Dictionary<long, Knockback>();
         private readonly Dictionary<long, WorldPosition> previousPositions = new Dictionary<long, WorldPosition>();
         private bool disposed;
         public IReadOnlyDictionary<long, WorldPosition> PreviousPositions { get; }
@@ -36,9 +35,9 @@ namespace SsalMuk.Core
         }
         public void AddKnockback(long id, DVec2 displacement, double seconds)
         {
-            world.Units.Get(id);
+            var unit = world.Units.Get(id);
             if (seconds <= 0 || double.IsNaN(seconds) || double.IsInfinity(seconds)) throw new ArgumentOutOfRangeException(nameof(seconds));
-            knockbacks[id] = new Knockback { Velocity = displacement / seconds, Remaining = seconds };
+            unit.Knockback = new KnockbackState(displacement / seconds, seconds);
         }
         public void Step(double dt)
         {
@@ -60,11 +59,11 @@ namespace SsalMuk.Core
                 else if (intents.TryGetValue(unit.Id, out var input)) direction = input;
                 else direction = unit.Kind == UnitKind.Player || !player.IsAlive ? DVec2.Zero : navigation.ChaseDirection(unit, player.Position);
                 var displacement = direction * (unit.Definition.MoveSpeed * dt);
-                if (knockbacks.TryGetValue(unit.Id, out var knockback))
+                var knockback = unit.Knockback;
+                if (knockback.IsActive)
                 {
-                    displacement += knockback.Velocity * Math.Min(dt, knockback.Remaining);
-                    knockback.Remaining -= dt;
-                    if (knockback.Remaining <= 0) knockbacks.Remove(unit.Id); else knockbacks[unit.Id] = knockback;
+                    displacement += knockback.Velocity * Math.Min(dt, knockback.RemainingSeconds);
+                    unit.Knockback = new KnockbackState(knockback.Velocity, Math.Max(0, knockback.RemainingSeconds - dt));
                 }
                 if (unit.Kind == UnitKind.Air) world.MoveUnit(unit.Id, unit.Position.Offset(displacement));
                 else
@@ -77,10 +76,9 @@ namespace SsalMuk.Core
         }
         private void Forget(UnitModel unit)
         {
-            intents.Remove(unit.Id); airDirections.Remove(unit.Id); knockbacks.Remove(unit.Id); previousPositions.Remove(unit.Id);
+            intents.Remove(unit.Id); airDirections.Remove(unit.Id); previousPositions.Remove(unit.Id);
             navigation.ForgetUnit(unit.Id); crowds.Forget(unit.Id);
         }
         public void Dispose() { if (disposed) return; disposed = true; world.Units.Removed -= Forget; }
-        private struct Knockback { public DVec2 Velocity; public double Remaining; }
     }
 }

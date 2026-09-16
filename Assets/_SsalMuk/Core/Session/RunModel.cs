@@ -13,6 +13,8 @@ namespace SsalMuk.Core
         public RunClock Clock { get; }
         public PlayerModel Player { get; private set; }
         public long Kills { get; internal set; }
+        private long lastAttackId;
+        public long AllocateAttackId() => lastAttackId = checked(lastAttackId + 1);
         public RunPhase Phase { get; internal set; } = RunPhase.MainMenu;
         public WorldPosition ViewOrigin => Player?.Position ?? new WorldPosition(default, new DVec2(16.5, 16.5));
         public IReadOnlyCollection<UnitModel> Units => World.Units.Units;

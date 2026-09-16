@@ -11,6 +11,10 @@ namespace SsalMuk.Core
         public double BodyRadius => Definition.BodyRadius;
         public double Health { get; internal set; }
         public bool IsAlive => Health > 0;
+        public double InvulnerableUntil { get; internal set; }
+        public KnockbackState Knockback { get; internal set; }
+        public double LastHitAt { get; internal set; } = double.NegativeInfinity;
+        public long HitSequence { get; internal set; }
         public WorldPosition Position { get; internal set; }
 
         internal UnitModel(UnitSpawnRequest request)

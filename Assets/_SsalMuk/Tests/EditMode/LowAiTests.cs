@@ -82,6 +82,18 @@ namespace SsalMuk.Tests
         }
 
         [Test]
+        public void ShortProtectedAirCrossingDoesNotInterruptCollection()
+        {
+            using var rig = RunTestRig.Create();
+            long air = rig.Spawn(UnitKind.Air, new DVec2(0.8, 0)); rig.Movement.SetAirDirection(air, new DVec2(-1, 0));
+            long loot = rig.DropXp(new DVec2(4, 0), 20);
+            Assert.That(rig.Damage.TryApply(DamageTests.Request(rig, rig.Player.Id, 1), 0), Is.True);
+            rig.Ai.Tick(0.02);
+            Assert.That(rig.Player.BrainState, Is.EqualTo(BrainState.Collect));
+            Assert.That(rig.Player.CollectionTargetId, Is.EqualTo(loot));
+        }
+
+        [Test]
         public void NoProgressReconsidersTheCommittedDirection()
         {
             using var rig = RunTestRig.Create(); Surround(rig); rig.Ai.Tick(0.02);

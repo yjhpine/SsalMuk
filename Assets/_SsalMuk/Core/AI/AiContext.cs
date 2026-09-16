@@ -77,9 +77,11 @@ namespace SsalMuk.Core
         public bool ImminentContact()
         {
             var ownVelocity = MoveIntent * Actor.Definition.MoveSpeed;
+            double horizon = Settings.EmergencyContactSeconds;
+            double protectedFor = Math.Max(0, Actor.InvulnerableUntil - Time);
             foreach (var enemy in enemies)
-                if (ContactTime(Actor.Position.DisplacementTo(enemy.Position), velocities[enemy.Id] - ownVelocity,
-                    Actor.BodyRadius + enemy.BodyRadius) <= Settings.EmergencyContactSeconds) return true;
+                if (CircleContact.Interval(Actor.Position.DisplacementTo(enemy.Position), (velocities[enemy.Id] - ownVelocity) * horizon,
+                    Actor.BodyRadius + enemy.BodyRadius, out _, out double exit) && exit * horizon >= protectedFor) return true;
             return false;
         }
 

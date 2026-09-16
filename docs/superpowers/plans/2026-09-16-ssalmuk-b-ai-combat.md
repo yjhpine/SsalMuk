@@ -58,7 +58,7 @@ public void EncirclementCommitsToAnEscapeDirection()
 
 **Interfaces:** `HitKey(Guid runId,long attackId,BigInteger copy,BigInteger repeat)`; `DamageRequest`는 HitKey·SourceId·TargetId·Amount·Direction·넉백 세기·시간을 담는다. `DamageService.TryApply(DamageRequest,double now)` → bool. `ContactDamageSystem.Step(double from,double to)`; `UnitModel.InvulnerableUntil`, `Knockback`는 읽기만 공개. `RunTestRig.Hit(long targetId,double amount)`는 새 HitKey의 실제 DamageService 요청을 전달한다.
 
-- [ ] 같은 타격 키의 중복 요청, 여러 접촉과 짧은 무적, 적 사망 중복 요청 테스트를 작성한다. 같은 정의를 공유하는 두 적 중 하나에게만 피해를 줘 다른 개체와 정의의 체력이 유지되는지도 확인한다.
+- [x] 같은 타격 키의 중복 요청, 여러 접촉과 짧은 무적, 적 사망 중복 요청 테스트를 작성한다. 같은 정의를 공유하는 두 적 중 하나에게만 피해를 줘 다른 개체와 정의의 체력이 유지되는지도 확인한다.
 
 ```csharp
 [Test]
@@ -72,11 +72,11 @@ public void InvulnerabilityRejectsTheNextHit()
 }
 ```
 
-- [ ] DamageService에 생존·판 유효성·양수 피해·HitKey 중복·플레이어 무적 검사 순서를 구현한다. 수락한 피해만 체력을 바꾸고 단일 CombatEvent를 발생시킨다. 플레이어에게 수락된 피해는 즉시 무적 종료 시각을 설정한다.
-- [ ] 접촉 후보는 이동 전후 몸체와 이동 구간으로 수집한다. 접촉 시점→적 ID 순서로 처리한다. 실제 접촉이 계속되면 무적 종료 후 다시 피해를 받을 수 있게 하며, 동일 주기에 사망한 적은 접촉 후보에서 제외한다.
-- [ ] 넉백을 이동 주기에 합성하고 구조물 sweep와 군집 보정을 통과시킨다. 반복 피격은 최신 넉백 방향·세기·종료 시각으로 갱신한다. 공중의 원래 비행 방향은 보존하고 넉백으로 덮어쓰지 않는다. 실제 공중 스폰·비행 연결은 D1이다.
-- [ ] DeathService는 살아 있음→사망 전환을 한 번만 수락하고 처치 수 증가·경험치 드롭·논리 적 제거를 한 번 수행한다. WorldStore의 경험치 저장을 재사용한다. 피해 처리 도중 컬렉션을 순회하며 즉시 제거하지 말고 해당 단계의 완료 큐로 반영한다.
-- [ ] 무적 종료 직전·직후, 두 공격이 동시에 치명 피해를 주는 상황, 구조물 옆 넉백, 화면 밖 사망 드롭을 검증한다. 테스트 체력은 팩토리 생성 입력으로 설정한다. 통과 후 `feat: implement damage knockback and single death drops`로 커밋한다.
+- [x] DamageService에 생존·판 유효성·양수 피해·HitKey 중복·플레이어 무적 검사 순서를 구현한다. 수락한 피해만 체력을 바꾸고 단일 CombatEvent를 발생시킨다. 플레이어에게 수락된 피해는 즉시 무적 종료 시각을 설정한다.
+- [x] 접촉 후보는 이동 전후 몸체와 이동 구간으로 수집한다. 접촉 시점→적 ID 순서로 처리한다. 실제 접촉이 계속되면 무적 종료 후 다시 피해를 받을 수 있게 하며, 동일 주기에 사망한 적은 접촉 후보에서 제외한다.
+- [x] 넉백을 이동 주기에 합성하고 구조물 sweep와 군집 보정을 통과시킨다. 반복 피격은 최신 넉백 방향·세기·종료 시각으로 갱신한다. 공중의 원래 비행 방향은 보존하고 넉백으로 덮어쓰지 않는다. 실제 공중 스폰·비행 연결은 D1이다.
+- [x] DeathService는 살아 있음→사망 전환을 한 번만 수락하고 처치 수 증가·경험치 드롭·논리 적 제거를 한 번 수행한다. WorldStore의 경험치 저장을 재사용한다. 피해 처리 도중 컬렉션을 순회하며 즉시 제거하지 말고 해당 단계의 완료 큐로 반영한다.
+- [x] 무적 종료 직전·직후, 두 공격이 동시에 치명 피해를 주는 상황, 구조물 옆 넉백, 화면 밖 사망 드롭을 검증한다. 테스트 체력은 팩토리 생성 입력으로 설정한다. 통과 후 `feat: implement damage knockback and single death drops`로 커밋한다.
 
 ## Task B3: 검 자동 전투와 고정 주기 처리
 
