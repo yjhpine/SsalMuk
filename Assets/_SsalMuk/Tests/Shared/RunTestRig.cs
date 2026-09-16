@@ -1,27 +1,34 @@
 using System;
+using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using SsalMuk.Core;
 
 namespace SsalMuk.Tests
 {
     public sealed class RunTestRig : IDisposable
     {
-        public WorldStore World { get; }
-        public PlayerModel Player { get; }
+        private readonly RunCoordinator coordinator;
+        public RunModel Run { get; }
+        public WorldStore World => Run.World;
+        public PlayerModel Player => Run.Player;
         public MovementSystem Movement { get; }
         public NavigationService Navigation { get; }
-        public RunClock Clock { get; }
-        private RunTestRig(int seed)
+        public RunClock Clock => Run.Clock;
+        private RunTestRig(int seed, IChunkGenerator terrain)
         {
-            World = new WorldStore(new UnitRegistry(Guid.NewGuid()), new ChunkGenerator(seed, MapSettings.TestDefaults(0)));
-            Player = (PlayerModel)new PlayerFactory(World.Units).Spawn(new UnitSpawnRequest(World.Units.RunId, UnitKind.Player, default, Definition(UnitKind.Player, 100)));
+            var definitions = new DefinitionCatalog(Enum.GetValues(typeof(UnitKind)).Cast<UnitKind>()
+                .Select(kind => Definition(kind, kind == UnitKind.Player ? 100 : 10)));
+            Run = new RunModel(Guid.NewGuid(), seed, definitions, terrain ?? new ChunkGenerator(seed, MapSettings.TestDefaults(0)));
+            coordinator = new RunCoordinator(new ImmediateSceneLoader(), () => new RigBuilder(Run));
+            coordinator.StartRunAsync().GetAwaiter().GetResult();
+            if (coordinator.Phase != RunPhase.Running) throw new InvalidOperationException(coordinator.LastError);
             Navigation = new NavigationService(World); Movement = new MovementSystem(World, Navigation, Player);
-            Clock = new RunClock(0.02); Clock.Start();
         }
-        public static RunTestRig Create(int seed = 1234, bool scheduledSpawns = false)
+        public static RunTestRig Create(int seed = 1234, bool scheduledSpawns = false, IChunkGenerator terrain = null)
         {
             if (scheduledSpawns) throw new NotSupportedException("Scheduled spawning belongs to phase D1.");
-            return new RunTestRig(seed);
+            return new RunTestRig(seed, terrain);
         }
         private static UnitDefinition Definition(UnitKind kind, double health)
         {
@@ -44,6 +51,22 @@ namespace SsalMuk.Tests
                 throw new ArgumentOutOfRangeException(nameof(seconds), "Use an integer multiple of the 0.02 second simulation step.");
             for (int i = 0; i < (int)Math.Round(steps); i++) { Movement.Step(0.02); Clock.Advance(); }
         }
-        public void Dispose() { Movement.Dispose(); World.Dispose(); }
+        public void Dispose() { Movement.Dispose(); coordinator.Dispose(); }
+
+        private sealed class ImmediateSceneLoader : ISceneLoader
+        {
+            public Task LoadBattleAsync() => Task.CompletedTask;
+        }
+
+        private sealed class RigBuilder : IRunBuilder
+        {
+            public RunModel Run { get; }
+            public RigBuilder(RunModel run) => Run = run;
+            public void BuildWorld() => Run.World.GetChunk(default);
+            public void CreatePlayer() => Run.SetPlayer((PlayerModel)new PlayerFactory(Run.World.Units).Spawn(
+                new UnitSpawnRequest(Run.Id, UnitKind.Player, default, Run.Definitions.GetUnit(UnitKind.Player))));
+            public void CreateInitialEnemies() { }
+            public void Dispose() => Run.Dispose();
+        }
     }
 }

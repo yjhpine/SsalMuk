@@ -172,8 +172,8 @@ public void GroundBodiesSeparateWithoutDeletingUnits()
 
 **Interfaces:** `RunCoordinator.StartRunAsync()` → `Task`, `RunCoordinator.Phase`; `IRunBuilder : IDisposable`의 `BuildWorld()`, `CreatePlayer()`, `CreateInitialEnemies()`; `WorldPresenter.Refresh(IRunReadModel)`; `IRunReadModel`는 `Core/Session/IRunReadModel.cs`에 RunId·Phase·Clock·읽기 유닛/경험치 목록으로 정의한다. `ISceneLoader.LoadBattleAsync()`는 씬 완료 Task를 반환하고 UnitySceneLoader가 구현한다. RunModel은 `Id`, `Definitions`, `World`, `Clock`, `Player`와 처치 수를 소유한다. RunTestRig에 이 모델 조립과 `Run` 읽기를 추가한다.
 
-- [ ] 시작 단계가 역전되거나 두 번 클릭에 판이 둘 생성되는 테스트를 작성한다. 지연 가능한 테스트 IRunBuilder로 각 단계를 관측하고, 실패 시 생성된 부분의 Dispose가 호출되는지도 검사한다.
-- [ ] AppRoot는 시작 훅에서 하나만 만들고 새 RunScope를 조립한다. GameStart를 수락하면 Loading → BuildingWorld → CreatingPlayer → CreatingEnemies → Running을 순서대로 진행한다. 초기 생성 중 clock은 멈춰 둔다. 예외 시 해당 scope를 정리하고 메뉴로 복귀한다.
+- [x] 시작 단계가 역전되거나 두 번 클릭에 판이 둘 생성되는 테스트를 작성한다. 지연 가능한 테스트 IRunBuilder로 각 단계를 관측하고, 실패 시 생성된 부분의 Dispose가 호출되는지도 검사한다.
+- [x] AppRoot는 시작 훅에서 하나만 만들고 새 RunScope를 조립한다. GameStart를 수락하면 Loading → BuildingWorld → CreatingPlayer → CreatingEnemies → Running을 순서대로 진행한다. 초기 생성 중 clock은 멈춰 둔다. 예외 시 해당 scope를 정리하고 메뉴로 복귀한다.
 
 ```csharp
 await sceneLoader.LoadBattleAsync();
@@ -183,13 +183,13 @@ builder.CreateInitialEnemies();
 clock.Start();
 ```
 
-- [ ] DevelopmentContentBuilder로 두 빈 씬·카탈로그·임시 단색 Sprite·UnitView 프리팹을 생성한다. 프리팹은 참조 에셋이며 씬 안에 개체를 넣지 않는다. 단색 이미지는 기능 확인용으로 표시하고 제공된 참고 이미지를 최종 게임 원화로 복사하지 않는다.
-- [ ] Runtime에서 카메라·Canvas·EventSystem을 만들고 MVP 메뉴 버튼을 연결한다. 입력 모듈은 프로젝트의 Input System 설정과 맞추고 중복 EventSystem을 만들지 않는다. UI 글꼴 참조와 한글 표시를 확인한다. WorldPresenter는 모델 ID 기준으로 View를 갱신하고 현재 표시 기준점에 대한 상대 좌표만 Unity float에 전달한다.
-- [ ] GameStart 뒤 구조물·플레이어·지상 몬스터가 자동 생성되고 몬스터가 장애물을 우회해 플레이어 주변에서 비비는 모습을 확인한다. 테스트 시나리오는 넓은 공간·좁은 통로·벽 옆 군집을 각각 사용한다. 본 단계의 플레이어는 정지 배치이며 자동 운영은 B1에서 연결된다.
-- [ ] Scene 로드 실패·연속 클릭·직접 Battle 실행·Domain Reload 켜짐/꺼짐에서 생성 순서와 scope 수를 검증한다. 새 씬 항목만 스테이징하고 사용자 설정 변경을 보존한 채 `feat: bootstrap runtime scenes and crowd preview`로 커밋한다.
+- [x] DevelopmentContentBuilder로 두 빈 씬·카탈로그·임시 단색 Sprite·UnitView 프리팹을 생성한다. 프리팹은 참조 에셋이며 씬 안에 개체를 넣지 않는다. 단색 이미지는 기능 확인용으로 표시하고 제공된 참고 이미지를 최종 게임 원화로 복사하지 않는다.
+- [x] Runtime에서 카메라·Canvas·EventSystem을 만들고 MVP 메뉴 버튼을 연결한다. 입력 모듈은 프로젝트의 Input System 설정과 맞추고 중복 EventSystem을 만들지 않는다. UI 글꼴 참조와 한글 표시를 확인한다. WorldPresenter는 모델 ID 기준으로 View를 갱신하고 현재 표시 기준점에 대한 상대 좌표만 Unity float에 전달한다.
+- [x] GameStart 뒤 구조물·플레이어·지상 몬스터가 자동 생성되고 몬스터가 장애물을 우회해 플레이어 주변에서 비비는 모습을 확인한다. 테스트 시나리오는 넓은 공간·좁은 통로·벽 옆 군집을 각각 사용한다. 본 단계의 플레이어는 정지 배치이며 자동 운영은 B1에서 연결된다.
+- [x] Scene 로드 실패·연속 클릭·직접 Battle 실행·Domain Reload 켜짐/꺼짐에서 생성 순서와 scope 수를 검증한다. 새 씬 항목만 스테이징하고 사용자 설정 변경을 보존한 채 `feat: bootstrap runtime scenes and crowd preview`로 커밋한다.
 
 ## 단계 A 완료
 
-- [ ] A1~A5의 관련 테스트가 현재 소스에서 통과한다.
-- [ ] 군집 이동 장면을 실제로 확인하고 과도한 튕김·벽 통과·공중 밀집 참여가 없다.
-- [ ] 기존 사용자 변경이 보존되어 있고 다음 작업은 B1부터다.
+- [x] A1~A5의 관련 테스트가 현재 소스에서 통과한다.
+- [x] 군집 이동 장면을 실제로 확인하고 과도한 튕김·벽 통과·공중 밀집 참여가 없다.
+- [x] 기존 사용자 변경이 보존되어 있고 다음 작업은 B1부터다.

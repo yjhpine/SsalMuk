@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f51d38d0b3dfffe44a316c635b26b7a9, type: 3}
+  m_Name: GameCatalog
+  m_EditorClassIdentifier: SsalMuk.Unity::SsalMuk.Unity.GameCatalog
+  unitDefinitions: {fileID: 11400000, guid: 273981417e5cd3340ac8287ac2104539, type: 2}
+  unitViewPrefab: {fileID: 2943524783615369896, guid: 2cd055d6eba507e40aa52da2a70a7f01, type: 3}
+  unitVisuals:
+  - kind: 0
+    sprite: {fileID: 21300000, guid: 373677fcf9f570d48b344eb4280598eb, type: 3}
+  - kind: 1
+    sprite: {fileID: 21300000, guid: 373677fcf9f570d48b344eb4280598eb, type: 3}
+  - kind: 2
+    sprite: {fileID: 21300000, guid: 373677fcf9f570d48b344eb4280598eb, type: 3}
+  - kind: 3
+    sprite: {fileID: 21300000, guid: 373677fcf9f570d48b344eb4280598eb, type: 3}
+  uiFont: {fileID: 12800000, guid: 1b68e73fdc081e94fa338cc7756a1a72, type: 3}
+  solidSprite: {fileID: 21300000, guid: dabd7a7c1a686004382fbd77e627957a, type: 3}
+  worldMaterial: {fileID: 2100000, guid: 938e303f7ba47ff48b0619d4e0311604, type: 2}

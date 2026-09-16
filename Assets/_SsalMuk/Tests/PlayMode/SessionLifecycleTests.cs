@@ -71,5 +71,33 @@ namespace SsalMuk.Tests
             }
             Assert.That(app.Coordinator.Phase, Is.EqualTo(RunPhase.Running));
         }
+
+        [UnityTest]
+        public IEnumerator RepeatedStartsReleaseEachScopeAndUseFreshRunIdentities()
+        {
+            var identities = new System.Collections.Generic.HashSet<System.Guid>();
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                yield return SceneManager.LoadSceneAsync(AppRoot.MainMenuScenePath);
+                yield return null;
+                var app = AppRoot.Instance;
+                app.Menu.StartButton.onClick.Invoke();
+                yield return WaitForRunning(app);
+                var run = app.Coordinator.Run;
+                Assert.That(identities.Add(run.Id), Is.True);
+                Assert.That(Object.FindObjectsByType<AppRoot>(FindObjectsSortMode.None).Length, Is.EqualTo(1));
+                Assert.That(Object.FindObjectsByType<WorldView>(FindObjectsSortMode.None).Length, Is.EqualTo(1));
+                Assert.That(Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None).Length, Is.EqualTo(1));
+                Object.Destroy(app.gameObject);
+                yield return null;
+                yield return null;
+                Assert.That(run.Phase, Is.EqualTo(RunPhase.Disposed));
+                Assert.That(run.Clock.IsRunning, Is.False);
+                Assert.That(run.World.Units.Count, Is.Zero);
+                Assert.That(Object.FindObjectsByType<WorldView>(FindObjectsSortMode.None), Is.Empty);
+                Assert.That(Object.FindObjectsByType<UnitView>(FindObjectsSortMode.None), Is.Empty);
+                Assert.That(Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None), Is.Empty);
+            }
+        }
     }
 }
