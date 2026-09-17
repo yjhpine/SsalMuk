@@ -42,7 +42,7 @@ namespace SsalMuk.Tests
             Assert.That(shot.HitTargetId, Is.EqualTo(targets[0]));
         }
         [Test]
-        public void OffscreenProjectilesRemainUntilTheirFlightLifetimeAndDoNotExplodeOnExpiry()
+        public void WithoutCameraBoundsProjectilesKeepTheirFlightLifetimeAndDoNotExplodeOnExpiry()
         {
             using var rig = RunTestRig.Create(enableAi: false); rig.Equip(WeaponKind.Fireball);
             using var system = new ProjectileSystem(rig.Run, rig.Movement, rig.Damage); int explosions = 0; system.Exploded += _ => explosions++;
@@ -63,6 +63,53 @@ namespace SsalMuk.Tests
             Assert.That(late.Position, Is.EqualTo(rig.Player.Position)); Assert.That(late.IsAlive, Is.True);
             Assert.That(late.Stats.Damage, Is.EqualTo(12)); Assert.That(rig.Unit(target).Health, Is.EqualTo(14));
         }
+        [TestCase(1, 0)]
+        [TestCase(-1, 0)]
+        [TestCase(0, 1)]
+        [TestCase(0, -1)]
+        [TestCase(1, 1)]
+        public void LongFlightStepStopsAtTheCameraMarginBeforeTestingDistantHits(int x, int y)
+        {
+            using var rig = RunTestRig.Create(enableAi: false); rig.Equip(WeaponKind.Fireball);
+            var direction = new DVec2(x, y).Normalized;
+            long target = rig.Spawn(UnitKind.Normal, direction * 8, 100);
+            using var system = new ProjectileSystem(rig.Run, rig.Movement, rig.Damage);
+            system.SetViewBounds(new WorldRect(rig.Player.Position, 2, 2));
+            var source = Create(rig);
+            var shot = system.Launch(new AttackInstance(source.Key, source.Kind, source.StartedAt, source.ActiveSeconds, direction, source.Stats, source.Origin));
+            system.Step(0, 2);
+            var delta = rig.Player.Position.DisplacementTo(shot.Position);
+            Assert.That(Math.Max(Math.Abs(delta.X), Math.Abs(delta.Y)), Is.EqualTo(4.1).Within(1e-9));
+            Assert.That(shot.IsAlive, Is.False); Assert.That(system.Active, Is.Empty); Assert.That(system.Explosions, Is.Empty);
+            Assert.That(rig.Unit(target).Health, Is.EqualTo(100));
+        }
+
+        [Test]
+        public void TargetInsideTheMarginStillReceivesTheFirstExplosion()
+        {
+            using var rig = RunTestRig.Create(enableAi: false); rig.Equip(WeaponKind.Fireball);
+            long target = rig.Spawn(UnitKind.Normal, new DVec2(4.2, 0), 100);
+            using var system = new ProjectileSystem(rig.Run, rig.Movement, rig.Damage);
+            system.SetViewBounds(new WorldRect(rig.Player.Position, 2, 2));
+            var shot = system.Launch(Create(rig)); system.Step(0, 2);
+            Assert.That(shot.HitTargetId, Is.EqualTo(target));
+            Assert.That(rig.Unit(target).Health, Is.EqualTo(94));
+            Assert.That(shot.Position.Local.X, Is.EqualTo(3.84).Within(1e-8));
+        }
+
+        [Test]
+        public void DenseRepeatsRespectEveryBirthTimeWithinOneFixedStep()
+        {
+            using var rig = RunTestRig.Create(enableAi: false); rig.Equip(WeaponKind.Fireball);
+            rig.Spawn(UnitKind.Normal, new DVec2(20, 0), 1000);
+            using var runtime = new WeaponRuntime(rig.Run, WeaponKind.Fireball, rig.Movement, rig.Damage,
+                () => new WeaponStats(6, .8, .1, copies: 3, repeats: 31));
+            runtime.Tick(0, .02);
+            Assert.That(runtime.Projectiles.Active.Count, Is.EqualTo(33));
+            foreach (var shot in runtime.Projectiles.Active)
+                Assert.That(shot.Position.DistanceTo(rig.Player.Position), Is.EqualTo((.02 - shot.SpawnedAt) * 8).Within(1e-9));
+        }
+
         private static AttackInstance Create(RunTestRig rig, double time = 0)
         {
             var definition = rig.Run.Definitions.GetWeapon(WeaponKind.Fireball);

@@ -37,6 +37,7 @@ namespace SsalMuk.Core
             var weapons = new Dictionary<WeaponKind, WeaponRuntime>();
             foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind))) weapons.Add(kind, new WeaponRuntime(run, kind, movement, damage));
             Weapons = new ReadOnlyDictionary<WeaponKind, WeaponRuntime>(weapons); Sword = weapons[WeaponKind.Sword];
+            ai?.ConfigureEngagementRange(MeleeEngagementRange);
             damage.Accepted += ForwardHit;
             var spawnConfiguration = spawnSettings ?? new SpawnSettings();
             airDepartures = new AirDepartureSystem(run, spawnConfiguration.AirDepartureMargin);
@@ -58,6 +59,7 @@ namespace SsalMuk.Core
                 Spawns?.Tick(to, viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
                 if (ai != null) { ai.Tick(run.Clock.FixedStep); movement.SetMoveIntent(run.Player.Id, run.Player.MoveIntent); }
                 movement.Step(run.Clock.FixedStep);
+                Weapons[WeaponKind.Fireball].Projectiles.SetViewBounds(viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
                 foreach (var kind in run.Player.Weapons.Kinds) Weapons[kind].Tick(from, to);
                 death.Flush(); contact.Step(from, to);
                 if (!run.Player.IsAlive) { Finish(); break; }
@@ -65,6 +67,14 @@ namespace SsalMuk.Core
                 Collector.Step(run.Clock.FixedStep);
                 run.Rewards.RefreshOffer();
             }
+        }
+        private double MeleeEngagementRange()
+        {
+            double range = 0;
+            foreach (var kind in run.Player.Weapons.Kinds)
+                if (kind != WeaponKind.Fireball)
+                    range = Math.Max(range, StatCalculator.Calculate(run.Definitions.GetWeapon(kind), run.Player.Weapons.Get(kind), run.GrowthSettings).Range);
+            return range;
         }
         private void ForwardHit(CombatEvent hit) => DamageAccepted?.Invoke(hit);
         private void Finish() { Dispose(); run.CompleteDeath(); }

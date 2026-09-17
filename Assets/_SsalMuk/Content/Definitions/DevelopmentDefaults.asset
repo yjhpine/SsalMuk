@@ -26,7 +26,7 @@ MonoBehaviour:
     kind: 1
     maxHealth: 10
     moveSpeed: 1.5
-    bodyRadius: 0.25999999046325684
+    bodyRadius: 0.32499998807907104
     hurtRadius: 0.3574999868869782
     visualFootOffset: 0.26
     contactDamage: 5
@@ -35,7 +35,7 @@ MonoBehaviour:
     kind: 2
     maxHealth: 6
     moveSpeed: 6
-    bodyRadius: 0.2119999885559082
+    bodyRadius: 0.26499998569488525
     hurtRadius: 0.2914999842643738
     visualFootOffset: 0.22
     contactDamage: 5
@@ -43,8 +43,8 @@ MonoBehaviour:
   - id: boss
     kind: 3
     maxHealth: 600
-    moveSpeed: 1.1
-    bodyRadius: 0.9
+    moveSpeed: 3.1500000000000004
+    bodyRadius: 1.125
     hurtRadius: 1.2375
     visualFootOffset: 0.75
     contactDamage: 15
@@ -95,7 +95,7 @@ MonoBehaviour:
   damageGrowth: 0.1
   speedGrowth: 0.1
   rangeGrowth: 0.08
-  attractionRadius: 1.5
+  attractionRadius: 1.95
   experienceFlightSpeed: 6
   experienceOrbRadius: 0.08
   blueExperienceThreshold: 5

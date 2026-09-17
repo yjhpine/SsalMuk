@@ -18,7 +18,7 @@ namespace SsalMuk.Core
             Key = attack.Key; Kind = attack.Kind; Origin = attack.Origin; Direction = attack.Direction; Progress = attack.Progress;
             Range = attack.Stats.Range; Width = definition.Width;
             AngleRadians = Math.Atan2(Direction.Y, Direction.X) + (Kind == WeaponKind.Sword ? -Math.PI / 6 + Progress * Math.PI / 3 :
-                Kind == WeaponKind.Axe ? CopyLayout.Phase(Key.Copy) + Progress * Math.PI * 2 : 0);
+                Kind == WeaponKind.Axe ? Progress * Math.PI * 2 : 0);
         }
     }
 }

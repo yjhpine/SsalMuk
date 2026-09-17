@@ -21,7 +21,7 @@ namespace SsalMuk.Unity
         [SerializeField] private double damageGrowth = 0.1;
         [SerializeField] private double speedGrowth = 0.1;
         [SerializeField] private double rangeGrowth = 0.08;
-        [SerializeField] private double attractionRadius = 1.5;
+        [SerializeField] private double attractionRadius = 1.95;
         [SerializeField] private double experienceFlightSpeed = 6;
         [SerializeField] private double experienceOrbRadius = 0.08;
         [SerializeField] private string blueExperienceThreshold = "5";
@@ -83,9 +83,9 @@ namespace SsalMuk.Unity
         // Approved development starting values; these are not final balance settings.
         private static UnitEntry[] CreatePreset() => new[] {
             new UnitEntry("player", UnitKind.Player, 100, 3, .24896384, 0, "0", .34232528, .28),
-            new UnitEntry("normal", UnitKind.Normal, 10, 1.5, .26, 5, "1", .3575, .26),
-            new UnitEntry("air", UnitKind.Air, 6, 6, .212, 5, "1", .2915, .22),
-            new UnitEntry("boss", UnitKind.Boss, 600, 1.1, .9, 15, "30", 1.2375, .75)
+            new UnitEntry("normal", UnitKind.Normal, 10, 1.5, .325, 5, "1", .3575, .26),
+            new UnitEntry("air", UnitKind.Air, 6, 6, .265, 5, "1", .2915, .22),
+            new UnitEntry("boss", UnitKind.Boss, 600, 3.15, 1.125, 15, "30", 1.2375, .75)
         };
 
         [Serializable]

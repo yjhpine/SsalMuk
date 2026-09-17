@@ -57,8 +57,7 @@ namespace SsalMuk.Unity
             }
             else if (snapshot.Kind == WeaponKind.Axe)
             {
-                double start = CopyLayout.Phase(snapshot.Key.Copy);
-                shape.Ring(Math.Max(0, range - snapshot.Width), range + snapshot.Width, start, start + snapshot.Progress * Math.PI * 2, new Color(0.82f, 0.92f, 1, 0.14f));
+                shape.Ring(Math.Max(0, range - snapshot.Width), range + snapshot.Width, 0, snapshot.Progress * Math.PI * 2, new Color(0.82f, 0.92f, 1, 0.14f));
                 effect.transform.localScale = new Vector3(range * 2 / effect.sprite.bounds.size.x, range * 2 / effect.sprite.bounds.size.y, 1);
             }
             else shape.Clear();

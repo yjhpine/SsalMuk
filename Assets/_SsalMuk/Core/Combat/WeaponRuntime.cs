@@ -48,7 +48,8 @@ namespace SsalMuk.Core
                 {
                     double due = reserved.Time;
                     MaximumDispatchDelay = Math.Max(MaximumDispatchDelay, to - due);
-                    AdvanceAttacks(from, to, at, due); at = due;
+                    if (fireball == null) AdvanceAttacks(from, to, at, due);
+                    at = due;
                     long? target = TargetResolver.Resolve(run.Player, run.World.Query);
                     if (!target.HasValue) { scheduler.Reset(); break; }
                     var delta = run.Player.Position.DisplacementTo(run.World.Units.Get(target.Value).Position);
@@ -59,14 +60,14 @@ namespace SsalMuk.Core
                     var origin = previous.Offset(previous.DisplacementTo(run.Player.Position) * fraction);
                     for (BigInteger copy = 0; copy < snapshot.Copies; copy++)
                     {
-                        var offset = AttackGeometry.Rotate(CopyLayout.Offset(definition.Kind, copy, definition.CopySpacing), Math.Atan2(lastDirection.Y, lastDirection.X));
                         var instance = new AttackInstance(new HitKey(run.Id, run.AllocateAttackId(), copy, reserved.Repeat), definition.Kind,
-                            due, definition.ActiveSeconds, lastDirection, snapshot, origin.Offset(offset));
+                            due, definition.ActiveSeconds, lastDirection, snapshot, origin);
                         active.Add(instance); LaunchCount = checked(LaunchCount + 1);
                         fireball?.Launch(instance); Launched?.Invoke(instance);
                     }
                 }
-                AdvanceAttacks(from, to, at, end); cursor = end;
+                // Fireballs carry their own birth time: one flight sweep per fixed slice is sufficient.
+                AdvanceAttacks(from, to, fireball == null ? at : cursor, end); cursor = end;
             }
         }
         private void AdvanceAttacks(double frameFrom, double frameTo, double from, double to)
@@ -78,9 +79,9 @@ namespace SsalMuk.Core
                 else if (definition.Kind == WeaponKind.Axe) axe.Step(attack, frameFrom, frameTo, from, to);
                 else
                 {
-                    attack.Progress = Math.Max(0, Math.Min(1, (to - attack.StartedAt) / attack.ActiveSeconds));
-                    var offset = AttackGeometry.Rotate(CopyLayout.Offset(definition.Kind, attack.Key.Copy, definition.CopySpacing), Math.Atan2(attack.Direction.Y, attack.Direction.X));
-                    attack.Origin = run.Player.Position.Offset(offset);
+                    attack.Progress = to >= attack.StartedAt + attack.ActiveSeconds ? 1 :
+                        Math.Max(0, Math.Min(1, (to - attack.StartedAt) / attack.ActiveSeconds));
+                    attack.Origin = run.Player.Position;
                 }
             }
             Projectiles?.Step(frameFrom, frameTo, from, to);

@@ -10,6 +10,7 @@ namespace SsalMuk.Core
         private readonly IBehaviorState[] states = { new CollectState(), new EvadeState(), new BreakoutState() };
         private readonly List<AiTransition> transitions = new List<AiTransition>();
         private double enteredAt, stableFor;
+        private Func<double> engagementRange;
         public IReadOnlyList<AiTransition> Transitions { get; }
         public LowAiController(PlayerModel player, WorldStore world, NavigationService navigation, AiSettings settings = null, PickupSettings pickupSettings = null)
         {
@@ -17,11 +18,16 @@ namespace SsalMuk.Core
             context = new AiContext(player, world, navigation, settings ?? new AiSettings(), pickupSettings);
             Transitions = transitions.AsReadOnly(); states[0].Enter(context);
         }
+        public void ConfigureEngagementRange(Func<double> range) => engagementRange = range ?? throw new ArgumentNullException(nameof(range));
         public void Tick(double dt)
         {
             if (dt <= 0 || double.IsNaN(dt) || double.IsInfinity(dt)) throw new ArgumentOutOfRangeException(nameof(dt));
             if (!player.IsAlive) { player.MoveIntent = DVec2.Zero; player.TargetId = null; return; }
             context.Observe(dt);
+            if (engagementRange != null) context.EngagementRange = engagementRange();
+            bool collected = player.BrainState == BrainState.Collect;
+            // Predict contact using this tick's approach/braking, not last tick's full-speed chase.
+            if (collected) states[(int)BrainState.Collect].Tick(context, dt);
             double blocked = context.BlockedFraction(); bool imminent = context.ImminentContact();
             if (player.BrainState == BrainState.Breakout)
             {
@@ -37,7 +43,7 @@ namespace SsalMuk.Core
                 if (stableFor >= context.Settings.ReleaseStableSeconds && context.Time - enteredAt >= context.Settings.MinimumHoldSeconds)
                     Transition(BrainState.Collect, "Contact risk stayed low.");
             }
-            states[(int)player.BrainState].Tick(context, dt);
+            if (!collected || player.BrainState != BrainState.Collect) states[(int)player.BrainState].Tick(context, dt);
             player.MoveIntent = context.MoveIntent; player.BreakoutDirection = context.BreakoutDirection;
             player.CollectionTargetId = context.CollectionTargetId;
             player.TargetId = TargetResolver.Resolve(player, context.World.Query);

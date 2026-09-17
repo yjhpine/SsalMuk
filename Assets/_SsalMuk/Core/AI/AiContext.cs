@@ -20,6 +20,7 @@ namespace SsalMuk.Core
         public DVec2 MoveIntent { get; internal set; }
         public DVec2 BreakoutDirection { get; internal set; }
         public long? CollectionTargetId { get; internal set; }
+        public double EngagementRange { get; internal set; } = 1.6;
 
         public AiContext(UnitModel actor, WorldStore world, NavigationService navigation, AiSettings settings, PickupSettings pickupSettings = null, UnitModel followTarget = null)
         {
@@ -54,6 +55,25 @@ namespace SsalMuk.Core
         }
 
         public bool CanMove(DVec2 direction, double distance) => !World.Query.SweepCircle(Actor.Position, direction * distance, Actor.BodyRadius).HasValue;
+
+        public DVec2 EngageNearestEnemy()
+        {
+            UnitModel nearest = null; double distance = double.PositiveInfinity;
+            foreach (var enemy in enemies)
+            {
+                double candidate = Actor.Position.DistanceTo(enemy.Position);
+                if (candidate < distance || (candidate == distance && (nearest == null || enemy.Id < nearest.Id)))
+                { nearest = enemy; distance = candidate; }
+            }
+            if (nearest == null || distance < 1e-10) return DVec2.Zero;
+            // Stay inside the weapon's real hit reach, with room between contact bodies.
+            double desired = Math.Max(Actor.BodyRadius + nearest.BodyRadius + .12, EngagementRange + nearest.HurtRadius * .5 - .15);
+            var toward = Actor.Position.DisplacementTo(nearest.Position).Normalized;
+            // Brake before reaching the target distance; emergency prediction then uses that same intent.
+            double speed = Math.Max(-.35, Math.Min(1, (distance - desired) / (Actor.Definition.MoveSpeed * Settings.EmergencyContactSeconds)));
+            var intent = toward * speed;
+            return CanMove(intent, Actor.Definition.MoveSpeed * Settings.EmergencyContactSeconds) ? intent : DVec2.Zero;
+        }
 
         public double BlockedFraction()
         {

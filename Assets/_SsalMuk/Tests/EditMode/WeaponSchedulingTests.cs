@@ -27,18 +27,14 @@ namespace SsalMuk.Tests
         [Test]
         public void CopyIndicesAlternateLeftRightWithoutIntegerTruncation()
         {
-            foreach (var kind in new[] { WeaponKind.Sword, WeaponKind.Spear, WeaponKind.Fireball })
-            {
-                Assert.That(CopyLayout.Offset(kind, 0, 0.25), Is.EqualTo(DVec2.Zero));
-                Assert.That(CopyLayout.Offset(kind, 1, 0.25), Is.EqualTo(new DVec2(0, 0.25)));
-                Assert.That(CopyLayout.Offset(kind, 2, 0.25), Is.EqualTo(new DVec2(0, -0.25)));
-                Assert.That(CopyLayout.Offset(kind, 3, 0.25), Is.EqualTo(new DVec2(0, 0.5)));
-                Assert.That(CopyLayout.Offset(kind, new BigInteger(int.MaxValue) + 2, 0.25).Y, Is.GreaterThan(100000000));
-            }
-            Assert.That(CopyLayout.Phase(1), Is.EqualTo(Math.PI / 9).Within(1e-12));
-            Assert.That(CopyLayout.Phase(2), Is.EqualTo(-Math.PI / 9).Within(1e-12));
-            Assert.That(CopyLayout.Phase(BigInteger.Pow(10, 80)), Is.InRange(-Math.PI * 2, Math.PI * 2));
-            Assert.Throws<NumericRangeException>(() => CopyLayout.Offset(WeaponKind.Sword, BigInteger.Pow(10, 400), 0.25));
+            Assert.That(CopyLayout.Phase(0), Is.Zero);
+            Assert.That(CopyLayout.Phase(1), Is.EqualTo(Math.PI / 12).Within(1e-12));
+            Assert.That(CopyLayout.Phase(2), Is.EqualTo(-Math.PI / 12).Within(1e-12));
+            Assert.That(CopyLayout.Phase(3), Is.EqualTo(Math.PI / 6).Within(1e-12));
+            Assert.That(CopyLayout.Phase(4), Is.EqualTo(-Math.PI / 6).Within(1e-12));
+            BigInteger huge = BigInteger.Pow(10, 400);
+            Assert.That(CopyLayout.Phase(huge), Is.EqualTo(CopyLayout.Phase(huge % 48)));
+            Assert.That(CopyLayout.Phase(huge + 1), Is.EqualTo(CopyLayout.Phase((huge + 1) % 48)));
         }
         [Test]
         public void BurstReservationsKeepTheirTimesAndReadNewSpeedOnlyForTheNextGroup()
@@ -76,7 +72,9 @@ namespace SsalMuk.Tests
             runtime.Tick(0.1, 1.4);
             Assert.That(launches.Count, Is.EqualTo(13)); Assert.That(launches.Select(x => x.Key.AttackId).Distinct().Count(), Is.EqualTo(13));
             Assert.That(launches[0].Stats.Damage, Is.EqualTo(8)); Assert.That(launches[0].Direction.X, Is.EqualTo(1));
-            Assert.That(launches.Skip(1).All(x => x.Stats.Damage == 16 && x.Stats.Range == 3.2 && x.Direction.X == -1), Is.True);
+            Assert.That(launches.Skip(1).All(x => x.Stats.Damage == 16 && x.Stats.Range == 3.2 &&
+                Math.Abs(x.Direction.X + Math.Cos(CopyLayout.Phase(x.Key.Copy))) < 1e-10 &&
+                Math.Abs(x.Direction.Y + Math.Sin(CopyLayout.Phase(x.Key.Copy))) < 1e-10), Is.True);
             CollectionAssert.AreEqual(new double[] { 0, 0.3, 0.3, 0.3, 0.6, 0.6, 0.6, 1, 1, 1, 1.3, 1.3, 1.3 }, launches.Select(x => Math.Round(x.StartedAt, 8)));
             CollectionAssert.AreEqual(new BigInteger[] { 0, 1, 2 }, launches.Skip(1).Take(3).Select(x => x.Key.Copy));
             Assert.That(launches[4].Key.Repeat, Is.EqualTo(new BigInteger(2)));

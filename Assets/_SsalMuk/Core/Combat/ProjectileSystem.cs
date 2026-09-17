@@ -10,6 +10,10 @@ namespace SsalMuk.Core
         private readonly WeaponDefinition definition;
         private readonly List<ProjectileModel> active = new List<ProjectileModel>();
         private readonly List<ExplosionSnapshot> explosions = new List<ExplosionSnapshot>();
+        private readonly List<long> flightCandidates = new List<long>();
+        private readonly List<long> explosionCandidates = new List<long>();
+        private WorldRect? viewBounds;
+        private double departureMargin = 2;
         private long lastLaunchedId;
         private bool disposed;
         public event Action<ExplosionSnapshot> Exploded;
@@ -29,6 +33,11 @@ namespace SsalMuk.Core
                 attack.StartedAt < 0 || double.IsNaN(attack.StartedAt) || double.IsInfinity(attack.StartedAt)) throw new ArgumentException("Invalid or repeated projectile launch.");
             var projectile = new ProjectileModel(attack, definition); active.Add(projectile); lastLaunchedId = attack.Key.AttackId; return projectile;
         }
+        public void SetViewBounds(WorldRect bounds, double margin = 2)
+        {
+            if (margin < 0 || double.IsNaN(margin) || double.IsInfinity(margin)) throw new ArgumentOutOfRangeException(nameof(margin));
+            viewBounds = bounds; departureMargin = margin;
+        }
         public void Step(double from, double to) => Step(from, to, from, to);
         public void Step(double frameFrom, double frameTo, double from, double to)
         {
@@ -40,11 +49,20 @@ namespace SsalMuk.Core
                 double lo = Math.Max(from, Math.Max(shot.SpawnedAt, shot.UpdatedAt)), hi = Math.Min(to, shot.ExpiresAt);
                 if (hi < lo) continue;
                 if (lo > shot.UpdatedAt + 1e-9) throw new InvalidOperationException("Projectile updates must not skip flight intervals.");
+                bool departed = false;
+                if (viewBounds.HasValue)
+                {
+                    if (!viewBounds.Value.Contains(shot.Position, departureMargin + shot.Radius))
+                    { shot.IsAlive = false; damage.CompleteAttack(shot.Key.AttackId); continue; }
+                    double exitTime = lo + SecondsToBoundary(shot, viewBounds.Value);
+                    if (exitTime <= hi) { hi = exitTime; departed = true; }
+                }
                 var origin = shot.Position; var travel = shot.Velocity * (hi - lo); shot.PreviousPosition = origin;
                 double a = Fraction(lo, frameFrom, frameTo), b = Fraction(hi, frameFrom, frameTo);
                 double earliest = double.PositiveInfinity; long? first = null;
-                double queryRadius = travel.Length + movement.MaximumDisplacement + movement.LargestHurtRadius + shot.Radius;
-                foreach (long id in run.World.Query.QueryCircle(origin, queryRadius))
+                double queryRadius = travel.Length * .5 + movement.MaximumDisplacement + movement.LargestHurtRadius + shot.Radius;
+                run.World.Query.QueryCircle(origin.Offset(travel * .5), queryRadius, flightCandidates);
+                foreach (long id in flightCandidates)
                 {
                     if (!run.World.Units.TryGet(id, out var unit) || unit.Kind == UnitKind.Player || !unit.IsAlive) continue;
                     var previous = Previous(unit); var enemyTravel = previous.DisplacementTo(unit.Position);
@@ -58,18 +76,30 @@ namespace SsalMuk.Core
                     shot.Position = origin.Offset(travel * earliest); shot.HitTargetId = first; shot.IsAlive = false;
                     Explode(shot, lo + (hi - lo) * earliest, frameFrom, frameTo);
                 }
-                else { shot.Position = origin.Offset(travel); if (hi >= shot.ExpiresAt) shot.IsAlive = false; }
+                else { shot.Position = origin.Offset(travel); if (departed || hi >= shot.ExpiresAt) shot.IsAlive = false; }
                 if (!shot.IsAlive) damage.CompleteAttack(shot.Key.AttackId);
             }
             active.RemoveAll(shot => !shot.IsAlive);
             explosions.RemoveAll(explosion => explosion.Time + definition.ActiveSeconds < to);
+        }
+        private double SecondsToBoundary(ProjectileModel shot, WorldRect bounds)
+        {
+            var position = bounds.Center.DisplacementTo(shot.Position);
+            double width = bounds.HalfWidth + departureMargin + shot.Radius;
+            double height = bounds.HalfHeight + departureMargin + shot.Radius;
+            double x = shot.Velocity.X > 0 ? (width - position.X) / shot.Velocity.X :
+                shot.Velocity.X < 0 ? (-width - position.X) / shot.Velocity.X : double.PositiveInfinity;
+            double y = shot.Velocity.Y > 0 ? (height - position.Y) / shot.Velocity.Y :
+                shot.Velocity.Y < 0 ? (-height - position.Y) / shot.Velocity.Y : double.PositiveInfinity;
+            return Math.Max(0, Math.Min(x, y));
         }
         private static double Fraction(double time, double from, double to) => to > from ? Math.Max(0, Math.Min(1, (time - from) / (to - from))) : 1;
         private WorldPosition Previous(UnitModel unit) => movement.PreviousPositions.TryGetValue(unit.Id, out var previous) ? previous : unit.Position;
         private void Explode(ProjectileModel shot, double time, double frameFrom, double frameTo)
         {
             double fraction = Fraction(time, frameFrom, frameTo);
-            foreach (long id in run.World.Query.QueryCircle(shot.Position, shot.Stats.Range + movement.LargestHurtRadius + movement.MaximumDisplacement))
+            run.World.Query.QueryCircle(shot.Position, shot.Stats.Range + movement.LargestHurtRadius + movement.MaximumDisplacement, explosionCandidates);
+            foreach (long id in explosionCandidates)
             {
                 if (!run.World.Units.TryGet(id, out var unit) || unit.Kind == UnitKind.Player || !unit.IsAlive) continue;
                 var previous = Previous(unit); var atImpact = previous.Offset(previous.DisplacementTo(unit.Position) * fraction);
@@ -85,7 +115,7 @@ namespace SsalMuk.Core
         {
             if (disposed) return; disposed = true;
             foreach (var shot in active) { shot.IsAlive = false; damage.CompleteAttack(shot.Key.AttackId); }
-            active.Clear(); explosions.Clear(); Exploded = null;
+            active.Clear(); explosions.Clear(); flightCandidates.Clear(); explosionCandidates.Clear(); Exploded = null;
         }
     }
 }

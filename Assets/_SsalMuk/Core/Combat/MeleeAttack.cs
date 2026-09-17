@@ -19,9 +19,8 @@ namespace SsalMuk.Core
             var previousPlayer = movement.PreviousPositions.TryGetValue(player.Id, out var p) ? p : player.Position;
             var playerTravel = previousPlayer.DisplacementTo(player.Position);
             double angle = Math.Atan2(attack.Direction.Y, attack.Direction.X);
-            var copyOffset = AttackGeometry.Rotate(CopyLayout.Offset(attack.Kind, attack.Key.Copy, definition.CopySpacing), angle);
-            var originStart = previousPlayer.Offset(playerTravel * startFraction + copyOffset);
-            var originEnd = previousPlayer.Offset(playerTravel * endFraction + copyOffset);
+            var originStart = previousPlayer.Offset(playerTravel * startFraction);
+            var originEnd = previousPlayer.Offset(playerTravel * endFraction);
             double previousProgress = Math.Max(0, Math.Min(1, (lo - attack.StartedAt) / attack.ActiveSeconds));
             double progress = hi >= attack.StartedAt + attack.ActiveSeconds ? 1 :
                 Math.Max(previousProgress, Math.Min(1, (hi - attack.StartedAt) / attack.ActiveSeconds));
@@ -39,9 +38,8 @@ namespace SsalMuk.Core
                 else if (attack.Kind == WeaponKind.Spear) hit = AttackGeometry.SpearSweepContains(localStart, localEnd, enemy.HurtRadius, attack.Stats.Range, definition.Width, previousProgress, progress);
                 else
                 {
-                    double phase = CopyLayout.Phase(attack.Key.Copy);
                     hit = AttackGeometry.AxeSweepContains(localStart, localEnd, enemy.HurtRadius, attack.Stats.Range, definition.Width,
-                        phase + previousProgress * Math.PI * 2, phase + progress * Math.PI * 2);
+                        previousProgress * Math.PI * 2, progress * Math.PI * 2);
                 }
                 if (!hit) continue;
                 var direction = relativeEnd != DVec2.Zero ? relativeEnd.Normalized : attack.Direction;

@@ -23,7 +23,7 @@ namespace SsalMuk.Tests
                 {
                     var definition = rig.Run.Definitions.GetUnit(kind); var art = catalog.Visuals.Unit(kind);
                     double diameter = Math.Min(art.Height, art.Height * art.Sprite.bounds.size.x / art.Sprite.bounds.size.y);
-                    Assert.That(definition.BodyRadius * 2, Is.EqualTo(diameter * .8).Within(1e-6));
+                    Assert.That(definition.BodyRadius * 2, Is.EqualTo(diameter * (kind == UnitKind.Player ? .8 : 1)).Within(1e-6));
                     Assert.That(definition.HurtRadius * 2, Is.EqualTo(diameter * 1.1).Within(1e-6));
                     var unit = kind == UnitKind.Player ? rig.Player : rig.Unit(rig.Spawn(kind, new DVec2(4, 0), 100));
                     view.ResetVisuals(); view.Show(unit, DVec2.Zero, catalog);

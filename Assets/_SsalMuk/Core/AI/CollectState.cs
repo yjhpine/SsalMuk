@@ -46,14 +46,7 @@ namespace SsalMuk.Core
                 context.CollectionTargetId = candidate.Record.Id; context.MoveIntent = intent; return;
             }
             context.CollectionTargetId = null;
-            // No loot: keep a little room to swing, without chasing an offscreen enemy indefinitely.
-            double nearest = double.PositiveInfinity; DVec2 away = DVec2.Zero;
-            foreach (var enemy in context.Enemies)
-            {
-                var delta = context.Actor.Position.DisplacementTo(enemy.Position);
-                if (delta.Length < nearest) { nearest = delta.Length; away = -delta.Normalized; }
-            }
-            if (nearest < 1.5 && context.CanMove(away, 0.5)) context.MoveIntent = away * 0.35;
+            context.MoveIntent = context.EngageNearestEnemy();
         }
 
         private bool TryApproach(AiContext context, ExperienceRecord xp, out DVec2 intent)

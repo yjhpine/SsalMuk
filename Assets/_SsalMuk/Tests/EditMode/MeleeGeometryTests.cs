@@ -26,7 +26,7 @@ namespace SsalMuk.Tests
             Assert.That(AttackGeometry.AxeSweepContains(new DVec2(1.8, -3), new DVec2(1.8, 3), 0.1, 1.8, 0.25, -0.05, 0.05), Is.True);
         }
         [Test]
-        public void SpearAndAxeUseRealDamageOncePerInstanceAndCopyOffsets()
+        public void SpearAndAxeUseRealDamageOncePerInstanceAndCopyAngles()
         {
             using var rig = RunTestRig.Create(enableAi: false);
             long front = rig.Spawn(UnitKind.Normal, new DVec2(2.1, 0), 100);
@@ -38,7 +38,7 @@ namespace SsalMuk.Tests
             var axe = Create(rig, WeaponKind.Axe, 0); var axeExecutor = new AxeAttack(rig.Run, rig.Movement, rig.Damage);
             axeExecutor.Step(axe, 0, 0.6, 0, 0.6); axeExecutor.Step(axe, 0, 0.6, 0, 0.6);
             Assert.That(rig.Unit(back).Health, Is.EqualTo(94)); Assert.That(rig.Unit(middle).Health, Is.EqualTo(90));
-            long shifted = rig.Spawn(UnitKind.Normal, new DVec2(1.8, 0.5), 100);
+            long shifted = rig.Spawn(UnitKind.Normal, new DVec2(1.8 * Math.Cos(Math.PI / 6), 1.8 * Math.Sin(Math.PI / 6)), 100);
             var copy = Create(rig, WeaponKind.Spear, 3); executor.Step(copy, 0, 0.18, 0, 0.18);
             Assert.That(rig.Unit(shifted).Health, Is.EqualTo(90));
         }
