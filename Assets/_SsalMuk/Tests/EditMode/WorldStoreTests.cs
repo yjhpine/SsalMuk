@@ -83,6 +83,59 @@ namespace SsalMuk.Tests
             Assert.That(world.AddExperience(default, 1), Is.GreaterThan(id));
         }
 
+        [Test]
+        public void LocalAndHugeQueriesAgreeWithAllRetainedPositionsAtIntegerWorldEdges()
+        {
+            foreach (var coord in new[] { default(ChunkCoord), new ChunkCoord(long.MaxValue, long.MinValue), new ChunkCoord(long.MinValue, long.MaxValue) })
+            {
+                var index = new SpatialIndex();
+                var positions = new System.Collections.Generic.Dictionary<long, WorldPosition>();
+                var origin = new WorldPosition(coord, new DVec2(31.9, .1)); long id = 0;
+                foreach (double x in new[] { -40d, -32, -.2, 0, .2, 32, 40 })
+                    foreach (double y in new[] { -40d, -.2, 0, .2, 40 })
+                        try { positions.Add(++id, origin.Offset(new DVec2(x, y))); } catch (OverflowException) { }
+                for (int i = 4; i < 30; i++)
+                    positions.Add(++id, new WorldPosition(new ChunkCoord(coord.X >= 0 ? coord.X - i : coord.X + i,
+                        coord.Y >= 0 ? coord.Y - i : coord.Y + i), new DVec2(16, 16)));
+                foreach (var pair in positions) index.Upsert(pair.Key, pair.Value);
+                foreach (double radius in new[] { 0d, .15, 1, 32, 32.0001, double.MaxValue })
+                {
+                    var expected = positions.Where(p => p.Key % 2 == 0 && origin.DistanceTo(p.Value) <= radius).Select(p => p.Key).OrderBy(x => x).ToArray();
+                    CollectionAssert.AreEqual(expected, index.QueryCircle(origin, radius, candidate => candidate % 2 == 0));
+                }
+            }
+        }
+
+        [Test]
+        public void DenseCircleQueriesKeepExactMembershipAcrossCellsMovementAndRemoval()
+        {
+            foreach (var center in new[] { default(ChunkCoord), new ChunkCoord(-100, -33), new ChunkCoord(long.MaxValue - 1, long.MinValue + 1) })
+            {
+                var index = new SpatialIndex();
+                var positions = new System.Collections.Generic.Dictionary<long, WorldPosition>(); long id = 0;
+                for (int cy = -1; cy <= 1; cy++) for (int cx = -1; cx <= 1; cx++)
+                    for (int y = 0; y < 32; y += 2) for (int x = 0; x < 32; x += 2)
+                    {
+                        var position = new WorldPosition(new ChunkCoord(center.X + cx, center.Y + cy), new DVec2(x, y));
+                        positions.Add(++id, position); index.Upsert(id, position);
+                    }
+                for (int phase = 0; phase < 2; phase++)
+                {
+                    foreach (double local in new[] { 0d, .1, 1, 15.5, 31.999999999999996 })
+                        foreach (double radius in new[] { 0d, 1e-12, .26, .52, 1.01, 2.5, 4, 16, 32, 32.000001, 1000 })
+                        {
+                            var origin = new WorldPosition(center, new DVec2(local, local == 0 ? 0 : 32 - local));
+                            var expected = positions.Where(p => p.Key % 3 != 0 && origin.DistanceTo(p.Value) <= radius)
+                                .Select(p => p.Key).OrderBy(candidate => candidate).ToArray();
+                            CollectionAssert.AreEqual(expected, index.QueryCircle(origin, radius, candidate => candidate % 3 != 0));
+                        }
+                    foreach (long key in positions.Keys.ToArray())
+                        if (key % 7 == 0) { index.Remove(key); positions.Remove(key); }
+                        else if (key % 11 == 0) { positions[key] = positions[key].Offset(new DVec2(.125, .25)); index.Upsert(key, positions[key]); }
+                }
+            }
+        }
+
         internal static UnitModel Spawn(WorldStore world, UnitKind kind, WorldPosition position)
         {
             var definition = new UnitDefinition(kind.ToString(), kind, 10, 2, kind == UnitKind.Boss ? 0.75 : 0.26, 1, BigInteger.One);

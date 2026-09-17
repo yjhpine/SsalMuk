@@ -1,10 +1,10 @@
-#requires -Version 7.0
+#requires -Version 7.5
 [CmdletBinding()]
 param(
     [ValidateSet('Static','EditMode','PlayMode','Smoke','Stress')][string]$Mode='Static',
     [string]$Filter='', [string]$Scenario='',
     [string]$ProjectPath=(Join-Path $PSScriptRoot '../..'),
-    [ValidateRange(1,3600)][int]$TimeoutSeconds=180,
+    [ValidateRange(1,14400)][int]$TimeoutSeconds=180,
     [string]$UnityPath=''
 )
 $ErrorActionPreference='Stop'
@@ -38,10 +38,11 @@ $batchProcess=$null
 $failureKind='RunnerError'
 try {
     if ($Mode -in @('Smoke','Stress')) {
-        $failureKind='UnsupportedMode'
-        throw 'Game scenarios are not implemented in A1; this request cannot pass.'
+        $failureKind='InvalidRequest'
+        $allowed=if ($Mode -eq 'Smoke') { @('EndToEnd','RepeatedRestart') } else { @('CrowdCorridor','PersistentWorld10m','PersistentWorld30m','HighGrowth') }
+        if ($Scenario -cnotin $allowed -or $Filter) { throw 'Supply one scenario belonging to this mode and no test filter.' }
     }
-    if ($Scenario) { $failureKind='InvalidRequest'; throw 'Scenario is only supported by the future Smoke/Stress runner.' }
+    elseif ($Scenario) { $failureKind='InvalidRequest'; throw 'Scenario is only supported by Smoke/Stress.' }
     if ($Mode -eq 'Static') {
         $failureKind='StaticChecksFailed'
         & (Join-Path $PSScriptRoot 'tests/result-reader.tests.ps1') | Set-Content -LiteralPath (Join-Path $runDirectory 'static.txt') -Encoding UTF8
@@ -54,7 +55,7 @@ try {
         $receipt=[ordered]@{schemaVersion=1;runId=$runId;sourceHash=$manifest.sourceHash;projectPath=$manifest.projectPath;mode=$Mode;filter=$Filter;requestedUtc=$manifest.startedUtc;startedUtc=$manifest.startedUtc;completedUtc=[DateTime]::UtcNow.ToString('O');status='Passed';errorCount=0;discoveredNames=@();xmlSha256='';unityVersion=$version}
         Write-ValidationJson $receiptPath $receipt
     } else {
-        $request=[ordered]@{schemaVersion=1;runId=$runId;projectPath=$manifest.projectPath;sourceHash=$manifest.sourceHash;mode=$Mode;filter=$Filter;startedUtc=$manifest.startedUtc;timeoutSeconds=$TimeoutSeconds}
+        $request=[ordered]@{schemaVersion=1;runId=$runId;projectPath=$manifest.projectPath;sourceHash=$manifest.sourceHash;mode=$Mode;filter=$Filter;scenario=$Scenario;startedUtc=$manifest.startedUtc;timeoutSeconds=$TimeoutSeconds}
         $instancePath=Join-Path $root 'Library/EditorInstance.json'
         $editorOpen=$false
         if (Test-Path -LiteralPath $instancePath) {

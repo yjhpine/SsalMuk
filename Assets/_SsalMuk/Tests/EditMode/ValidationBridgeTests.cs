@@ -63,5 +63,18 @@ namespace SsalMuk.Tests
             var request = Valid(); request.startedUtc = DateTime.UtcNow.AddMinutes(-10).ToString("O");
             Assert.Throws<InvalidDataException>(() => request.Validate(Root, request.runId));
         }
+
+        [Test]
+        public void LongStressRunKeepsItsExplicitDeadlineAndStillRejectsExpiredRequests()
+        {
+            var request = Valid(); request.mode = "Stress"; request.filter = "";
+            request.scenario = "PersistentWorld30m"; request.timeoutSeconds = 7200;
+            request.startedUtc = DateTime.UtcNow.AddMinutes(-90).ToString("O");
+            Assert.DoesNotThrow(() => request.Validate(Root, request.runId));
+            request.startedUtc = DateTime.UtcNow.AddMinutes(-121).ToString("O");
+            Assert.Throws<InvalidDataException>(() => request.Validate(Root, request.runId));
+            request.startedUtc = DateTime.UtcNow.ToString("O"); request.timeoutSeconds = 14401;
+            Assert.Throws<InvalidDataException>(() => request.Validate(Root, request.runId));
+        }
     }
 }

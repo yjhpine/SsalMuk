@@ -60,9 +60,15 @@ Check 'No discovered tests is rejected' { $r=ReceiptFixture; $r.discoveredNames=
 Check 'Missing XML identity is rejected' { $r=ReceiptFixture; $r.xmlSha256=''; MustThrow { Assert-ValidationReceipt (ManifestFixture) $r } }
 $fixture=Join-Path $PSScriptRoot ('../../../Logs/Validation/reader-fixture-'+[guid]::NewGuid().ToString('N')+'.json')
 [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($fixture))) | Out-Null
-[IO.File]::WriteAllText($fixture,'{"status":"Ready"}')
+[IO.File]::WriteAllText($fixture,'{"status":"Ready","startedUtc":"2026-09-16T18:21:00.4534543Z"}')
 try {
     Check 'Available JSON is read' { Must ((Read-ValidationJson $fixture).status -eq 'Ready') }
+    Check 'Timestamp strings retain UTC and subsecond identity' {
+        $timestamp=(Read-ValidationJson $fixture).startedUtc
+        Must ($timestamp -is [string])
+        Must ($timestamp -ceq '2026-09-16T18:21:00.4534543Z')
+        Must ([DateTimeOffset]::Parse($timestamp).Offset -eq [TimeSpan]::Zero)
+    }
     Check 'Optional heartbeat retries an exclusively locked file' {
         $lock=[IO.File]::Open($fixture,'Open','ReadWrite','None')
         try { Must ($null -eq (Read-ValidationJson $fixture -IfAvailable)) }
@@ -75,3 +81,27 @@ try {
     }
 } finally { [IO.File]::Delete($fixture) }
 Write-Output "Result reader: $script:passed passed."
+
+function ScenarioFixture {
+    [pscustomobject]@{
+        schemaVersion=1;runId='0123456789abcdef0123456789abcdef';sourceHash=('a'*64);scenario='EndToEnd';status='Passed';errorCount=0
+        startedUtc='2026-09-16T00:00:01Z';completedUtc='2026-09-16T00:00:02Z';unityVersion='6000.4.6f1';environment='Editor'
+        processor='CPU';graphics='GPU';operatingSystem='Windows';systemMemoryMB=16384;width=1920;height=1080;seed=1;preset='Fixture';executionMode='Fixed ticks'
+        steps=50;simulationSeconds=1
+        observations=@('GameStart','Attack','ExperienceGrounded','ExperienceAttracting','ExperienceFlight','ExperienceContact','ChoiceButton','Death','Results','Restart','CleanScope')
+        samples=@([pscustomobject]@{runId='11111111111111111111111111111111';phase='Running';brain='Collect';target='';pendingStrikes='1';elapsed=1;playerHealth=100;maxAttackDispatchDelay=.02;oldestPathWaitSeconds=0;kills=0;launches=1;spawnedNormal=0;spawnedAir=0;spawnedBoss=0;pendingSpawnCount=0;units=13;experience=0;attracting=0;visibleUnits=13;visibleExperience=0;visibleAttacks=0;retainedViews=13;projectiles=0;pathRequests=0;scopeCount=1})
+        metrics=[pscustomobject]@{tickCount=50;renderCount=1;allocatedBytes=10;peakManagedBytes=100;peakUnityBytes=200;peakWorkingSetBytes=300;modelMeanMs=1;modelP95Ms=2;modelMaxMs=3;viewMeanMs=1;viewP95Ms=1;frameWallP95Ms=16;wallSeconds=1;allocationSource='Counter';memorySource='Counter'}
+    }
+}
+function VerifyScenario($value) { Assert-ScenarioReport $value '0123456789abcdef0123456789abcdef' ('a'*64) 'EndToEnd' }
+Check 'Complete runtime evidence is accepted' { VerifyScenario (ScenarioFixture) }
+Check 'Scenario missing observation is rejected' { $r=ScenarioFixture; $r.observations=@('GameStart'); MustThrow { VerifyScenario $r } }
+Check 'Missing metrics does not pass' { $r=ScenarioFixture; $r.PSObject.Properties.Remove('metrics'); MustThrow { VerifyScenario $r } }
+Check 'Missing sample field does not become zero' { $r=ScenarioFixture; $r.samples[0].PSObject.Properties.Remove('pathRequests'); MustThrow { VerifyScenario $r } }
+Check 'Other runtime identity is rejected' { $r=ScenarioFixture; $r.runId='old'; MustThrow { VerifyScenario $r } }
+Check 'Different runtime source is rejected' { $r=ScenarioFixture; $r.sourceHash=('b'*64); MustThrow { VerifyScenario $r } }
+Check 'No actual simulation ticks is rejected' { $r=ScenarioFixture; $r.metrics.tickCount=0; MustThrow { VerifyScenario $r } }
+Check 'NaN model time is rejected' { $r=ScenarioFixture; $r.metrics.modelP95Ms=[double]::NaN; MustThrow { VerifyScenario $r } }
+Check 'Runtime error is rejected' { $r=ScenarioFixture; $r.errorCount=1; MustThrow { VerifyScenario $r } }
+Check 'Duplicate observations are rejected' { $r=ScenarioFixture; $r.observations+=@('GameStart'); MustThrow { VerifyScenario $r } }
+Write-Output "Extended result reader: $script:passed passed."

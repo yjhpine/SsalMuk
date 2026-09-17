@@ -1,7 +1,7 @@
 # SsalMuk 개발 하네스 설계
 
 - 작성일: 2026-09-16
-- 상태: A1~A5·B1~B4·C1~C3·D1~D2 구현·검증 완료 · 통합 시나리오·성능·실제 빌드는 D3에서 진행
+- 상태: A~D 기본 기능·통합 도구·Windows 빌드 구현 · 사용자 지시로 D3 추가 검사 종료(30분 미완료) · 실제 플레이·밸런스 단계
 - 기준: [게임 기획서](../planning/GAME_DESIGN.md), [구조 설계](../superpowers/specs/2026-09-16-ssalmuk-architecture-design.md)
 
 하네스는 사용자와 합의한 규칙에 맞춰 Codex가 개발·수정·검증하는 환경이다. 게임 내부의 low AI와 별개다. 문서·작업 규칙·실행 도구·검증 증거가 서로 연결되어야 하며, 이 문서를 작성한 것만으로 하네스가 실행 가능해졌다고 보고하지 않는다.
@@ -54,9 +54,13 @@
 
 ## 4. 검증 도구의 구조
 
-`tools/validation/validate.ps1`을 공통 진입점으로 구현했다. `Static`, `EditMode`, `PlayMode`, `Smoke`, `Stress` 모드를 명시적으로 선택하고, 모든 변경에 가장 무거운 모드를 자동 실행하지 않는다. 현재 Static/EditMode/PlayMode를 지원하며, Smoke/Stress는 D3 구현 전까지 `UnsupportedMode`로 실패한다. Editor 연결 여부에 따라 테스트 API 또는 배치 실행으로 연결하되 같은 결과 계약을 사용한다.
+PowerShell 7.5 이상의 `tools/validation/validate.ps1`을 공통 진입점으로 구현했다. `Static`, `EditMode`, `PlayMode`, `Smoke`, `Stress` 모드를 명시적으로 선택하고, 모든 변경에 가장 무거운 모드를 자동 실행하지 않는다. Smoke는 EndToEnd·RepeatedRestart, Stress는 CrowdCorridor·PersistentWorld10m·PersistentWorld30m·HighGrowth를 지원한다. 알 수 없는 이름과 모드 조합을 거절한다. 시나리오도 실행 ID·소스 해시·시각·필수 관측·실제 주기 수·성능 필드와 결과 파일 해시를 모두 대조한다.
 
-현재 입력은 프로젝트 경로, 검증 모드, 이름 필터, 제한 시간, 닫힌 프로젝트용 Unity 경로다. 시드·설정 프리셋·시나리오 실행은 후속 단계다. 결과 경로는 실행기가 새로 정한다. 실행기는 동일 프로젝트 점유 상태를 검사하며, 유효하지 않은 경로·컴파일 실패·테스트 시간 초과·빈 검색 결과를 실패로 남긴다.
+Windows 개발 빌드는 열린 Editor의 `BuildValidator.QueueWindows`로 MainMenu·Battle을 명시해 생성한다. Unity가 빌드 중 자동 저장하는 설정은 실행 전 파일을 백업하고 성공/실패 모두 복원한다. `tools/validation/run-build-smoke.ps1`은 해당 빌드의 실제 exe로 위 여섯 시나리오를 실행하고 소스 일치·종료 코드·결과를 확인한다. 숨긴 창의 촬영은 같은 런타임 카메라와 활성 UI를 별도 렌더 대상으로 그린 결과이며, 해당 관측을 기록한다. 측정 조건과 실제 통과 실행은 [D3 검증](D3_VALIDATION.md)을 따른다.
+
+현재 입력은 프로젝트 경로, 검증 모드, 이름 필터, 시나리오 이름, 제한 시간, 닫힌 프로젝트용 Unity 경로다. 각 시나리오의 시드·설정 프리셋은 ScenarioDefinition과 실행 결과에 명시한다. 결과 경로는 실행기가 새로 정한다. 실행기는 동일 프로젝트 점유 상태를 검사하며, 유효하지 않은 경로·컴파일 실패·테스트 시간 초과·빈 검색 결과를 실패로 남긴다.
+
+제한 시간은 기본 180초다. 오래 걸리는 진단은 Editor 진입점에 최대 14,400초, Windows 실행 파일 진입점에 최대 43,200초를 명시할 수 있다. 요청에 기록된 기한을 넘기면 취소한다. 이는 검증 도구의 기한이며 게임의 생존 시간이나 개체 수를 제한하지 않는다. Windows 실행의 manifest에는 해당 프로세스 ID도 기록한다. 같은 실행 ID의 `cancel.json`이 있거나 실행 도구가 오류로 종료되면 직접 시작한 프로세스를 정리한다.
 
 결과 경로는 기존 Unity 무시 규칙에 포함되는 `Logs/Validation/<새 실행 ID>/`다.
 
@@ -65,8 +69,9 @@
 | `manifest.json` | 실행 ID, 시작·종료 시간, 프로젝트 경로, Unity·패키지 버전, Git HEAD와 관련 소스 해시, 시드·프리셋·모드·필터 |
 | `editmode.xml`, `playmode.xml` | 해당 모드를 실제 실행했을 때 생성된 테스트 결과 |
 | `receipt.json` | 실행 ID·소스 해시·시간·버전, 발견한 테스트 전체 이름, XML 해시, 완료/실패 원인 |
-| `runtime.json` | 수행한 시나리오, 모델 상태 관측, 생성·종료 순서, 실패 지점 |
-| `metrics.json` | 성능 검증을 수행했을 때만 시간·메모리·누적 개체·대기량 측정 |
+| `scenario.json` | 수행한 시나리오, 필수 관측, 실제 주기 수, 실패 지점, 시간·메모리 측정과 개체·대기량 표본 |
+| `progress.json` | 장시간 시나리오의 최근 시뮬레이션 시간·개체 수·처리 주기 수 |
+| `build.json`, `standalone-manifest.json` | Windows 개발 빌드와 실제 실행 파일 검증, 소스·실행 파일·설정 보존 해시 |
 | 화면 증거 | 필요한 경우 해당 실행에서 얻은 화면 또는 영상 |
 | Editor 원시 출력 | 컴파일·런타임 예외와 도구 오류의 근거 |
 
@@ -82,7 +87,7 @@ PowerShell 7에서 다음 명령을 사용한다.
 
 필터는 정규식이 아닌 이름 접두사다. 테스트는 해당 모드의 `SsalMuk.Tests.*` 조립 단위 안에서 검색한다. 미저장 씬이 있으면 `EditorBusy`로 실패하며 강제로 저장하지 않는다. 활성 요청은 SessionState로 유지하고 PlayMode 종료·씬/설정 복원 후 소스 상태를 대조한다. Windows의 잠깐 파일 잠금은 제한된 재시도로 처리하고, 지속되는 오류를 통과로 바꾸지 않는다.
 
-A1~A5·B1~B4·C1~C3·D1~D2 검증은 열린 Editor 경로를 사용했다. D2 완료 시 EditMode 168개와 PlayMode 20개, Static 판독 검사가 통과했다. 실제 아트 import·피격·보행·공격 범위·발광 경험치 비행·풀 재사용·원거리 모델 보존과 화면 픽셀을 확인했다. 최신 실행 ID와 소스 해시는 [인계](HANDOFF.md)를 따른다. 범용 Smoke/Stress와 실제 Windows 빌드 실행은 D3에 남아 있어 H01~H30 전체 완료를 뜻하지 않는다.
+A~D에서 모델·Unity 표시·통합 시나리오·Windows 실행을 확인했다. D3 게임 코드의 EditMode 175개·PlayMode 21개·짧은 시나리오 4종·10분 누적·Windows 시작/전투/사망/재시작이 통과했다. 30분은 기한 초과로 미완료다. 이후 Windows 검사 도구 확장에 대한 검증 범위와 설정 캐시 문제는 [D3 결과](D3_VALIDATION.md)를 따른다. 2026-09-17 사용자의 검사 종료 지시에 따라 추가 실행 없이 [실제 플레이·밸런스](PLAYTEST_TUNING.md)로 전환한다.
 
 ## 5. 재현과 관측 경계
 

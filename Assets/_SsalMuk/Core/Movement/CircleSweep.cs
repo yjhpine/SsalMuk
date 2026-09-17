@@ -24,7 +24,8 @@ namespace SsalMuk.Core
                 if (inward < 0) remaining -= hit.Value.Normal * inward;
                 else break;
             }
-            if (!query.IsCircleFree(position, radius)) throw new InvalidOperationException("Obstacle penetration after movement correction.");
+            if (!query.IsCircleFree(position, radius)) throw new InvalidOperationException(FormattableString.Invariant(
+                $"Obstacle penetration after movement correction. Start=({start.Chunk.X},{start.Chunk.Y};{start.Local.X:R},{start.Local.Y:R}), movement=({displacement.X:R},{displacement.Y:R}), radius={radius:R}, result=({position.Chunk.X},{position.Chunk.Y};{position.Local.X:R},{position.Local.Y:R})."));
             return position;
         }
 
@@ -42,17 +43,20 @@ namespace SsalMuk.Core
             if (min.X > max.X || min.Y > max.Y) throw new ArgumentException("Box bounds are reversed.");
             if (OverlapsBox(start, radius, min, max)) throw new InvalidOperationException("Sweep starts inside an obstacle.");
             double best = double.PositiveInfinity; DVec2 normal = default;
-            if (displacement.X > Epsilon) Face((min.X - radius - start.X) / displacement.X, new DVec2(-1, 0), true);
-            if (displacement.X < -Epsilon) Face((max.X + radius - start.X) / displacement.X, new DVec2(1, 0), true);
-            if (displacement.Y > Epsilon) Face((min.Y - radius - start.Y) / displacement.Y, new DVec2(0, -1), false);
-            if (displacement.Y < -Epsilon) Face((max.Y + radius - start.Y) / displacement.Y, new DVec2(0, 1), false);
+            if (displacement.X > 0) Face((min.X - radius - start.X) / displacement.X, new DVec2(-1, 0), true);
+            if (displacement.X < 0) Face((max.X + radius - start.X) / displacement.X, new DVec2(1, 0), true);
+            if (displacement.Y > 0) Face((min.Y - radius - start.Y) / displacement.Y, new DVec2(0, -1), false);
+            if (displacement.Y < 0) Face((max.Y + radius - start.Y) / displacement.Y, new DVec2(0, 1), false);
             Corner(new DVec2(min.X, min.Y), -1, -1); Corner(new DVec2(min.X, max.Y), -1, 1);
             Corner(new DVec2(max.X, min.Y), 1, -1); Corner(new DVec2(max.X, max.Y), 1, 1);
             return double.IsPositiveInfinity(best) ? (SweepHit?)null : new SweepHit(best, normal, WorldPosition.FromLocal(start + displacement * best));
 
             void Face(double t, DVec2 n, bool vertical)
             {
-                if (t < -Epsilon || t > 1 || t >= best) return;
+                // IsCircleFree tolerates a tiny squared-distance overlap. Treat that same shell as
+                // contact at t=0, rather than rejecting an entry time just behind the start.
+                double tolerance = radius - Math.Sqrt(Math.Max(0, radius * radius - Epsilon)) + Epsilon;
+                if ((t < 0 && -t * Math.Abs(vertical ? displacement.X : displacement.Y) > tolerance) || t > 1 || t >= best) return;
                 var p = start + displacement * Math.Max(0, t);
                 double along = vertical ? p.Y : p.X, low = vertical ? min.Y : min.X, high = vertical ? max.Y : max.X;
                 if (along < low - Epsilon || along > high + Epsilon) return;
@@ -62,11 +66,11 @@ namespace SsalMuk.Core
             {
                 var offset = start - corner;
                 double a = DVec2.Dot(displacement, displacement);
-                if (a <= Epsilon) return;
+                if (a <= 0) return;
                 double b = DVec2.Dot(offset, displacement), c = DVec2.Dot(offset, offset) - radius * radius;
                 double discriminant = b * b - a * c;
                 if (discriminant < 0) return;
-                double t = (-b - Math.Sqrt(discriminant)) / a;
+                double t = c < 0 && b < 0 ? 0 : (-b - Math.Sqrt(discriminant)) / a;
                 if (t < -Epsilon || t > 1 || t >= best) return;
                 var delta = start + displacement * Math.Max(0, t) - corner;
                 if (delta.X * sx < -Epsilon || delta.Y * sy < -Epsilon || DVec2.Dot(displacement, delta) >= -Epsilon) return;

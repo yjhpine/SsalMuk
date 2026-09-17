@@ -77,7 +77,7 @@ namespace SsalMuk.Editor.Validation
         public string startedUtc, jobId;
         public string[] discoveredNames = Array.Empty<string>();
         public int errorCount;
-        public bool resultSaved, testsPassed;
+        public bool resultSaved, testsPassed, scenarioStarted;
         public string resultMessage, xmlHash;
     }
 
@@ -86,7 +86,7 @@ namespace SsalMuk.Editor.Validation
     {
         public int schemaVersion = 1;
         public string runId, sourceHash, projectPath, mode, filter, requestedUtc, startedUtc, completedUtc;
-        public string status, failureKind, message, xmlSha256, unityVersion;
+        public string status, failureKind, message, xmlSha256, unityVersion, scenario, scenarioSha256;
         public int errorCount;
         public string[] discoveredNames;
     }

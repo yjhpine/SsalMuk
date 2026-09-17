@@ -69,17 +69,56 @@ namespace SsalMuk.Core
         public IReadOnlyList<long> QueryCircle(WorldPosition origin, double radius, Func<long, bool> accepts = null)
         {
             RequireRadius(radius); var result = new List<long>();
-            foreach (var chunk in chunks)
+            if (radius <= WorldPosition.ChunkSize && chunks.Count > 9)
             {
-                if (LowerBound(origin, new WorldPosition(chunk.Key, DVec2.Zero), 32) > radius) continue;
-                foreach (var cell in chunk.Value)
+                // A local circle touches at most the surrounding nine chunks. Far living entities
+                // remain indexed; their growing count need not make every local query scan them.
+                int minChunkX = origin.Local.X - radius <= 0 ? -1 : 0;
+                int maxChunkX = origin.Local.X + radius >= WorldPosition.ChunkSize ? 1 : 0;
+                int minChunkY = origin.Local.Y - radius <= 0 ? -1 : 0;
+                int maxChunkY = origin.Local.Y + radius >= WorldPosition.ChunkSize ? 1 : 0;
+                for (int y = minChunkY; y <= maxChunkY; y++) for (int x = minChunkX; x <= maxChunkX; x++)
                 {
-                    if (LowerBound(origin, new WorldPosition(cell.Chunk, new DVec2(cell.X, cell.Y)), 1) > radius) continue;
-                    foreach (long id in cells[cell])
-                        if ((accepts == null || accepts(id)) && origin.DistanceTo(positions[id]) <= radius) result.Add(id);
+                    if ((x < 0 && origin.Chunk.X == long.MinValue) || (x > 0 && origin.Chunk.X == long.MaxValue) ||
+                        (y < 0 && origin.Chunk.Y == long.MinValue) || (y > 0 && origin.Chunk.Y == long.MaxValue)) continue;
+                    var coord = new ChunkCoord(origin.Chunk.X + x, origin.Chunk.Y + y);
+                    if (chunks.TryGetValue(coord, out var region)) Collect(coord, region);
                 }
             }
+            else foreach (var chunk in chunks) Collect(chunk.Key, chunk.Value);
             result.Sort(); return result.AsReadOnly();
+
+            void Collect(ChunkCoord coord, HashSet<GridCell> region)
+            {
+                if (LowerBound(origin, new WorldPosition(coord, DVec2.Zero), 32) > radius) return;
+                if (radius <= WorldPosition.ChunkSize)
+                {
+                    var local = new WorldPosition(coord, DVec2.Zero).DisplacementTo(origin);
+                    // Include one extra cell at each edge so floating-point boundary rounding
+                    // cannot narrow the broad phase. Exact distances still decide membership.
+                    int minX = Math.Max(0, (int)Math.Floor(local.X - radius) - 1);
+                    int maxX = Math.Min(31, (int)Math.Floor(local.X + radius) + 1);
+                    int minY = Math.Max(0, (int)Math.Floor(local.Y - radius) - 1);
+                    int maxY = Math.Min(31, (int)Math.Floor(local.Y + radius) + 1);
+                    if (minX > maxX || minY > maxY) return;
+                    if ((maxX - minX + 1) * (maxY - minY + 1) < region.Count)
+                    {
+                        for (int y = minY; y <= maxY; y++) for (int x = minX; x <= maxX; x++)
+                            if (cells.TryGetValue(new GridCell(coord, x, y), out var ids)) CollectIds(ids);
+                        return;
+                    }
+                }
+                foreach (var cell in region)
+                {
+                    if (LowerBound(origin, new WorldPosition(cell.Chunk, new DVec2(cell.X, cell.Y)), 1) > radius) continue;
+                    CollectIds(cells[cell]);
+                }
+            }
+            void CollectIds(SortedSet<long> ids)
+            {
+                foreach (long id in ids)
+                    if ((accepts == null || accepts(id)) && origin.DistanceTo(positions[id]) <= radius) result.Add(id);
+            }
         }
 
         private static double LowerBound(WorldPosition origin, WorldPosition minimum, double size)

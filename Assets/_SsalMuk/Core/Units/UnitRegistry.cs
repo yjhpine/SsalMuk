@@ -7,8 +7,8 @@ namespace SsalMuk.Core
     {
         private readonly Dictionary<long, UnitModel> units = new Dictionary<long, UnitModel>();
         private long lastId;
-        internal event Action<UnitModel> Registered;
-        internal event Action<UnitModel> Removed;
+        public event Action<UnitModel> Registered;
+        public event Action<UnitModel> Removed;
         public Guid RunId { get; }
         public int Count => units.Count;
         public IReadOnlyCollection<UnitModel> Units => units.Values;

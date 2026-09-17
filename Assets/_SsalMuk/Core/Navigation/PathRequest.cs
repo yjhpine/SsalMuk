@@ -16,6 +16,7 @@ namespace SsalMuk.Core
         public PathStatus Status { get; private set; } = PathStatus.Pending;
         public IReadOnlyList<WorldPosition> Waypoints { get; }
         internal bool Cancelled { get; set; }
+        internal long RequestedAtAdvance { get; set; }
         public void Cancel() => Cancelled = true;
         internal PathRequest(WorldStore world, NavigationGrid grid, WorldPosition start, WorldPosition target, System.Func<GridCell, double> risk)
         {

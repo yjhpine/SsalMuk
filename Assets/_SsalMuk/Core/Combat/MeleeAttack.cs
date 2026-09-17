@@ -23,7 +23,8 @@ namespace SsalMuk.Core
             var originStart = previousPlayer.Offset(playerTravel * startFraction + copyOffset);
             var originEnd = previousPlayer.Offset(playerTravel * endFraction + copyOffset);
             double previousProgress = Math.Max(0, Math.Min(1, (lo - attack.StartedAt) / attack.ActiveSeconds));
-            double progress = Math.Max(previousProgress, Math.Min(1, (hi - attack.StartedAt) / attack.ActiveSeconds));
+            double progress = hi >= attack.StartedAt + attack.ActiveSeconds ? 1 :
+                Math.Max(previousProgress, Math.Min(1, (hi - attack.StartedAt) / attack.ActiveSeconds));
             double queryRadius = attack.Stats.Range + definition.Width + movement.LargestBodyRadius + movement.MaximumDisplacement + playerTravel.Length;
             foreach (long id in run.World.Query.QueryCircle(originEnd, queryRadius))
             {

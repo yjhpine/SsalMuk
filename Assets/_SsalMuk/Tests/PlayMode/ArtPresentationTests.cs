@@ -51,6 +51,7 @@ namespace SsalMuk.Tests
             Assert.That(run.World.TryGetExperience(green, out var flying), Is.True); Assert.That(flying.State, Is.EqualTo(ExperienceState.Attracting));
             Assert.That(run.Player.Growth.ExperienceIntoLevel, Is.EqualTo(System.Numerics.BigInteger.Zero));
             yield return Capture(Path.Combine(folder, "experience-attraction.png"));
+            Assert.That(app.Hud.WeaponsText.text, Does.Contain("철검").And.Contain("철창").And.Contain("철도끼").And.Contain("파이어볼"));
             int steps = 0;
             while (run.World.TryGetExperience(green, out _) && steps++ < 100) simulation.Step(0.02);
             Assert.That(run.World.TryGetExperience(green, out _), Is.False); presenter.Refresh(run);

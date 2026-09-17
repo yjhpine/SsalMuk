@@ -10,6 +10,21 @@ namespace SsalMuk.Tests
     public sealed class WeaponSchedulingTests
     {
         [Test]
+        public void FractionalMeleeDurationsRetireEveryExpiredInstance()
+        {
+            foreach (var kind in new[] { WeaponKind.Spear, WeaponKind.Axe })
+            {
+                using var rig = RunTestRig.Create(enableAi: false);
+                rig.Equip(kind); rig.Upgrade(kind, UpgradeKind.Speed, 10);
+                rig.Spawn(UnitKind.Air, new DVec2(50, 0), 1000);
+                using var runtime = new WeaponRuntime(rig.Run, kind, rig.Movement, rig.Damage);
+                runtime.Tick(0, 20);
+                Assert.That(runtime.LaunchCount, Is.GreaterThan(10));
+                Assert.That(runtime.ActiveAttacks.All(a => a.StartedAt + a.ActiveSeconds > 20), Is.True,
+                    kind + " retained attacks whose progress rounded below one.");
+            }
+        }
+        [Test]
         public void CopyIndicesAlternateLeftRightWithoutIntegerTruncation()
         {
             foreach (var kind in new[] { WeaponKind.Sword, WeaponKind.Spear, WeaponKind.Fireball })

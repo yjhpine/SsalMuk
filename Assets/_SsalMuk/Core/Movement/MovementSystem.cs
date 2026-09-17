@@ -18,6 +18,7 @@ namespace SsalMuk.Core
         public IReadOnlyDictionary<long, WorldPosition> PreviousPositions { get; }
         public double LargestBodyRadius { get; private set; }
         public double MaximumDisplacement { get; private set; }
+        public NavigationService Navigation => navigation;
         public EnemyFsm GetEnemyFsm(long id) => enemies.TryGetValue(id, out var fsm) ? fsm : throw new ArgumentException("No enemy FSM for this ID.");
         public MovementSystem(WorldStore world, NavigationService navigation, PlayerModel player, MovementSettings settings = null)
         {

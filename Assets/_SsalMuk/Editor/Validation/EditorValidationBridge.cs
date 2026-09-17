@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditor.TestTools.TestRunner.Api;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using SsalMuk.Unity.Diagnostics;
 
 namespace SsalMuk.Editor.Validation
 {
@@ -84,6 +85,7 @@ namespace SsalMuk.Editor.Validation
                     else if (DateTimeOffset.UtcNow > DateTimeOffset.Parse(active.request.startedUtc).AddSeconds(active.request.timeoutSeconds))
                         Cancel("Timeout", "Test execution exceeded the request deadline.");
                     else if (EditorUtility.scriptCompilationFailed) Cancel("CompilationFailed", "Unity reports script compilation errors.");
+                    else if (active.request.IsScenario && !active.resultSaved) ProgressScenario(directory);
                     else if (active.resultSaved && !TestsBusy() && !EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isUpdating)
                     {
                         // PlayMode reports its result before restoring scenes and project settings.
@@ -93,7 +95,7 @@ namespace SsalMuk.Editor.Validation
                         else
                         {
                             bool passed = active.testsPassed && active.errorCount == 0;
-                            Finish(passed ? "Passed" : "Failed", passed ? "" : "TestsFailed", active.resultMessage, active.xmlHash);
+                            Finish(passed ? "Passed" : "Failed", passed ? "" : active.request.IsScenario ? "ScenarioFailed" : "TestsFailed", active.resultMessage, active.xmlHash);
                         }
                     }
                     return;
@@ -142,6 +144,7 @@ namespace SsalMuk.Editor.Validation
                 if (ValidationFiles.SourceHash() != request.sourceHash) { Fail("SourceChanged", "Sources changed before execution."); return; }
                 for (int i = 0; i < SceneManager.sceneCount; i++)
                     if (SceneManager.GetSceneAt(i).isDirty) { Fail("EditorBusy", "Save the open scene before running validation."); return; }
+                if (request.IsScenario) { EditorApplication.isPlaying = true; return; }
                 api = ScriptableObject.CreateInstance<TestRunnerApi>();
                 TestMode mode = request.mode == "EditMode" ? TestMode.EditMode : TestMode.PlayMode;
                 api.RetrieveTestList(mode, tree => StartTests(id, mode, tree));
@@ -169,6 +172,34 @@ namespace SsalMuk.Editor.Validation
                 if (active?.request.runId == id) { active.jobId = job; Persist(); }
             }
             catch (Exception error) { Fail("TestExecutionFailed", error.Message); }
+        }
+
+        private static void ProgressScenario(string directory)
+        {
+            string path = Path.Combine(directory, "scenario.json");
+            if (File.Exists(path))
+            {
+                var report = JsonUtility.FromJson<ScenarioReport>(File.ReadAllText(path));
+                active.testsPassed = report != null && report.status == "Passed" && report.errorCount == 0 &&
+                    report.runId == active.request.runId && report.sourceHash == active.request.sourceHash &&
+                    report.scenario == active.request.scenario && report.samples.Length > 0 && report.observations.Length > 0;
+                active.resultMessage = report?.message ?? "Scenario result is missing.";
+                active.discoveredNames = new[] { active.request.scenario };
+                active.xmlHash = ValidationFiles.FileHash(path); active.resultSaved = true; Persist();
+                EditorApplication.isPlaying = false; return;
+            }
+            if (!EditorApplication.isPlaying)
+            {
+                if (active.scenarioStarted && !EditorApplication.isPlayingOrWillChangePlaymode)
+                    Fail("ScenarioInterrupted", "Play mode ended before the scenario report.");
+                return;
+            }
+            if (active.scenarioStarted) return;
+            var host = new GameObject("SsalMuk validation scenario");
+            UnityEngine.Object.DontDestroyOnLoad(host);
+            var runner = host.AddComponent<ScenarioRunner>();
+            active.scenarioStarted = true; Persist();
+            runner.StartCoroutine(runner.Run(active.request.scenario, directory, active.request.runId, active.request.sourceHash));
         }
 
         private static IEnumerable<string> Discover(ITestAdaptor test, string assembly, string pattern, bool selected)
@@ -221,8 +252,10 @@ namespace SsalMuk.Editor.Validation
         private static void Cancel(string kind, string message)
         {
             string job = active?.jobId;
+            bool scenario = active?.request.IsScenario == true;
             Fail(kind, message);
             if (!string.IsNullOrEmpty(job)) TestRunnerApi.CancelTestRun(job);
+            if (scenario && EditorApplication.isPlayingOrWillChangePlaymode) EditorApplication.isPlaying = false;
         }
 
         internal static void Fail(string kind, string message)
@@ -239,6 +272,7 @@ namespace SsalMuk.Editor.Validation
                 startedUtc = active.startedUtc, completedUtc = DateTime.UtcNow.ToString("O"), status = status,
                 failureKind = kind, message = message ?? "", errorCount = active.errorCount,
                 discoveredNames = active.discoveredNames, xmlSha256 = xmlHash, unityVersion = Application.unityVersion
+                , scenario = request.scenario ?? "", scenarioSha256 = request.IsScenario ? xmlHash : ""
             });
             active = null;
             SessionState.EraseString(SessionKey);

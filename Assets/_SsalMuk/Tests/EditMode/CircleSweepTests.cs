@@ -44,6 +44,34 @@ namespace SsalMuk.Tests
 
         internal static WorldStore CreateWall() => new WorldStore(new UnitRegistry(Guid.NewGuid()), new SingleWall(default, 5, 4));
 
+        [TestCase(false)] [TestCase(true)]
+        public void ContactWithinOverlapToleranceBlocksFurtherInwardMovement(bool corner)
+        {
+            using var world = CreateWall();
+            double offset = corner ? .26 / Math.Sqrt(2) : .26;
+            var start = WorldPosition.FromLocal(new DVec2(5 - offset + 1e-10, corner ? 4 - offset + 1e-10 : 4.5));
+            var displacement = corner ? new DVec2(.02, .02) : new DVec2(.03, 0);
+            Assert.That(world.Query.IsCircleFree(start, .26), Is.True);
+            Assert.That(world.Query.SweepCircle(start, displacement, .26).HasValue, Is.True);
+            var result = CircleSweep.MoveAndSlide(world.Query, start, displacement, .26);
+            Assert.That(world.Query.IsCircleFree(result, .26), Is.True);
+            Assert.That(start.DistanceTo(result), Is.LessThan(1e-6));
+        }
+
+        [Test]
+        public void TinyCrowdCorrectionStillCollidesWithRoundedObstacleCorner()
+        {
+            using var world = new WorldStore(new UnitRegistry(Guid.NewGuid()), new SingleWall(default, 16, 13));
+            double offset = .26 / Math.Sqrt(2) + 1e-7;
+            var start = WorldPosition.FromLocal(new DVec2(16 - offset, 13 - offset));
+            var displacement = new DVec2(2e-6, 2e-6);
+            Assert.That(world.Query.IsCircleFree(start, .26), Is.True);
+            var hit = world.Query.SweepCircle(start, displacement, .26);
+            Assert.That(hit.HasValue, Is.True, "Small crowd corrections must not skip corner collision.");
+            var result = CircleSweep.MoveAndSlide(world.Query, start, displacement, .26);
+            Assert.That(world.Query.IsCircleFree(result, .26), Is.True);
+        }
+
         internal sealed class SingleWall : IChunkGenerator
         {
             private readonly ChunkCoord coord; private readonly int x, y;

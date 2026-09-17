@@ -86,16 +86,17 @@ public void WalkingReturnsToTheFloorBetweenHops()
 검증: EditMode `b51b655e0aeb421db0d895fd22d4afc4` 168개, PlayMode `8987d377c4df4121bf78c3a35512597c` 20개, Static `cb0cf36f9a1e410e9b41befe8ca0e2c8`. 소스 해시 `264682303524aef78e5069a2f23794c295fb22d195bd531f32824bc6d8592d4d`.
 
 ## Task D3: 시나리오 실행·장시간 보존·빌드 검증
+**2026-09-17 종료 지시:** 사용자가 충분히 검사했으므로 현재 검사를 종료하고 다음 단계로 진행하도록 지시했다. 아래 체크는 실제 구현·완료한 실행만 표시한다. 10분 검사는 통과했고 30분 전체는 기한 초과로 미완료다. 게임 코드 이후 변경한 Windows 검사 도구의 실제 장시간·취소 동작도 미검증이다. 상세 근거는 [D3 결과](../../development/D3_VALIDATION.md), 다음 단계는 [실제 플레이·밸런스](../../development/PLAYTEST_TUNING.md)를 따른다. 장시간 검사를 자동 재개하지 않는다.
 
-**Files:** 생성 `Unity/Diagnostics/ScenarioRunner.cs`, `ScenarioDefinition.cs`, `RuntimeProbe.cs`, `MetricsCollector.cs`, `BuildSmokeRunner.cs`, `Editor/Validation/BuildValidator.cs`, `Tests/PlayMode/EndToEndTests.cs`, `Tests/EditMode/PersistenceStressTests.cs`; 수정 `tools/validation/validate.ps1`, `Editor/Validation/EditorValidationBridge.cs`, `Tests/Shared/RunTestRig.cs`, 전체 계획의 완료 체크박스.
+**Files:** 생성 `Unity/Diagnostics/ScenarioRunner.cs`, `ScenarioDefinition.cs`, `DiagnosticSession.cs`, `RuntimeProbe.cs`, `MetricsCollector.cs`, `BuildSmokeRunner.cs`, `Editor/Validation/BuildValidator.cs`, `Tests/PlayMode/EndToEndTests.cs`, `tools/validation/run-build-smoke.ps1`; 수정 `tools/validation/validate.ps1`, `read-results.ps1`, `tests/result-reader.tests.ps1`, `Editor/Validation/EditorValidationBridge.cs`, `ValidationRequest.cs`, `ValidationFiles.cs`, `Tests/EditMode/WorldStoreTests.cs`, `CircleSweepTests.cs`, `WeaponSchedulingTests.cs`, `ValidationBridgeTests.cs`, 실제 검증 중 수정한 전투·이동·공간 검색·관측 코드와 완료 체크박스. 원거리 보존은 기존 WorldStore/PersistentWorldView 검사와 두 장시간 시나리오에 통합했다.
 
-**Interfaces:** `ScenarioRunner.Run(string scenarioId,string outputDirectory)` → 비동기 완료 상태; `RuntimeProbe.Capture()` → RunId·시계·FSM·목표·논리 수·표시 수·예약 수의 스냅샷. `BuildValidator.BuildWindows(string outputPath)`는 BuildReport를 확인한다. `BuildSmokeRunner`는 개발 빌드의 명시적 시나리오 인수가 있을 때만 실행한다. 일반 게임 메뉴에 검증 도구를 노출하지 않는다.
+**Interfaces:** `ScenarioRunner.Run(string scenarioId,string outputDirectory,string requestRunId = null,string sourceHash = null)` → IEnumerator와 Report/Finished; `RuntimeProbe.Capture(RunModel run,RunSimulation simulation,WorldView view)` → RunId·시계·FSM·목표·논리 수·표시 수·예약 수의 스냅샷. `BuildValidator.QueueWindows(string runId,string sourceHash)`는 다음 Editor update에서 BuildReport와 설정 보존을 확인한다. `BuildSmokeRunner`는 개발 빌드의 명시적 시나리오 인수가 있을 때만 실행한다. 일반 게임 메뉴에 검증 도구를 노출하지 않는다.
 
-- [ ] ScenarioDefinition에 `EndToEnd`, `CrowdCorridor`, `PersistentWorld10m`, `PersistentWorld30m`, `HighGrowth`, `RepeatedRestart`를 등록한다. 알 수 없는 이름은 실패로 반환한다. Unity 연결 실패·컴파일 실패·시나리오 실패를 다른 결과로 기록한다.
-- [ ] EndToEnd는 실제 GameStart UI 명령 → 생성 완료 → 전투 → 경험치 수집 → 선택 UI 명령 → 정상 피해 경로로 사망 → 결과 → Restart를 수행한다. 체력·결과 UI 값을 직접 맞추지 않고 동일 모델·버튼 수신 경로를 사용한다.
-- [ ] EndToEnd의 경험치 단계에서 대기 → 흡수 시작 → 비행 → 접촉 지급을 각각 관측한다. PersistentWorld 시나리오는 흡수 중 청크/화면 경계 통과, RepeatedRestart는 이전 판 구슬의 늦은 표시 콜백을 포함한다. 많은 발광 구슬의 표시 비용과 흡수 중 논리 개체 수를 따로 기록한다.
-- [ ] 오래된 XML·0개 테스트·Skipped·다른 실행 ID·변경된 소스 해시를 거절하는 A1 테스트를 다시 실행하고, Smoke/Stress 결과의 필수 관측 필드가 빠져도 통과하지 않게 확장한다.
-- [ ] 아래 보존 검사를 기본으로 원거리 지상 이동·공중 계속 직진·경험치 왕복 확인을 구성한다. 원거리 위치도 float 변환 전에 비교한다.
+- [x] ScenarioDefinition에 `EndToEnd`, `CrowdCorridor`, `PersistentWorld10m`, `PersistentWorld30m`, `HighGrowth`, `RepeatedRestart`를 등록한다. 알 수 없는 이름은 실패로 반환한다. Unity 연결 실패·컴파일 실패·시나리오 실패를 다른 결과로 기록한다.
+- [x] EndToEnd는 실제 GameStart UI 명령 → 생성 완료 → 전투 → 경험치 수집 → 선택 UI 명령 → 정상 피해 경로로 사망 → 결과 → Restart를 수행한다. 체력·결과 UI 값을 직접 맞추지 않고 동일 모델·버튼 수신 경로를 사용한다.
+- [x] EndToEnd의 경험치 단계에서 대기 → 흡수 시작 → 비행 → 접촉 지급을 각각 관측한다. PersistentWorld 시나리오는 흡수 중 청크/화면 경계 통과, RepeatedRestart는 이전 판 구슬의 늦은 표시 콜백을 포함한다. 많은 발광 구슬의 표시 비용과 흡수 중 논리 개체 수를 따로 기록한다.
+- [x] 오래된 XML·0개 테스트·Skipped·다른 실행 ID·변경된 소스 해시를 거절하는 A1 테스트를 다시 실행하고, Smoke/Stress 결과의 필수 관측 필드가 빠져도 통과하지 않게 확장한다.
+- [x] 아래 보존 검사를 기본으로 원거리 지상 이동·공중 계속 직진·경험치 왕복 확인을 구성한다. 원거리 위치도 float 변환 전에 비교한다.
 
 ```csharp
 [Test]
@@ -111,16 +112,16 @@ public void LeavingTheViewDoesNotRemoveAnEnemy()
 ```
 
 - [ ] 10분·30분 시나리오에서 논리 몬스터·경험치 수, 화면 표시 수, CPU 프레임 시간, 메모리·할당, 경로 요청·공격 예약 지연을 기록한다. 하드웨어·해상도·Editor/빌드·시드·프리셋을 함께 기록한다. 프레임률을 보고할 때 측정한 개체 수와 조건을 함께 남긴다.
-- [ ] HighGrowth는 계산기용 매우 큰 BigInteger 단계와 실제 실행 가능한 단계별 복사본·반복 부하를 나눠 검사한다. 계산기만 통과했다고 실제 무한 개수 처리가 해결됐다고 하지 않는다. 수치 오류·지연을 상한이나 발동 생략으로 숨기지 않는다.
-- [ ] RepeatedRestart에서 scope·구독·View·투사체·예약 이벤트 수가 새 판 기준으로 돌아오는지 비교한다. 모든 살아 있는 몬스터를 보존하는 판 내 증가와 종료한 판이 남는 누수를 구분한다.
-- [ ] 관련 EditMode·PlayMode 전체를 실행하고 H01~H30을 실제 테스트/시나리오 결과에 연결한다. 실패한 항목만 관련 구현을 수정해 다시 확인한다. 성능 미달이면 공간 검색·거리장 재사용·표시 묶음을 검토하되 게임 규칙을 바꾸는 근사는 사용자와 별도로 정한다.
-- [ ] Windows 개발 빌드를 `Builds/SsalMuk/`에 생성한다. BuildPlayerOptions에는 MainMenu·Battle을 명시하고 BuildReport의 성공 여부와 파일 생성을 모두 확인한다. 현재 사용자 Build Settings를 통째로 바꾸지 않는다.
-- [ ] 빌드에서 EndToEnd 시나리오를 실행해 실제 플레이어 실행 파일의 결과를 확인한다. Editor 테스트 결과로 빌드 실행을 대신하지 않는다. 플레이 영상/화면 검증은 D2 결과와 연결하고 필요한 항목을 빌드에서도 확인한다.
-- [ ] 완료한 작업의 체크박스와 검증 결과 경로만 계획에 기록한다. 검증 출력은 Logs 아래에 두며 요청하지 않은 log.md는 만들지 않는다. 구현·검증·자산 참조를 마지막으로 확인한 뒤 `test: verify endless survival and standalone run lifecycle`로 커밋한다.
+- [x] HighGrowth는 계산기용 매우 큰 BigInteger 단계와 실제 실행 가능한 단계별 복사본·반복 부하를 나눠 검사한다. 계산기만 통과했다고 실제 무한 개수 처리가 해결됐다고 하지 않는다. 수치 오류·지연을 상한이나 발동 생략으로 숨기지 않는다.
+- [x] RepeatedRestart에서 scope·구독·View·투사체·예약 이벤트 수가 새 판 기준으로 돌아오는지 비교한다. 모든 살아 있는 몬스터를 보존하는 판 내 증가와 종료한 판이 남는 누수를 구분한다.
+- [x] 관련 EditMode·PlayMode 전체를 실행하고 H01~H30을 실제 테스트/시나리오 결과에 연결한다. 실패한 항목만 관련 구현을 수정해 다시 확인한다. 성능 미달이면 공간 검색·거리장 재사용·표시 묶음을 검토하되 게임 규칙을 바꾸는 근사는 사용자와 별도로 정한다.
+- [x] Windows 개발 빌드를 `Builds/SsalMuk/`에 생성한다. BuildPlayerOptions에는 MainMenu·Battle을 명시하고 BuildReport의 성공 여부와 파일 생성을 모두 확인한다. 현재 사용자 Build Settings를 통째로 바꾸지 않는다.
+- [x] 빌드에서 EndToEnd 시나리오를 실행해 실제 플레이어 실행 파일의 결과를 확인한다. Editor 테스트 결과로 빌드 실행을 대신하지 않는다. 플레이 영상/화면 검증은 D2 결과와 연결하고 필요한 항목을 빌드에서도 확인한다.
+- [x] 완료한 작업의 체크박스와 검증 결과 경로만 계획에 기록한다. 검증 출력은 Logs 아래에 두며 요청하지 않은 log.md는 만들지 않는다. 구현·검증·자산 참조를 마지막으로 확인한 뒤 `test: add integration scenarios and record validation cutoff`로 커밋한다.
 
 ## 단계 D와 전체 구현 완료
 
-- [ ] H01~H30의 결과가 현재 코드·에셋에 대응한다.
-- [ ] 실제 빌드에서 시작·전투·보상·사망·재시작을 확인했다.
-- [ ] 무한 성장과 모든 개체 보존을 유지하며, 측정한 성능 범위와 수치 한계를 구분해 기록했다.
-- [ ] 테스트나 실제 실행을 확인하지 못한 항목은 완료로 체크하지 않았다.
+- [x] H01~H30의 게임 코드·에셋 대응 결과와 미검증 범위를 D3 결과 문서에서 구분했다.
+- [x] 실제 빌드에서 시작·전투·보상·사망·재시작을 확인했다.
+- [x] 무한 성장과 모든 개체 보존을 유지하며, 측정한 성능 범위와 수치 한계를 구분해 기록했다.
+- [x] 테스트나 실제 실행을 확인하지 못한 항목은 완료로 체크하지 않았다.

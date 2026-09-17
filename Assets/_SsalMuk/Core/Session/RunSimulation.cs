@@ -16,6 +16,7 @@ namespace SsalMuk.Core
         private bool disposed;
         private WorldRect? viewBounds;
         public SpawnDirector Spawns { get; }
+        public NavigationService Navigation => movement.Navigation;
         public IEnumerable<AttackShapeSnapshot> AttackShapes
         {
             get { foreach (var weapon in Weapons.Values) foreach (var attack in weapon.ActiveAttacks) yield return new AttackShapeSnapshot(attack, run.Definitions.GetWeapon(attack.Kind)); }

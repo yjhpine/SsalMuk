@@ -33,6 +33,7 @@ namespace SsalMuk.Core
 
         public DVec2 DisplacementTo(WorldPosition other)
         {
+            if (Chunk.Equals(other.Chunk)) return other.Local - Local;
             // Subtract integer chunks before converting to double, retaining small local differences far away.
             double x = (double)((decimal)other.Chunk.X - Chunk.X) * ChunkSize + other.Local.X - Local.X;
             double y = (double)((decimal)other.Chunk.Y - Chunk.Y) * ChunkSize + other.Local.Y - Local.Y;

@@ -24,6 +24,8 @@ namespace SsalMuk.Core
         public ProjectileSystem Projectiles { get; }
         public WeaponKind Kind => definition.Kind;
         public long LaunchCount { get; private set; }
+        public BigInteger PendingStrikes => scheduler.PendingStrikes;
+        public double MaximumDispatchDelay { get; private set; }
         public WeaponRuntime(RunModel run, WeaponKind kind, MovementSystem movement, DamageService damage, Func<WeaponStats> stats = null)
         {
             this.run = run ?? throw new ArgumentNullException(nameof(run)); this.damage = damage; this.movement = movement; definition = run.Definitions.GetWeapon(kind);
@@ -45,6 +47,7 @@ namespace SsalMuk.Core
                 foreach (var reserved in scheduler.CollectDueStrikes(cursor, end, stats, TargetResolver.Resolve(run.Player, run.World.Query).HasValue))
                 {
                     double due = reserved.Time;
+                    MaximumDispatchDelay = Math.Max(MaximumDispatchDelay, to - due);
                     AdvanceAttacks(from, to, at, due); at = due;
                     long? target = TargetResolver.Resolve(run.Player, run.World.Query);
                     if (!target.HasValue) { scheduler.Reset(); break; }

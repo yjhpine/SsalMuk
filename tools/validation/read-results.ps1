@@ -1,4 +1,51 @@
+#requires -Version 7.5
 Set-StrictMode -Version Latest
+
+function Assert-ScenarioReport {
+    param($Report, [string]$RunId, [string]$SourceHash, [string]$Scenario)
+    Assert-EvidenceFields $Report @('schemaVersion','runId','sourceHash','scenario','status','errorCount','startedUtc','completedUtc','unityVersion','environment','processor','graphics','operatingSystem','systemMemoryMB','width','height','seed','preset','executionMode','steps','simulationSeconds','observations','samples','metrics')
+    if ($Report.schemaVersion -ne 1 -or $Report.runId -cne $RunId -or $Report.sourceHash -cne $SourceHash -or $Report.scenario -cne $Scenario -or $Report.status -cne 'Passed' -or $Report.errorCount -ne 0) { throw 'Runtime identity or status mismatch.' }
+    if ($RunId -cnotmatch '^[a-f0-9]{32}$' -or $SourceHash -cnotmatch '^[a-f0-9]{64}$') { throw 'Invalid runtime identity.' }
+    if ([DateTimeOffset]::Parse($Report.completedUtc) -lt [DateTimeOffset]::Parse($Report.startedUtc)) { throw 'Reversed scenario timestamps.' }
+    foreach ($field in @('unityVersion','processor','graphics','operatingSystem','preset','executionMode')) { if ([string]::IsNullOrWhiteSpace($Report.$field)) { throw "Missing runtime context: $field" } }
+    if ($Report.environment -cnotin @('Editor','WindowsPlayer') -or $Report.width -le 0 -or $Report.height -le 0 -or $Report.systemMemoryMB -le 0) { throw 'Invalid runtime environment.' }
+    $required = switch -CaseSensitive ($Scenario) {
+        'EndToEnd' { @('GameStart','Attack','ExperienceGrounded','ExperienceAttracting','ExperienceFlight','ExperienceContact','ChoiceButton','Death','Results','Restart','CleanScope') }
+        'RepeatedRestart' { @('GameStart','ExperienceContact','ChoiceButton','Death','Results','Restart','CleanScope','RestartCycles=3') }
+        'PersistentWorld10m' { @('ExperienceBoundaryFlight','AllFixedTicks','NoLivingEntityDeletion','FarGroundProgress','FarAirProgress','FarExperiencePreserved','OverlappingBosses','ViewRoundTrip','Glow600Views') }
+        'PersistentWorld30m' { @('ExperienceBoundaryFlight','AllFixedTicks','NoLivingEntityDeletion','FarGroundProgress','FarAirProgress','FarExperiencePreserved','OverlappingBosses','ViewRoundTrip','Glow600Views') }
+        'CrowdCorridor' { @('Crowd72','BodySafeCorridor','NoTeleport','AllFixedTicks') }
+        'HighGrowth' { @('BigIntegerExact','NumericLimitExplicit','RuntimeTier=0','RuntimeTier=2','RuntimeTier=8','NoAttackOmission') }
+        default { throw 'Unknown runtime scenario.' }
+    }
+    foreach ($name in $required) { if ($Report.observations -cnotcontains $name) { throw "Missing scenario observation: $name" } }
+    if (@($Report.observations | Select-Object -Unique).Count -ne @($Report.observations).Count) { throw 'Duplicate observations.' }
+    $metricFields=@('tickCount','renderCount','allocatedBytes','peakManagedBytes','peakUnityBytes','peakWorkingSetBytes','modelMeanMs','modelP95Ms','modelMaxMs','viewMeanMs','viewP95Ms','frameWallP95Ms','wallSeconds')
+    Assert-EvidenceFields $Report.metrics ($metricFields + @('allocationSource','memorySource'))
+    if ([string]::IsNullOrWhiteSpace($Report.metrics.allocationSource) -or [string]::IsNullOrWhiteSpace($Report.metrics.memorySource) -or $Report.metrics.allocatedBytes -le 0 -or $Report.metrics.peakWorkingSetBytes -le 0) { throw 'Allocation or process-memory evidence is unavailable.' }
+    foreach ($field in $metricFields) { Assert-EvidenceNumber $Report.metrics.$field $field }
+    Assert-EvidenceNumber $Report.steps 'steps'; Assert-EvidenceNumber $Report.simulationSeconds 'simulationSeconds'
+    if ($Report.metrics.tickCount -le 0 -or $Report.metrics.tickCount -ne $Report.steps -or $Report.metrics.renderCount -le 0 -or $Report.metrics.wallSeconds -le 0 -or [Math]::Abs($Report.simulationSeconds - $Report.steps * .02) -gt .001) { throw 'No complete fixed-step runtime measurement.' }
+    if (@($Report.samples).Count -eq 0) { throw 'Missing runtime samples.' }
+    $sampleNumbers=@('elapsed','playerHealth','maxAttackDispatchDelay','oldestPathWaitSeconds','kills','launches','spawnedNormal','spawnedAir','spawnedBoss','pendingSpawnCount','units','experience','attracting','visibleUnits','visibleExperience','visibleAttacks','retainedViews','projectiles','pathRequests','scopeCount')
+    foreach ($sample in $Report.samples) {
+        Assert-EvidenceFields $sample (@('runId','phase','brain','target','pendingStrikes')+$sampleNumbers)
+        if ($sample.runId -cnotmatch '^[a-f0-9]{32}$' -or $sample.pendingStrikes -cnotmatch '^[0-9]+$') { throw 'Missing sample identity or reservations.' }
+        foreach ($field in $sampleNumbers) { Assert-EvidenceNumber $sample.$field $field }
+    }
+    $seconds=switch ($Scenario) { 'PersistentWorld10m' {600} 'PersistentWorld30m' {1800} 'CrowdCorridor' {12} default {0} }
+    if ($Report.simulationSeconds + .00001 -lt $seconds) { throw 'Requested scenario duration was not executed.' }
+    if ($Scenario -like 'PersistentWorld*' -and (@($Report.samples | Where-Object { $_.elapsed + .00001 -ge $seconds -and $_.spawnedBoss -ge ($seconds / 300) }).Count -eq 0)) { throw 'No final duration and boss observation.' }
+}
+function Assert-EvidenceFields {
+    param($Value, [string[]]$Fields)
+    if ($null -eq $Value) { throw 'Missing evidence object.' }
+    foreach ($field in $Fields) { if ($Value.PSObject.Properties.Name -cnotcontains $field -or $null -eq $Value.$field) { throw "Missing evidence field: $field" } }
+}
+function Assert-EvidenceNumber {
+    param($Value, [string]$Name)
+    if ($null -eq $Value -or $Value -is [string] -or $Value -is [bool] -or [double]::IsNaN([double]$Value) -or [double]::IsInfinity([double]$Value) -or [double]$Value -lt 0) { throw "Invalid evidence number: $Name" }
+}
 
 function Read-ValidationJson {
     param([Parameter(Mandatory)][string]$Path, [switch]$IfAvailable)
@@ -6,7 +53,7 @@ function Read-ValidationJson {
         $stream=[IO.File]::Open($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
         try {
             $reader=[IO.StreamReader]::new($stream,[Text.Encoding]::UTF8)
-            try { return ($reader.ReadToEnd() | ConvertFrom-Json) } finally { $reader.Dispose() }
+            try { return ($reader.ReadToEnd() | ConvertFrom-Json -DateKind String) } finally { $reader.Dispose() }
         } finally { $stream.Dispose() }
     } catch [IO.IOException] {
         if ($IfAvailable) { return $null }
@@ -61,6 +108,9 @@ function Assert-ValidationReceipt {
         if (@($Receipt.discoveredNames).Count -eq 0) { throw 'No tests were discovered.' }
         if ($Receipt.xmlSha256 -cnotmatch '^[a-f0-9]{64}$') { throw 'Missing XML identity.' }
     }
+    elseif ($Receipt.mode -in @('Smoke','Stress')) {
+        if ($Receipt.scenario -cne $Manifest.scenario -or $Receipt.scenarioSha256 -cnotmatch '^[a-f0-9]{64}$') { throw 'Missing scenario identity.' }
+    }
 }
 
 function Read-ValidationResult {
@@ -77,6 +127,13 @@ function Read-ValidationResult {
         $reader=[Xml.XmlReader]::Create($xmlPath,$settings)
         try { $xml=[xml]::new(); $xml.Load($reader) } finally { $reader.Dispose() }
         if (-not (Test-TestXml $xml @($receipt.discoveredNames))) { throw 'Tests failed, were skipped, missing, duplicated, or not executed.' }
+    }
+    if ($manifest.mode -in @('Smoke','Stress')) {
+        $path=Join-Path $RunDirectory 'scenario.json'
+        if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $receipt.scenarioSha256) { throw 'Scenario does not match its receipt.' }
+        $report=Read-ValidationJson $path
+        Assert-ScenarioReport $report $manifest.runId $manifest.sourceHash $manifest.scenario
+        if ($report.unityVersion -cne $manifest.unityVersion -or [DateTimeOffset]::Parse($report.startedUtc) -lt [DateTimeOffset]::Parse($manifest.startedUtc) -or [DateTimeOffset]::Parse($report.completedUtc) -gt [DateTimeOffset]::Parse($receipt.completedUtc)) { throw 'Runtime version or time mismatch.' }
     }
     return $receipt
 }

@@ -12,6 +12,11 @@ namespace SsalMuk.Core
         private readonly List<PathRequest> requests = new List<PathRequest>();
         private readonly Dictionary<long, ChaseRoute> chases = new Dictionary<long, ChaseRoute>();
         private int jobCursor;
+        private long advances;
+        public int PendingRequestCount
+        { get { int count = 0; foreach (var request in requests) if (request.Status == PathStatus.Pending && !request.Cancelled) count++; return count; } }
+        public long OldestPendingSteps
+        { get { long age = 0; foreach (var request in requests) if (request.Status == PathStatus.Pending && !request.Cancelled) age = Math.Max(age, advances - request.RequestedAtAdvance); return age; } }
         public NavigationService(WorldStore world, Func<GridCell, double> risk = null)
         { this.world = world ?? throw new ArgumentNullException(nameof(world)); this.risk = risk; }
         private NavigationGrid Grid(double radius)
@@ -23,6 +28,7 @@ namespace SsalMuk.Core
         public PathRequest RequestPath(WorldPosition from, WorldPosition to, double radius)
         {
             var request = new PathRequest(world, Grid(radius), from, to, risk);
+            request.RequestedAtAdvance = advances;
             if (request.Status == PathStatus.Pending) requests.Add(request); return request;
         }
         public FlowField GetFlowField(WorldPosition target, double radius)
@@ -35,6 +41,7 @@ namespace SsalMuk.Core
         public void Advance(int nodeBudget = 512)
         {
             if (nodeBudget <= 0) throw new ArgumentOutOfRangeException(nameof(nodeBudget));
+            advances = checked(advances + 1);
             var jobs = new List<Func<int, int>>();
             foreach (var field in fields.Values) if (!field.IsComplete) jobs.Add(field.Advance);
             foreach (var request in requests) if (request.Status == PathStatus.Pending && !request.Cancelled) jobs.Add(request.Advance);
@@ -83,6 +90,15 @@ namespace SsalMuk.Core
             if (!chases.TryGetValue(unit.Id, out var chase) || chase.Route == null) return DVec2.Zero;
             while (chase.Index < chase.Route.Count && unit.Position.DistanceTo(chase.Route[chase.Index]) < 0.08) chase.Index++;
             if (chase.Index >= chase.Route.Count) return DVec2.Zero;
+            // Shared grid centers are route guides, not mandatory stopping points.
+            // A crowd can block a starting waypoint behind a body even though the next segment is clear.
+            int furthest = chase.Index;
+            for (int candidate = chase.Index + 1; candidate < Math.Min(chase.Route.Count, chase.Index + 9); candidate++)
+            {
+                var lookAhead = unit.Position.DisplacementTo(chase.Route[candidate]);
+                if (!world.Query.SweepCircle(unit.Position, lookAhead, unit.BodyRadius).HasValue) furthest = candidate;
+            }
+            chase.Index = furthest;
             var delta = unit.Position.DisplacementTo(chase.Route[chase.Index]);
             if (world.Query.SweepCircle(unit.Position, delta, unit.BodyRadius).HasValue) return DVec2.Zero;
             return delta.Normalized;

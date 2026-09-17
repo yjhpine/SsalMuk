@@ -9,6 +9,7 @@ namespace SsalMuk.Core
         private bool burstArmed, inGroup;
         private double dueStrike, groupStart, groupEnd, groupPeriod, groupFraction;
         private BigInteger repeat, repeatCount;
+        public BigInteger PendingStrikes => burstArmed ? (inGroup ? repeatCount - repeat : BigInteger.One) : BigInteger.Zero;
         public IEnumerable<ScheduledStrike> CollectDueStrikes(double from, double to, Func<WeaponStats> getStats, bool hasTarget)
         {
             if (from < 0 || to < from || double.IsNaN(from) || double.IsNaN(to) || double.IsInfinity(to)) throw new ArgumentOutOfRangeException(nameof(to));
