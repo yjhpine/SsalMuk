@@ -19,7 +19,7 @@ namespace SsalMuk.Tests
         }
 
         [Test]
-        public void IdenticalCentersResolveDeterministicallyAndAirIgnoresCrowdsAndWalls()
+        public void IdenticalCentersSteerDeterministicallyAndAirIgnoresCrowdsAndWalls()
         {
             using var a = RunTestRig.Create(); using var b = RunTestRig.Create();
             a.PlacePlayer(new DVec2(10, 0)); b.PlacePlayer(new DVec2(10, 0));
@@ -34,6 +34,21 @@ namespace SsalMuk.Tests
             movement.SetAirDirection(air.Id, new DVec2(1, 0));
             for (int i = 0; i < 200; i++) movement.Step(0.02);
             Assert.That(air.Position.Local.X, Is.EqualTo(10).Within(1e-8));
+        }
+
+        [Test]
+        public void SteeringNeverAddsSpeedAndAttackKnockbackKeepsItsDisplacement()
+        {
+            using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
+            rig.PlacePlayer(new DVec2(10, 0));
+            long a = rig.Spawn(UnitKind.Normal, DVec2.Zero), b = rig.Spawn(UnitKind.Normal, new DVec2(.1, 0));
+            rig.Movement.SetMoveIntent(a, new DVec2(1, 0)); rig.Movement.SetMoveIntent(b, DVec2.Zero);
+            rig.Advance(.02);
+            Assert.That(rig.Unit(a).Position.DistanceTo(WorldPosition.FromLocal(DVec2.Zero)), Is.LessThanOrEqualTo(.03 + 1e-9));
+            var start = rig.Unit(a).Position;
+            rig.Movement.AddKnockback(a, new DVec2(1, 0), .1); rig.Advance(.1);
+            Assert.That(start.DisplacementTo(rig.Unit(a).Position).X, Is.EqualTo(1).Within(1e-8));
+            Assert.That(rig.Unit(b).Position, Is.EqualTo(WorldPosition.FromLocal(new DVec2(.1, 0))));
         }
 
         [Test]
