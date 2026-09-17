@@ -76,7 +76,8 @@ namespace SsalMuk.Tests
                 view.Show(rig.Player, DVec2.Zero, catalog);
                 var sprite = go.transform.Find("WalkPivot/HitScaleRoot/Sprite");
                 Assert.That(sprite, Is.Not.Null, "The foot pivot and hit scale must be separate from the logical root.");
-                Assert.That(go.transform.Find("Shadow").parent, Is.EqualTo(go.transform));
+                Assert.That(go.transform.Find("Shadow"), Is.Null, "The prefab must not retain its old ground shadow.");
+                Assert.That(go.transform.Find("GroundShadow"), Is.Null, "Showing a unit must not recreate the removed shadow.");
                 Assert.That(rig.Player.BodyRadius, Is.EqualTo(0.28));
                 yield return null;
             }

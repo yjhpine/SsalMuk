@@ -86,10 +86,8 @@ namespace SsalMuk.Editor.Content
                 SceneManager.SetActiveScene(temporary);
                 var root = new GameObject("UnitView"); var view = root.AddComponent<UnitView>();
                 var body = new GameObject("VisualRoot", typeof(SpriteRenderer)); body.transform.SetParent(root.transform, false);
-                var shadow = new GameObject("Shadow", typeof(SpriteRenderer)); shadow.transform.SetParent(root.transform, false);
                 var bodyRenderer = body.GetComponent<SpriteRenderer>(); bodyRenderer.sprite = sprite; bodyRenderer.sharedMaterial = material;
-                var shadowRenderer = shadow.GetComponent<SpriteRenderer>(); shadowRenderer.sprite = sprite; shadowRenderer.sharedMaterial = material;
-                view.Configure(bodyRenderer, shadowRenderer);
+                view.Configure(bodyRenderer);
                 return PrefabUtility.SaveAsPrefabAsset(root, path);
             }
             finally { EditorSceneManager.CloseScene(temporary, true); if (previous.IsValid() && previous.isLoaded) SceneManager.SetActiveScene(previous); }

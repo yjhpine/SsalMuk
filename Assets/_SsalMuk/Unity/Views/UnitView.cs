@@ -6,10 +6,8 @@ namespace SsalMuk.Unity
     public sealed class UnitView : PooledView
     {
         [SerializeField] private SpriteRenderer body;
-        [SerializeField] private SpriteRenderer shadow;
         [SerializeField] private Transform walkPivot, hitScaleRoot;
         private SpriteRenderer healthBackground, healthFill;
-        private ShapeRenderer groundShadow;
         private readonly WalkAnimator walk = new WalkAnimator();
         private readonly HitFeedback hit = new HitFeedback();
         public long UnitId { get; private set; }
@@ -17,8 +15,8 @@ namespace SsalMuk.Unity
         public SpriteRenderer Body => body;
         public Transform WalkPivot => walkPivot;
         public Transform HitScaleRoot => hitScaleRoot;
-        public void Configure(SpriteRenderer bodyRenderer, SpriteRenderer shadowRenderer)
-        { body = bodyRenderer; shadow = shadowRenderer; PrepareHierarchy(); }
+        public void Configure(SpriteRenderer bodyRenderer)
+        { body = bodyRenderer; PrepareHierarchy(); }
         public void PrepareHierarchy()
         {
             if (walkPivot == null)
@@ -26,7 +24,6 @@ namespace SsalMuk.Unity
             if (hitScaleRoot == null)
             { var go = new GameObject("HitScaleRoot"); go.transform.SetParent(walkPivot, false); hitScaleRoot = go.transform; }
             if (body != null) { body.transform.SetParent(hitScaleRoot, false); body.name = "Sprite"; body.transform.localPosition = Vector3.zero; }
-            if (shadow != null) { shadow.transform.SetParent(transform, false); shadow.enabled = false; }
         }
         public bool TryApplyHit(LeaseToken token, long sequence, double acceptedAt) => Accepts(token) && hit.Observe(sequence, acceptedAt);
         public void Show(UnitModel unit, DVec2 relative, GameCatalog catalog, double now = 0, double dt = 0.02)
@@ -47,14 +44,6 @@ namespace SsalMuk.Unity
             if (System.Math.Abs(unit.MoveIntent.X) > 0.01) body.flipX = unit.MoveIntent.X < 0;
             int order = 1000 - Mathf.RoundToInt((float)(relative.Y - radius) * 30) + (kind == UnitKind.Air ? 5000 : 0);
             body.sortingOrder = order;
-            if (groundShadow == null)
-            {
-                groundShadow = ShapeRenderer.Create(transform, "GroundShadow", catalog.WorldMaterial, order - 1);
-                groundShadow.Disc(1, new Color(0, 0, 0, 0.45f), true);
-            }
-            groundShadow.transform.localPosition = new Vector3(0, (float)-radius, 0);
-            groundShadow.transform.localScale = new Vector3((float)(radius * 1.3), (float)(radius * 0.42), 1);
-            groundShadow.SetOrder(order - 1);
             if (healthBackground == null)
             {
                 var back = new GameObject("HealthBackground", typeof(SpriteRenderer)); back.transform.SetParent(transform, false);

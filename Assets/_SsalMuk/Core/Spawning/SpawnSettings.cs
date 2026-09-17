@@ -18,7 +18,7 @@ namespace SsalMuk.Core
         public int NormalPopulationCap { get; }
         public SpawnSettings(double normalBaseRate = 1, double normalRateGrowth = 1.0 / 120, double airInterval = 20,
             int airBaseCount = 8, double airCountGrowthSeconds = 120, double airSpacing = 0.65, double groundMargin = 1.2,
-            double groundBand = 5, int positionAttempts = 32, int creationBudget = 64, double airDepartureMargin = 4, int normalPopulationCap = 300)
+            double groundBand = 5, int positionAttempts = 32, int creationBudget = 64, double airDepartureMargin = 4, int normalPopulationCap = 500)
         {
             foreach (double value in new[] { normalBaseRate, airInterval, airCountGrowthSeconds, airSpacing, groundMargin, groundBand, airDepartureMargin })
                 WeaponDefinition.RequirePositive(value, nameof(value));
