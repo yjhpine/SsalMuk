@@ -35,7 +35,8 @@ namespace SsalMuk.Unity
         {
             if (!playerCreated || enemiesCreated) throw new InvalidOperationException("Enemies must be created after the player exactly once.");
             var definition = Run.Definitions.GetUnit(UnitKind.Normal); var factory = new GroundEnemyFactory(Run.World.Units);
-            for (int i = 0; i < defaults.InitialEnemyCount; i++)
+            int count = Math.Min(defaults.InitialEnemyCount, defaults.CreateSpawnSettings().NormalPopulationCap);
+            for (int i = 0; i < count; i++)
             {
                 bool spawned = false;
                 for (int attempt = 0; attempt < 256; attempt++)

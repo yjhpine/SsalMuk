@@ -4,6 +4,8 @@
 
 **Goal:** 일반·공중·보스의 무한 출현, 피격·보행·공격 표현, 일반·보스·경험치 보존과 공중 돌진 후 퇴장, 빌드 검증을 완성한다.
 
+2026-09-17 후속 사용자 지시가 아래 과거 구현 기록보다 우선한다. 일반 몬스터는 맵 전체 동시 존재 상한(임시 300)을 적용하고 상한 중 지난 소환을 적립하지 않는다. 몬스터의 기울임·점프 보행은 제거하며 플레이어 보행과 공통 피격 표현은 유지한다. 현재 규칙과 검증은 [실제 플레이 조정](../../development/PLAYTEST_TUNING.md), [인계 문서](../../development/HANDOFF.md)를 따른다.
+
 **Architecture:** SpawnDirector는 한 생존 시계의 독립 일정을 관리한다. 논리 개체는 WorldStore에 유지하고 WorldPresenter와 풀은 보이는 표현만 관리한다.
 
 **Tech Stack:** Unity `6000.4.6f1`, C#, URP 2D, MVP, Unity Test Framework `1.6.0`, 개발 빌드 진단.

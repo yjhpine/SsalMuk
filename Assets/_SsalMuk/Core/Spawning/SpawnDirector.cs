@@ -14,7 +14,7 @@ namespace SsalMuk.Core
         private readonly List<SpawnTicket> pending = new List<SpawnTicket>();
         private readonly long[] spawned = new long[4];
         private long nextId, normalOrdinal = 1, airOrdinal = 1;
-        private int cursor;
+        private int cursor, normalPopulation;
         private double lastObserved, nextNormal, largestGroundRadius;
         private bool disposed;
         public IReadOnlyList<SpawnTicket> Pending { get; }
@@ -24,9 +24,15 @@ namespace SsalMuk.Core
             difficulty = new DifficultyCurve(this.settings); nextNormal = difficulty.NormalDeadline(1); random = run.Streams.Spawn;
             groundFactory = new GroundEnemyFactory(run.World.Units); airFactory = new AirEnemyFactory(run.World.Units);
             Pending = pending.AsReadOnly(); foreach (var unit in run.Units) TrackRadius(unit); run.World.Units.Registered += TrackRadius;
+            run.World.Units.Removed += OnRemoved;
         }
         public long SpawnedCount(UnitKind kind) => spawned[(int)kind];
-        private void TrackRadius(UnitModel unit) { if (unit.Kind != UnitKind.Air) largestGroundRadius = Math.Max(largestGroundRadius, unit.BodyRadius); }
+        private void TrackRadius(UnitModel unit)
+        {
+            if (unit.Kind != UnitKind.Air) largestGroundRadius = Math.Max(largestGroundRadius, unit.BodyRadius);
+            if (unit.Kind == UnitKind.Normal) normalPopulation++;
+        }
+        private void OnRemoved(UnitModel unit) { if (unit.Kind == UnitKind.Normal) normalPopulation--; }
         public void Tick(double now, WorldRect viewBounds)
         {
             if (disposed || run.Phase != RunPhase.Running || run.Player == null || !run.Player.IsAlive) return;
@@ -38,11 +44,20 @@ namespace SsalMuk.Core
                 if (next * settings.AirInterval <= at || double.IsInfinity(next * settings.AirInterval)) throw new NumericRangeException("Air wave deadline lost time precision.");
                 Add(UnitKind.Air, at, difficulty.AirCount(at)); airOrdinal = next;
             }
+            // Pending blocked spawns reserve slots, so a full population never accumulates spawn debt.
+            int normalSlots = Math.Max(0, settings.NormalPopulationCap - normalPopulation);
+            foreach (var ticket in pending)
+                if (ticket.Kind == UnitKind.Normal && ticket.Remaining > 0)
+                {
+                    if (normalSlots > 0) normalSlots--;
+                    else ticket.Remaining = 0;
+                }
             while (nextNormal <= now)
             {
                 long ordinal = checked(normalOrdinal + 1); double following = difficulty.NormalDeadline(ordinal);
                 if (following <= nextNormal) throw new NumericRangeException("Normal spawn schedule lost time precision.");
-                Add(UnitKind.Normal, nextNormal, 1); normalOrdinal = ordinal; nextNormal = following;
+                if (normalSlots > 0) { Add(UnitKind.Normal, nextNormal, 1); normalSlots--; }
+                normalOrdinal = ordinal; nextNormal = following;
             }
             lastObserved = now;
             int budget = settings.CreationBudget;
@@ -64,6 +79,7 @@ namespace SsalMuk.Core
         {
             while (ticket.Remaining > 0 && budget > 0)
             {
+                if (ticket.Kind == UnitKind.Normal && normalPopulation >= settings.NormalPopulationCap) { ticket.Remaining = 0; return; }
                 budget--;
                 if (ticket.Kind == UnitKind.Air)
                 {
@@ -106,7 +122,7 @@ namespace SsalMuk.Core
         public void Dispose()
         {
             if (disposed) return; disposed = true;
-            run.World.Units.Registered -= TrackRadius; pending.Clear();
+            run.World.Units.Registered -= TrackRadius; run.World.Units.Removed -= OnRemoved; pending.Clear();
         }
     }
 }

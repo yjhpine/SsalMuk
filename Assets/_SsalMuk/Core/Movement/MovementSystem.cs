@@ -55,6 +55,7 @@ namespace SsalMuk.Core
             foreach (var unit in units)
             {
                 previousPositions[unit.Id] = unit.Position;
+                unit.PreviousPosition = unit.Position;
                 if (unit.Kind != UnitKind.Air && unit.IsAlive) largest = Math.Max(largest, unit.BodyRadius);
             }
             foreach (var unit in units)

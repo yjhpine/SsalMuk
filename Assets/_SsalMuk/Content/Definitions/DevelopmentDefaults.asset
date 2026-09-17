@@ -96,6 +96,7 @@ MonoBehaviour:
   upgradeWeight: 3
   normalBaseRate: 1
   normalRateGrowth: 0.008333333333333333
+  normalPopulationCap: 300
   airInterval: 20
   airBaseCount: 8
   airCountGrowthSeconds: 120

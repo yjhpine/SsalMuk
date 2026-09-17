@@ -30,6 +30,7 @@ namespace SsalMuk.Unity
         [SerializeField] private double upgradeWeight = 3;
         [SerializeField] private double normalBaseRate = 1;
         [SerializeField] private double normalRateGrowth = 1.0 / 120;
+        [SerializeField, Min(1)] private int normalPopulationCap = 300;
         [SerializeField] private double airInterval = 20;
         [SerializeField] private int airBaseCount = 8;
         [SerializeField] private double airCountGrowthSeconds = 120;
@@ -44,7 +45,7 @@ namespace SsalMuk.Unity
         public MovementSettings CreateMovementSettings() => new MovementSettings(crowdIterations, navigationNodeBudget);
         public RewardWeights CreateRewardWeights() => new RewardWeights(acquisitionWeight, upgradeWeight);
         public SpawnSettings CreateSpawnSettings() => new SpawnSettings(normalBaseRate, normalRateGrowth, airInterval, airBaseCount,
-            airCountGrowthSeconds, airSpacing, groundSpawnMargin, groundSpawnBand, spawnPositionAttempts, spawnCreationBudget, airDepartureMargin);
+            airCountGrowthSeconds, airSpacing, groundSpawnMargin, groundSpawnBand, spawnPositionAttempts, spawnCreationBudget, airDepartureMargin, normalPopulationCap);
         public GrowthSettings CreateGrowthSettings()
         {
             if (!BigInteger.TryParse(firstLevelCost, NumberStyles.Integer, CultureInfo.InvariantCulture, out var first) ||

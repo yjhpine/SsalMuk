@@ -17,6 +17,8 @@ namespace SsalMuk.Presentation
             if (interpolation < 0 || interpolation > 1 || double.IsNaN(interpolation) || viewRadius <= 0) throw new ArgumentOutOfRangeException(nameof(interpolation));
             if (model.RunId != runId) { visible.Clear(); visibleExperience.Clear(); runId = model.RunId; }
             nextVisible.Clear(); nextExperience.Clear(); view.BeginFrame(runId); var origin = model.ViewOrigin;
+            foreach (var unit in model.Units)
+                if (unit.Kind == UnitKind.Player) { origin = Interpolate(unit, interpolation); break; }
             var combatView = view as ICombatWorldView;
             double renderTime = Math.Max(0, model.Clock.ElapsedSeconds - model.Clock.FixedStep * (1 - interpolation));
             combatView?.SetFrameTime(renderTime);
@@ -31,7 +33,7 @@ namespace SsalMuk.Presentation
             {
                 if (!unit.IsAlive) continue;
                 if (unit.Kind != UnitKind.Player) enemies++;
-                var relative = origin.DisplacementTo(unit.Position);
+                var relative = origin.DisplacementTo(Interpolate(unit, interpolation));
                 if (relative.Length > (visible.Contains(unit.Id) ? viewRadius + 2 : viewRadius)) continue;
                 nextVisible.Add(unit.Id); view.ShowUnit(unit, relative);
             }
@@ -69,5 +71,8 @@ namespace SsalMuk.Presentation
             visible.Clear(); visible.UnionWith(nextVisible); visibleExperience.Clear(); visibleExperience.UnionWith(nextExperience);
             view.EndFrame(model.Clock.ElapsedSeconds, enemies);
         }
+        private static WorldPosition Interpolate(UnitModel unit, double alpha)
+            => alpha >= 1 ? unit.Position : alpha <= 0 ? unit.PreviousPosition :
+                unit.PreviousPosition.Offset(unit.PreviousPosition.DisplacementTo(unit.Position) * alpha);
     }
 }

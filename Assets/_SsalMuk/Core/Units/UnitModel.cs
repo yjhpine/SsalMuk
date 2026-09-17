@@ -16,12 +16,13 @@ namespace SsalMuk.Core
         public double LastHitAt { get; internal set; } = double.NegativeInfinity;
         public long HitSequence { get; internal set; }
         public WorldPosition Position { get; internal set; }
+        public WorldPosition PreviousPosition { get; internal set; }
         public DVec2 MoveIntent { get; internal set; }
 
         internal UnitModel(UnitSpawnRequest request)
         {
             RunId = request.RunId; Definition = request.Definition;
-            Position = request.Position; Health = Definition.MaxHealth;
+            Position = PreviousPosition = request.Position; Health = Definition.MaxHealth;
         }
 
         internal void AssignIdentity(long id)

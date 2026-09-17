@@ -36,7 +36,9 @@ namespace SsalMuk.Unity
             UnitId = unit.Id; var kind = unit.Kind; double radius = unit.BodyRadius;
             transform.localPosition = WorldRenderOrigin.ToVector(relative);
             var art = catalog.Visuals.Unit(kind); body.sprite = art.Sprite; body.sharedMaterial = catalog.WorldMaterial;
-            hit.Observe(unit.HitSequence, unit.LastHitAt); hit.Sample(now, catalog.Visuals); walk.Step(unit.MoveIntent, dt, catalog.Visuals);
+            hit.Observe(unit.HitSequence, unit.LastHitAt); hit.Sample(now, catalog.Visuals);
+            if (kind == UnitKind.Player) walk.Step(unit.MoveIntent, dt, catalog.Visuals);
+            else walk.Reset();
             walkPivot.localPosition = new Vector3(0, (float)(-radius + walk.Pose.Height), 0);
             walkPivot.localRotation = Quaternion.Euler(0, 0, (float)walk.Pose.RotationDegrees);
             hitScaleRoot.localScale = Vector3.one * hit.Scale; body.color = hit.Color;
