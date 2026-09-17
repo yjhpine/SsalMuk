@@ -19,7 +19,7 @@ namespace SsalMuk.Unity.Diagnostics
                 projectiles = simulation.Projectiles.Count, pendingStrikes = pending.ToString(), maxAttackDispatchDelay = delay,
                 pathRequests = simulation.Navigation.PendingRequestCount, oldestPathWaitSeconds = simulation.Navigation.OldestPendingSteps * run.Clock.FixedStep,
                 spawnedNormal = simulation.Spawns?.SpawnedCount(UnitKind.Normal) ?? 0, spawnedAir = simulation.Spawns?.SpawnedCount(UnitKind.Air) ?? 0,
-                spawnedBoss = simulation.Spawns?.SpawnedCount(UnitKind.Boss) ?? 0,
+                spawnedBoss = simulation.Spawns?.SpawnedCount(UnitKind.Boss) ?? 0, departedAir = simulation.DepartedAirCount,
                 pendingSpawnCount = simulation.Spawns?.Pending.Sum(x => x.Remaining) ?? 0, scopeCount = RunScope.ActiveCount + DiagnosticSession.ActiveCount };
         }
     }

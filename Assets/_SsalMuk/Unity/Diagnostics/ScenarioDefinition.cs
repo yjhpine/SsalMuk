@@ -38,7 +38,7 @@ namespace SsalMuk.Unity.Diagnostics
     {
         public string runId, phase, brain, target, pendingStrikes;
         public double elapsed, playerHealth, maxAttackDispatchDelay, oldestPathWaitSeconds;
-        public long kills, launches, spawnedNormal, spawnedAir, spawnedBoss, pendingSpawnCount;
+        public long kills, launches, spawnedNormal, spawnedAir, spawnedBoss, pendingSpawnCount, departedAir;
         public int units, experience, attracting, visibleUnits, visibleExperience, visibleAttacks, retainedViews, projectiles, pathRequests, scopeCount;
     }
     [Serializable]

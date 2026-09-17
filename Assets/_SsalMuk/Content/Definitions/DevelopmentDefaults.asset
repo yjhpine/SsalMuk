@@ -104,3 +104,4 @@ MonoBehaviour:
   groundSpawnBand: 5
   spawnPositionAttempts: 32
   spawnCreationBudget: 64
+  airDepartureMargin: 4

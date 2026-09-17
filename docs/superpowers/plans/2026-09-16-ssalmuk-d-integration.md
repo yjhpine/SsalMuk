@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 일반·공중·보스의 무한 출현, 피격·보행·공격 표현, 모든 개체 보존과 빌드 검증을 완성한다.
+**Goal:** 일반·공중·보스의 무한 출현, 피격·보행·공격 표현, 일반·보스·경험치 보존과 공중 돌진 후 퇴장, 빌드 검증을 완성한다.
 
 **Architecture:** SpawnDirector는 한 생존 시계의 독립 일정을 관리한다. 논리 개체는 WorldStore에 유지하고 WorldPresenter와 풀은 보이는 표현만 관리한다.
 
@@ -14,7 +14,7 @@
 
 - 전체 계획의 Global Constraints와 공통 타입·검증 명령을 모두 적용한다.
 - 보스는 `300초`마다 이전 보스가 살아 있어도 추가 생성하며 고유 패턴은 없다.
-- 경험치와 모든 몬스터를 계속 유지한다. 공중도 화면 이탈만으로 삭제하지 않는다.
+- 경험치와 일반·보스 몬스터를 계속 유지한다. 2026-09-17 사용자 정정에 따라 공중만 직선 돌진 후 진행 방향의 화면 밖 여유 거리에서 무보상 퇴장한다. 진입·넉백 중에는 유지한다. 아래 이전 검증 기록의 공중 보존은 정정 전 규칙이다.
 - 피격·보행·공격 표시가 실제 몸 반경과 피해 판정을 바꾸지 않게 한다.
 - 처리량이 부족하더라도 상한·개체 삭제·발동 누락을 몰래 넣지 않는다. 측정한 지원 범위와 미검증 범위를 구분한다.
 

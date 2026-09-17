@@ -12,8 +12,8 @@ function Assert-ScenarioReport {
     $required = switch -CaseSensitive ($Scenario) {
         'EndToEnd' { @('GameStart','Attack','ExperienceGrounded','ExperienceAttracting','ExperienceFlight','ExperienceContact','ChoiceButton','Death','Results','Restart','CleanScope') }
         'RepeatedRestart' { @('GameStart','ExperienceContact','ChoiceButton','Death','Results','Restart','CleanScope','RestartCycles=3') }
-        'PersistentWorld10m' { @('ExperienceBoundaryFlight','AllFixedTicks','NoLivingEntityDeletion','FarGroundProgress','FarAirProgress','FarExperiencePreserved','OverlappingBosses','ViewRoundTrip','Glow600Views') }
-        'PersistentWorld30m' { @('ExperienceBoundaryFlight','AllFixedTicks','NoLivingEntityDeletion','FarGroundProgress','FarAirProgress','FarExperiencePreserved','OverlappingBosses','ViewRoundTrip','Glow600Views') }
+        'PersistentWorld10m' { @('ExperienceBoundaryFlight','AllFixedTicks','GroundAndExperienceRetention','FarGroundProgress','AirWaveDeparture','FarExperiencePreserved','OverlappingBosses','ViewRoundTrip','Glow600Views') }
+        'PersistentWorld30m' { @('ExperienceBoundaryFlight','AllFixedTicks','GroundAndExperienceRetention','FarGroundProgress','AirWaveDeparture','FarExperiencePreserved','OverlappingBosses','ViewRoundTrip','Glow600Views') }
         'CrowdCorridor' { @('Crowd72','BodySafeCorridor','NoTeleport','AllFixedTicks') }
         'HighGrowth' { @('BigIntegerExact','NumericLimitExplicit','RuntimeTier=0','RuntimeTier=2','RuntimeTier=8','NoAttackOmission') }
         default { throw 'Unknown runtime scenario.' }

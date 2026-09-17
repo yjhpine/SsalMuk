@@ -38,12 +38,13 @@ namespace SsalMuk.Unity
         [SerializeField] private double groundSpawnBand = 5;
         [SerializeField] private int spawnPositionAttempts = 32;
         [SerializeField] private int spawnCreationBudget = 64;
+        [SerializeField] private double airDepartureMargin = 4;
         public int InitialEnemyCount => initialEnemyCount >= 0 ? initialEnemyCount : throw new ArgumentOutOfRangeException(nameof(initialEnemyCount));
         public MapSettings CreateMapSettings() => new MapSettings(obstacleChance, maximumBodyRadius: CreateCatalog().Units.Max(unit => unit.BodyRadius));
         public MovementSettings CreateMovementSettings() => new MovementSettings(crowdIterations, navigationNodeBudget);
         public RewardWeights CreateRewardWeights() => new RewardWeights(acquisitionWeight, upgradeWeight);
         public SpawnSettings CreateSpawnSettings() => new SpawnSettings(normalBaseRate, normalRateGrowth, airInterval, airBaseCount,
-            airCountGrowthSeconds, airSpacing, groundSpawnMargin, groundSpawnBand, spawnPositionAttempts, spawnCreationBudget);
+            airCountGrowthSeconds, airSpacing, groundSpawnMargin, groundSpawnBand, spawnPositionAttempts, spawnCreationBudget, airDepartureMargin);
         public GrowthSettings CreateGrowthSettings()
         {
             if (!BigInteger.TryParse(firstLevelCost, NumberStyles.Integer, CultureInfo.InvariantCulture, out var first) ||

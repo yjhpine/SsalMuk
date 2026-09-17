@@ -12,10 +12,12 @@ namespace SsalMuk.Core
         private readonly DeathService death;
         private readonly ContactDamageSystem contact;
         private readonly DamageService damage;
+        private readonly AirDepartureSystem airDepartures;
         public event Action<CombatEvent> DamageAccepted;
         private bool disposed;
         private WorldRect? viewBounds;
         public SpawnDirector Spawns { get; }
+        public long DepartedAirCount => airDepartures.DepartedCount;
         public NavigationService Navigation => movement.Navigation;
         public IEnumerable<AttackShapeSnapshot> AttackShapes
         {
@@ -36,7 +38,9 @@ namespace SsalMuk.Core
             foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind))) weapons.Add(kind, new WeaponRuntime(run, kind, movement, damage));
             Weapons = new ReadOnlyDictionary<WeaponKind, WeaponRuntime>(weapons); Sword = weapons[WeaponKind.Sword];
             damage.Accepted += ForwardHit;
-            if (scheduledSpawns) Spawns = new SpawnDirector(run, spawnSettings);
+            var spawnConfiguration = spawnSettings ?? new SpawnSettings();
+            airDepartures = new AirDepartureSystem(run, spawnConfiguration.AirDepartureMargin);
+            if (scheduledSpawns) Spawns = new SpawnDirector(run, spawnConfiguration);
             run.Combat = this;
         }
         public void SetViewBounds(WorldRect bounds) => viewBounds = bounds;
@@ -57,6 +61,7 @@ namespace SsalMuk.Core
                 foreach (var kind in run.Player.Weapons.Kinds) Weapons[kind].Tick(from, to);
                 death.Flush(); contact.Step(from, to);
                 if (!run.Player.IsAlive) { Finish(); break; }
+                airDepartures.Step(viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
                 Collector.Step(run.Clock.FixedStep);
                 run.Rewards.RefreshOffer();
             }
@@ -68,6 +73,7 @@ namespace SsalMuk.Core
             if (disposed) return; disposed = true;
             damage.Accepted -= ForwardHit; DamageAccepted = null;
             Spawns?.Dispose();
+            airDepartures.Dispose();
             if (ReferenceEquals(run.Combat, this)) run.Combat = null;
             foreach (var weapon in Weapons.Values) weapon.Dispose();
         }

@@ -272,7 +272,7 @@ namespace SsalMuk.Unity.Diagnostics
             var catalog = Resources.Load<GameCatalog>("Bootstrap/GameCatalog");
             session = new DiagnosticSession(catalog, Report.seed);
             var run = session.Run; var simulation = session.Simulation; var view = session.View;
-            Report.preset = "Seed 260917; generated map and default continuous spawn; player/boss HP 1e9; all 4 weapons: Damage +1000, Range +20, Speed +10. Every 0.02s tick executed; no distance deletion or freezing. Separate far sentinels and 300-value XP ledger.";
+            Report.preset = "Seed 260917; generated map and default continuous spawn; player/boss HP 1e9; all 4 weapons: Damage +1000, Range +20, Speed +10. Every 0.02s tick executed; ground/boss/XP retained, outgoing air waves depart beyond the screen margin. Separate sentinels and 300-value XP ledger.";
             var growth = new GrowthService(run);
             foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind)))
             {
@@ -281,13 +281,13 @@ namespace SsalMuk.Unity.Diagnostics
             }
             var normal = Spawn(run, UnitKind.Normal, FreeNear(run, run.Player.Position.Offset(new DVec2(96, 0)), .26));
             var air = Spawn(run, UnitKind.Air, run.Player.Position.Offset(new DVec2(64, 16)), direction: new DVec2(1, 0));
-            var originalGround = normal.Position; var originalAir = air.Position;
+            var originalGround = normal.Position;
             var far = new WorldPosition(new ChunkCoord(100, 100), new DVec2(16.5, 16.5));
             var waiting = new Dictionary<long, WorldPosition>();
             for (int i = 0; i < 12; i++) { var at = far.Offset(new DVec2(i % 4, i / 4)); waiting.Add(run.World.AddExperience(at, 25, 0), at); }
-            long registered = run.Units.Count, removed = 0; bool aliveRemoved = false;
+            long registered = run.Units.Count, removed = 0, departedAir = 0; bool aliveRemoved = false;
             Action<UnitModel> onRegister = _ => registered++;
-            Action<UnitModel> onRemove = unit => { removed++; if (unit.IsAlive) aliveRemoved = true; };
+            Action<UnitModel> onRemove = unit => { removed++; if (unit.IsAlive) { if (unit.Kind == UnitKind.Air) departedAir++; else aliveRemoved = true; } };
             run.World.Units.Registered += onRegister; run.World.Units.Removed += onRemove;
             try
             {
@@ -313,22 +313,22 @@ namespace SsalMuk.Unity.Diagnostics
                     metrics.Render(session.Render);
                     if (run.Clock.ElapsedSeconds >= nextSample || run.Clock.ElapsedSeconds + 1e-8 >= seconds)
                     {
-                        Require(!aliveRemoved && registered - removed == run.Units.Count, "A living monster was discarded.");
+                        Require(!aliveRemoved && departedAir == simulation.DepartedAirCount && registered - removed == run.Units.Count, "A monster was discarded outside the air-departure rule.");
                         Require(simulation.Weapons.Values.All(w => w.ActiveAttacks.All(a => a.StartedAt + a.ActiveSeconds > run.Clock.ElapsedSeconds)),
                             "Expired attack instances accumulated during persistent simulation.");
                         foreach (var pair in waiting)
                             Require(run.World.TryGetExperience(pair.Key, out var orb) && orb.Value == 25 && orb.Position == pair.Value && orb.State == ExperienceState.Grounded, "Far waiting XP changed.");
-                        Require(run.World.Units.TryGet(normal.Id, out _) && run.World.Units.TryGet(air.Id, out _), "Far sentinel was deleted.");
+                        Require(run.World.Units.TryGet(normal.Id, out _), "Far ground sentinel was deleted.");
                         Sample(run, simulation, view); nextSample += 60;
                     }
                     yield return null;
                 }
                 Require(normal.Position.DistanceTo(originalGround) > 1, "Far ground enemy never progressed.");
-                Require(Math.Abs(originalAir.DisplacementTo(air.Position).X - 6 * run.Clock.ElapsedSeconds) < .01, "Far air enemy stopped flying.");
+                Require(air.IsAlive && !run.World.Units.TryGet(air.Id, out _) && simulation.DepartedAirCount > 0, "Outgoing air enemy was retained or counted as dead.");
                 Require(!run.World.TryGetExperience(flyingId, out _), "Offscreen attracted XP never completed its flight.");
                 Require(simulation.Spawns.SpawnedCount(UnitKind.Boss) == (long)Math.Floor(seconds / 300), "Boss schedule did not reach every deadline.");
                 Require(run.Units.Count(x => x.Kind == UnitKind.Boss) == simulation.Spawns.SpawnedCount(UnitKind.Boss), "Overlapping diagnostic bosses were lost.");
-                Observe("AllFixedTicks"); Observe("NoLivingEntityDeletion"); Observe("FarGroundProgress"); Observe("FarAirProgress"); Observe("FarExperiencePreserved"); Observe("OverlappingBosses");
+                Observe("AllFixedTicks"); Observe("GroundAndExperienceRetention"); Observe("FarGroundProgress"); Observe("AirWaveDeparture"); Observe("FarExperiencePreserved"); Observe("OverlappingBosses");
                 var originalPlayer = run.Player.Position;
                 run.World.MoveUnit(run.Player.Id, far); metrics.Render(session.Render);
                 Require(waiting.Keys.All(id => view.ExperienceViews.Any(v => v.Lease.EntityId == id)), "Returning did not restore far XP views.");
