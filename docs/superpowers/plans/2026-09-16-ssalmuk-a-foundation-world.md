@@ -6,7 +6,7 @@
 
 **Architecture:** C# 모델을 먼저 검증하고 Unity가 그 결과를 표시한다. 청크 지형·공간 검색·군집 이동을 분리하며 게임 개체는 실행 시 생성한다.
 
-**Tech Stack:** Unity `6000.4.6f1`, C#, Test Framework `1.6.0`, uGUI, PowerShell, MCP for Unity `10.2.0`.
+**Tech Stack:** Unity `6000.4.6f1`, C#, Test Framework `1.6.0`, uGUI, PowerShell. 아래 MCP for Unity `10.2.0` 설치 내역은 A1의 과거 기록이며, 2026-09-17 사용자 요청으로 Unity 공식 플러그인·CLI·Pipeline으로 교체했다. 현재 연결은 [하네스](../../development/HARNESS.md) 3절을 따른다.
 
 **Spec:** [구조 설계](../specs/2026-09-16-ssalmuk-architecture-design.md) 2~7·13절, [전체 계획](2026-09-16-ssalmuk-implementation-plan.md).
 

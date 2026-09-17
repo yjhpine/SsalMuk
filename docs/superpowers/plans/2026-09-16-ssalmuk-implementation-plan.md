@@ -6,7 +6,7 @@
 
 **Architecture:** C# Core가 월드·유닛·전투·성장을 소유한다. MVP Presenter가 Unity View를 갱신하고, Factory Method·Flyweight·State를 지정한 위치에 적용한다. 논리 몬스터·경험치와 표시 오브젝트의 수명을 분리한다.
 
-**Tech Stack:** Unity `6000.4.6f1`, C#, URP `17.4.0`, uGUI `2.0.0`, Input System `1.19.0`, Unity Test Framework `1.6.0`, PowerShell, MCP for Unity `10.2.0` 설치 대상.
+**Tech Stack:** Unity `6000.4.6f1`, C#, URP `17.4.0`, uGUI `2.0.0`, Input System `1.19.0`, Unity Test Framework `1.6.0`, PowerShell. 작성 당시 MCP for Unity `10.2.0`을 설치했으며 2026-09-17 사용자 요청으로 Unity 공식 플러그인·CLI·Pipeline으로 교체했다. 아래 MCP 조사 내용은 과거 기록이며 현재 연결은 [하네스](../../development/HARNESS.md) 3절을 따른다.
 
 **Spec:** [승인된 구조 설계](../specs/2026-09-16-ssalmuk-architecture-design.md), [게임 기획서](../../planning/GAME_DESIGN.md), [하네스 계약](../../development/HARNESS.md).
 

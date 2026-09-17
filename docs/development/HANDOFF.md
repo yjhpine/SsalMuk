@@ -8,8 +8,12 @@
 
 ## 현재 상태와 사용자 지시
 
+- 2026-09-17 사용자 요청으로 Coplay 연결을 [Unity 공식 Codex 플러그인](https://docs.unity.com/en-us/ai/unity-plugin/codex)으로 전환했다. 플러그인 `unity@unity-agent-plugin` `0.1.6-beta`(스킬 31개), CLI `1.0.0-beta.10`, 기존 Pipeline `0.7.0-exp.1`을 사용한다. Unity `6000.4.6f1`과 다른 패키지는 유지했다. Codex의 새 `unity` stdio 설정은 CLI 절대 경로와 SsalMuk 경로에 고정했다. 이전 `unityMCP` 설정·Coplay 패키지·Editor 전용 연결 브리지를 제거했고 8080 리스너가 없는 것을 확인했다.
+- 교체 후 CLI와 실제 MCP stdio 양쪽에서 대상 프로젝트·버전 읽기에 성공했다. MCP 도구 151개와 시작 스크립트를 통한 같은 프로토콜 호출도 확인했다. 컴파일 실패 없음, 등록된 Coplay 패키지 없음, 기존 사용자 설정 파일 해시 보존을 확인했다. `package_status`는 제거 중 도메인 재로딩으로 한 번 시간 초과했으며 이후 재연결과 실제 등록 패키지 읽기로 제거 완료를 판정했다. 원시 증거는 `Logs/Validation/unity-plugin-migration-1789645736476/`다.
+- 도구 변경 후 Static `e845c26b4ce5476495be8ed4b4dd3d5f`에서 판독기 39개와 PowerShell 문법 검사를 통과했다. manifest·receipt의 소스 해시는 `788bfe50b86baae15b741e53dd54d513a474dff37845c50b7a3ddf9183b79482`이며 오류 0을 확인했다. 연결 스크립트는 정상 `ready`와 `playing` 모두 허용하며 CLI 누락·다른 프로젝트·다른 버전·컴파일 중 상태는 거절한다. 확인 중 이미 진행 중인 재생을 중단하지 않았다. 게임 전체 검사·장시간 검사·새 빌드는 수행하지 않았다.
+- 이후 연결은 PowerShell 7.5 이상에서 `./tools/validation/connect-unity.ps1`로 확인한다. 새 Codex 세션에서 공식 플러그인의 스킬·`unity` 도구를 불러온다. 현재 세션은 `C:/Users/ace21/AppData/Local/Unity/bin/unity.exe`로 직접 사용할 수 있다. 자세한 재설치·운영 지침은 [하네스 3절](HARNESS.md)을 따르며 과거 Coplay 설치 기록을 현재 지침으로 사용하지 않는다.
 - 최신 정정: 사용자가 공중 무리는 일직선으로 플레이어를 지나 일정 범위를 벗어나면 없어져야 한다고 설명했다. 공중만 출구 방향의 화면 밖 4월드 단위+몸 반경을 통과하면 무보상 퇴장하도록 수정했다. 진입·넉백 중에는 유지한다. 일반·보스·경험치는 계속 보존한다. 원래 모든 몬스터 보존 규칙은 이 정정이 우선한다.
-- 현재 소스 `6b364ef5c917c11d101e6e57a39a1ff77ce2eb5d1550686fe96cd07191d08a2b`: 공중 퇴장 EditMode 15개 `63d41f70aea64ad39b7bb2ab5fb0ac73`, 보존·표시 회수 PlayMode 2개 `e98ca9f44f614e039c90587719e6cbf6`, Static `a095d145bb124eefab0aead3fbcbb864` 통과. 결과를 현재 소스에 대조했다. 전체 검사·장시간 검사는 재개하지 않았다. 현재 수정은 Unity 프로젝트에 적용됐고 기존 Windows exe는 수정 전 버전이다.
+- 공중 퇴장 수정 당시 소스 `6b364ef5c917c11d101e6e57a39a1ff77ce2eb5d1550686fe96cd07191d08a2b`: 공중 퇴장 EditMode 15개 `63d41f70aea64ad39b7bb2ab5fb0ac73`, 보존·표시 회수 PlayMode 2개 `e98ca9f44f614e039c90587719e6cbf6`, Static `a095d145bb124eefab0aead3fbcbb864` 통과. 결과를 당시 소스에 대조했다. 전체 검사·장시간 검사는 재개하지 않았다. 현재 수정은 Unity 프로젝트에 적용됐고 기존 Windows exe는 수정 전 버전이다.
 - 2026-09-17 사용자가 충분히 검사했으므로 현재 검사를 종료하고 다음 단계로 진행하도록 지시했다. 현재 활성 검증은 없다. 전체 테스트·장시간 검사·새 빌드를 자동 재개하지 않는다.
 - A~D 기능, 아트, low AI, 네 무기, 성장·선택, 스폰, 결과·재시작과 통합 도구를 구현했다. 게임 코드의 EditMode 175개·PlayMode 21개·짧은 시나리오 4종·10분 누적·실제 Windows 시작/전투/사망/재시작이 통과했다. 세부 실행 ID는 [D3 결과](D3_VALIDATION.md)를 따른다.
 - 30분 실행 `a84b49b7803449bb9f164a19eb0d8c59`는 4시간 기한 초과로 미완료다. 마지막 별도 관측은 게임 시간 1,732.32초, 처치 9,469, 플레이어 포함 생존 유닛 6,063이었다. 플레이어·보스 체력과 무기를 높인 보존·부하 프리셋이므로 기본 난이도나 생존율의 근거가 아니다.

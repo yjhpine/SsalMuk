@@ -35,15 +35,21 @@
 
 ## 3. Unity 연결과 도구 구성
 
-2026-09-16 A1에서 Unity `6000.4.6f1`, Test Framework `1.6.0`, URP `17.4.0`을 유지하고 Unity MCP 패키지·서버 `10.2.0`을 연결했다. MCP의 `mcpforunity://project/info` 읽기로 대상 `C:/Users/ace21/Desktop/SsalMuk`와 Editor 버전을 확인했다. 원시 증거는 `Logs/Validation/mcp-project-evidence.json`에 보관한다.
+2026-09-17 사용자 요청에 따라 [Unity 공식 Codex 플러그인](https://docs.unity.com/en-us/ai/unity-plugin/codex)으로 전환했다. 공식 지원 조건은 Unity 6 이상이며 이 프로젝트의 `6000.4.6f1`을 유지한다. Codex 플러그인 `unity@unity-agent-plugin` `0.1.6-beta`(31개 스킬), 공식 Unity CLI `1.0.0-beta.10`, 이미 설치되어 있던 `com.unity.pipeline` `0.7.0-exp.1`을 사용한다. Test Framework `1.6.0`과 URP `17.4.0`도 유지한다.
 
-기존 `unityMCP`의 `http://127.0.0.1:8080/mcp` 설정을 재사용했다. `tools/validation/start-unity-server.ps1`은 서버가 없을 때만 고정 버전을 관리되는 터미널에서 실행하고, `connect-unity.ps1`은 열린 프로젝트의 연결을 요청한다. 다른 주소·버전의 기존 설정은 덮어쓰지 않고 실패한다. 비밀값은 출력하거나 저장소에 복사하지 않는다.
+Codex의 `unity` 연결은 `C:/Users/ace21/AppData/Local/Unity/bin/unity.exe mcp --project-path C:/Users/ace21/Desktop/SsalMuk`를 stdio로 실행한다. 실행 파일·프로젝트 절대 경로를 지정하며 다른 MCP 설정은 보존한다. `tools/validation/start-unity-server.ps1`도 같은 stdio 진입점이고 HTTP 서버를 따로 상주시킬 필요가 없다. `connect-unity.ps1`은 공식 CLI의 `editor_status`와 `eval`로 실제 프로젝트 경로·버전·컴파일 상태를 검사하고 `Logs/Validation/unity-connection.json`에 새 증거를 남긴다. CLI가 다른 위치에 설치되면 두 스크립트의 `-UnityCli`로 지정한다.
+
+Codex 플러그인은 공식 저장소 `Unity-Technologies/unity-agent-plugin`을 marketplace로 등록해 설치한다. 공식 CLI 설치기는 `https://public-cdn.cloud.unity3d.com/hub/prod/cli/install.ps1`이며 설치 결과의 SHA256을 검증한다. 다른 PC에서 복구할 때는 공식 설치 문서의 현재 지원 버전을 먼저 확인하고 `unity pipeline install --project-path <프로젝트>`로 Pipeline 설치 여부를 확인한다. Codex의 새 세션에서 설치된 스킬과 `unity` MCP 도구를 불러온다. 현재 세션에서 새 도구가 아직 보이지 않아도 CLI 절대 경로로 같은 Editor에 연결할 수 있다.
+
+모든 CLI `command` 호출에는 `--project-path <프로젝트> --caller plugin --skill unity-cli`를 붙인다(다른 공식 스킬 작업은 해당 스킬 이름). JSON 명령 목록은 파일로 받아 필요한 이름만 선택하며 전체 목록을 그대로 출력하지 않는다. Editor 작업 전 `set_autotick --enable true`로 비활성 창에서도 갱신되게 하고, 코드 변경 후 `recompile` → `recompile_status`로 완료·실패를 확인한다. 모달 창의 `blocked_by_dialog`를 게임 오류로 오인하지 않는다. 깊은 Pipeline 사용법은 `Library/PackageCache/com.unity.pipeline@*/.claude/skills/unity-pipeline/SKILL.md`를 읽는다. 패키지는 Unity Package Manager 경로로 변경하고 기존 파일 기반 검증 도구는 그대로 사용한다.
+
+이전 A1의 Coplay 패키지·서버 `10.2.0`, Codex `unityMCP`, 8080 연결과 전용 Editor 연결 브리지는 폐기했다. 당시 `Logs/Validation/mcp-project-evidence.json`은 과거 증거로만 보존하며 재설치 지침으로 사용하지 않는다. 이번 교체의 설치·프로토콜·프로젝트 읽기·컴파일 증거는 `Logs/Validation/unity-plugin-migration-1789645736476/`에 둔다. 비밀값은 출력하거나 저장소에 복사하지 않는다.
 
 연결 준비 완료는 **대상 프로젝트 경로·Editor 버전·읽기 요청 성공**을 함께 확인한 경우다. 다음으로 컴파일 상태와 테스트 실행 기능을 확인한다. 다른 Unity 프로젝트가 연결되었거나 도구 목록만 보이는 상태를 성공으로 보지 않는다.
 
 | 수단 | 용도 | 경계 |
 | --- | --- | --- |
-| Unity MCP | 대상 Editor 확인, 에셋·씬 조작, 콘솔, 테스트·플레이 연결 | 연결 실패와 게임 실패를 분리. 가능한 도구를 실제 확인 |
+| Unity 공식 플러그인·CLI·Pipeline MCP | 대상 Editor 확인, 에셋·씬 조작, 콘솔, 테스트·플레이 연결 | 프로젝트 경로 고정, 연결 실패와 게임 실패 분리, 실제 제공 명령 확인 |
 | 프로젝트 파일 편집 | C#·문서·설정의 검토 가능한 변경 | 직렬화 에셋의 GUID·참조 관계 보존 |
 | Unity Test Framework | EditMode·PlayMode 테스트 | 결과 파일과 종료 상태를 모두 확인 |
 | Editor 테스트 API | 열린 프로젝트에서 자동 검증 | 같은 프로젝트에 두 번째 Editor를 병렬 실행하지 않음 |
