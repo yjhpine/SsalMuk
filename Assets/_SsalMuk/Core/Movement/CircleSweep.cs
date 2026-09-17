@@ -11,6 +11,10 @@ namespace SsalMuk.Core
         {
             if (query == null) throw new ArgumentNullException(nameof(query));
             if (maximumContacts <= 0) throw new ArgumentOutOfRangeException(nameof(maximumContacts));
+            // This checks the entire swept body, including the start. Near an obstacle the exact
+            // rounded-corner/slide path below is retained for movement and attack knockback alike.
+            if (query is WorldQuery terrain && terrain.IsSweepRegionEmpty(start, displacement, radius))
+                return displacement.Length > 1e-9 ? start.Offset(displacement) : start;
             if (!query.IsCircleFree(start, radius)) throw new InvalidOperationException("Movement requires a safe starting position.");
             var position = start; var remaining = displacement;
             for (int i = 0; i < maximumContacts && remaining.Length > 1e-9; i++)

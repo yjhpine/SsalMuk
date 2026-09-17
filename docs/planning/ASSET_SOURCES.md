@@ -46,6 +46,14 @@ D2의 실제 취득·적용 기록은 아래와 같다. [기존 조사 후보](A
 - 추가로 조사한 Cethiel의 Fireball Effect와 MSavioti의 Firebal 32x32는 검토용 다운로드만 `Logs/Validation/bcd-assets/`에 유지한다. 프로젝트 콘텐츠에는 선택한 Umplix 시트만 포함했다.
 - 원본 크기·해시·모서리 alpha의 취득 증거는 `Logs/Validation/bcd-baseline/unit-vfx-originals.json`에 보관한다.
 
+## 개방형 맵의 가구 아틀라스 (2026-09-18)
+
+- Codex 이미지 생성으로 낡고 기울어진 책장·책상·의자 각 2종을 만들었다. 1536×1024 투명 PNG, 3열×2행이며 별도 외부 에셋 구매는 없다.
+- 생성 원본: `C:/Users/ace21/.codex/generated_images/01a0af96-0fe3-7880-b3cf-d60b85bb9394/exec-5f39ab6a-8630-48eb-96e0-36570e5956ca.png`. 프로젝트 원본은 `Assets/_SsalMuk/Content/Art/Environment/AbandonedFurniture.png`이며 픽셀 편집 없이 복사했다.
+- 원본 SHA256: `6572b556a9373cb7550b6158bdc82dfda84df5ba9501d38538631d42260cb6af`. 모서리와 셀 사이 실제 alpha 0을 확인했다.
+- 생성 요구 요약: 투명 배경의 3×2 픽셀 아트 아틀라스, 버려지고 낡은 기울어진 책장·책상·의자, 각 2개 변형, 차분한 나무색, 상단 사선 시점, 글자·배경·바닥 그림자 없음.
+- `FurnitureArtImporter.Apply()`가 Sprite Data Provider의 편집 능력을 확인하고 각 셀의 alpha 경계로 분리한다. Point/비압축/mipmap 없음, 128 PPU, 하단 중앙 피벗, 자동 물리 형상 없음, 안정적인 Sprite ID를 사용한다. 가구 외형의 기울기는 스프라이트에 들어 있으며 충돌은 Core의 간단한 정적 바닥 영역이다.
+
 ## Unity 적용과 화면 확인
 
 - `ArtContentBuilder`는 Sprite Data Provider로 기존 이름의 ID를 유지한다. Point 필터, 비압축, mipmap 없음, FullRect와 자동 물리 형상 없음으로 import한다. `VisualCatalog`에 유닛·무기·효과 프레임·축·크기·보행·피격 시간을 저장한다. 도입 자산에 피해 콜백이나 Collider를 추가하지 않았다.

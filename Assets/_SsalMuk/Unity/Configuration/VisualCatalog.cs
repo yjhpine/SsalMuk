@@ -11,6 +11,7 @@ namespace SsalMuk.Unity
         [SerializeField] private WeaponArt[] weapons = Array.Empty<WeaponArt>();
         [SerializeField] private Sprite[] projectileFrames = Array.Empty<Sprite>();
         [SerializeField] private Sprite[] explosionFrames = Array.Empty<Sprite>();
+        [SerializeField] private Sprite[] furniture = Array.Empty<Sprite>();
         [SerializeField] private float projectileFrameSeconds = 0.08f;
         [SerializeField] private float projectileSourceAxisDegrees = 180;
         [SerializeField] private float walkAngle = 8, walkHeight = 0.08f, walkCycles = 1.8f;
@@ -26,6 +27,12 @@ namespace SsalMuk.Unity
         public float ProjectileSourceAxisDegrees => projectileSourceAxisDegrees;
         public Sprite[] ProjectileFrames => projectileFrames;
         public Sprite[] ExplosionFrames => explosionFrames;
+        public Sprite Furniture(FurnitureKind kind, int variation) => furniture[variation * 3 + (int)kind];
+        public void ConfigureFurniture(Sprite[] sprites)
+        {
+            if (sprites == null || sprites.Length != 6 || sprites.Any(x => x == null)) throw new ArgumentException("Six furniture sprites are required.");
+            furniture = (Sprite[])sprites.Clone();
+        }
         public UnitArt Unit(UnitKind kind) => units.First(x => x.Kind == kind);
         public WeaponArt Weapon(WeaponKind kind) => weapons.First(x => x.Kind == kind);
         public Color ExperienceColor(ExperienceTier tier) => experienceColors[(int)tier];

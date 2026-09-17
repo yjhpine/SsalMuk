@@ -53,9 +53,9 @@ namespace SsalMuk.Unity
             if (!terrain.TryGetValue(chunk.Coord, out var view))
             {
                 var go = new GameObject("Chunk " + chunk.Coord.X + "," + chunk.Coord.Y); go.transform.SetParent(transform, false);
-                view = go.AddComponent<TerrainView>(); view.Initialize(chunk, catalog.WorldMaterial); terrain.Add(chunk.Coord, view);
+                view = go.AddComponent<TerrainView>(); view.Initialize(chunk, catalog.WorldMaterial, catalog.Visuals); terrain.Add(chunk.Coord, view);
             }
-            view.transform.localPosition = WorldRenderOrigin.ToVector(relativeOrigin);
+            view.SetRelativeOrigin(relativeOrigin);
         }
         public void ShowUnit(UnitModel unit, DVec2 relativePosition) => units.Show(unit.Id).Show(unit, relativePosition, catalog, frameTime, frameDelta);
         public void ShowExperience(ExperienceRecord record, ExperienceTier tier, DVec2 relative, double radius)

@@ -8,7 +8,7 @@ namespace SsalMuk.Core
         public int GeneratorVersion { get; }
         public int PassageWidth { get; }
         public double MaximumBodyRadius { get; }
-        public MapSettings(double obstacleChance = 0.2, int generatorVersion = 1, int passageWidth = 4, double maximumBodyRadius = 0.75)
+        public MapSettings(double obstacleChance = 0.2, int generatorVersion = 2, int passageWidth = 4, double maximumBodyRadius = 0.75)
         {
             if (double.IsNaN(obstacleChance) || obstacleChance < 0 || obstacleChance > 1) throw new ArgumentOutOfRangeException(nameof(obstacleChance));
             if (generatorVersion <= 0) throw new ArgumentOutOfRangeException(nameof(generatorVersion));

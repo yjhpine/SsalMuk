@@ -29,6 +29,7 @@ namespace SsalMuk.Core
             this.player = player ?? throw new ArgumentNullException(nameof(player));
             if (player.RunId != world.Units.RunId) throw new ArgumentException("Player belongs to a different run.", nameof(player));
             this.settings = settings ?? new MovementSettings(); crowds = new CrowdSolver(this.settings);
+            navigation.ConfigureDirectionCadence(this.settings.DirectionDecisionSeconds);
             PreviousPositions = new ReadOnlyDictionary<long, WorldPosition>(previousPositions);
             world.Units.Removed += Forget;
             world.Units.Registered += TrackRadius;
@@ -46,12 +47,13 @@ namespace SsalMuk.Core
             var unit = world.Units.Get(id);
             if (seconds <= 0 || double.IsNaN(seconds) || double.IsInfinity(seconds)) throw new ArgumentOutOfRangeException(nameof(seconds));
             unit.Knockback = new KnockbackState(displacement / seconds, seconds);
+            navigation.InvalidateDirection(id);
         }
         public void Step(double dt)
         {
             if (disposed) throw new ObjectDisposedException(nameof(MovementSystem));
             if (dt <= 0 || double.IsNaN(dt) || double.IsInfinity(dt)) throw new ArgumentOutOfRangeException(nameof(dt));
-            navigation.Advance(settings.NavigationNodeBudget);
+            navigation.AdvanceTime(dt); navigation.Advance(settings.NavigationNodeBudget);
             units.Clear(); units.AddRange(world.Units.Units); units.Sort((a, b) => a.Id.CompareTo(b.Id));
             double largest = 0; previousPositions.Clear();
             foreach (var unit in units)
@@ -60,6 +62,7 @@ namespace SsalMuk.Core
                 unit.PreviousPosition = unit.Position;
                 if (unit.Kind != UnitKind.Air && unit.IsAlive) largest = Math.Max(largest, unit.BodyRadius);
             }
+            crowds.BeginStep(units);
             foreach (var unit in units)
             {
                 enemies.TryGetValue(unit.Id, out var fsm); fsm?.Tick(dt);
@@ -85,8 +88,13 @@ namespace SsalMuk.Core
                 if (unit.Kind == UnitKind.Air) world.MoveUnit(unit.Id, unit.Position.Offset(displacement));
                 else
                 {
-                    world.MoveUnit(unit.Id, CircleSweep.MoveAndSlide(world.Query, unit.Position, displacement, unit.BodyRadius, settings.SlideContacts));
+                    var destination = CircleSweep.MoveAndSlide(world.Query, unit.Position, displacement, unit.BodyRadius, settings.SlideContacts);
+                    var actual = unit.Position.DisplacementTo(destination);
+                    world.MoveUnit(unit.Id, destination);
+                    if (unit.Kind != UnitKind.Player && displacement != DVec2.Zero && (actual - displacement).Length > 1e-6)
+                        navigation.InvalidateDirection(unit.Id);
                 }
+                if (knockback.IsActive && !unit.Knockback.IsActive) navigation.InvalidateDirection(unit.Id);
             }
             MaximumDisplacement = 0;
             foreach (var unit in units) MaximumDisplacement = Math.Max(MaximumDisplacement, previousPositions[unit.Id].DistanceTo(unit.Position));

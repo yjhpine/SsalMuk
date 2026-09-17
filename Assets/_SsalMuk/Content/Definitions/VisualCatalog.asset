@@ -102,6 +102,13 @@ MonoBehaviour:
   - {fileID: -385189489659299415, guid: e832e251936890f43a62dc299962334b, type: 3}
   - {fileID: -7440698777261311257, guid: e832e251936890f43a62dc299962334b, type: 3}
   - {fileID: -2526488593372668831, guid: e832e251936890f43a62dc299962334b, type: 3}
+  furniture:
+  - {fileID: 1877986357, guid: 8a80312fd7edc9747a8337b1d0ab7c49, type: 3}
+  - {fileID: 1394638707, guid: 8a80312fd7edc9747a8337b1d0ab7c49, type: 3}
+  - {fileID: -542899727, guid: 8a80312fd7edc9747a8337b1d0ab7c49, type: 3}
+  - {fileID: 179880781, guid: 8a80312fd7edc9747a8337b1d0ab7c49, type: 3}
+  - {fileID: 441714274, guid: 8a80312fd7edc9747a8337b1d0ab7c49, type: 3}
+  - {fileID: -417060182, guid: 8a80312fd7edc9747a8337b1d0ab7c49, type: 3}
   projectileFrameSeconds: 0.08
   projectileSourceAxisDegrees: 180
   walkAngle: 8
