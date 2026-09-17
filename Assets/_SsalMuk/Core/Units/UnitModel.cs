@@ -9,6 +9,7 @@ namespace SsalMuk.Core
         public UnitDefinition Definition { get; }
         public UnitKind Kind => Definition.Kind;
         public double BodyRadius => Definition.BodyRadius;
+        public double HurtRadius => Definition.HurtRadius;
         public double Health { get; internal set; }
         public bool IsAlive => Health > 0;
         public double InvulnerableUntil { get; internal set; }

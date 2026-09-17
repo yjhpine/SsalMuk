@@ -13,6 +13,7 @@ namespace SsalMuk.Core
         public long? FindNearestEnemy(WorldPosition position) => units.FindNearest(position,
             id => world.Units.TryGet(id, out var unit) && unit.IsAlive && unit.Kind != UnitKind.Player);
         public IReadOnlyList<long> QueryCircle(WorldPosition position, double radius) => units.QueryCircle(position, radius);
+        public void QueryCircle(WorldPosition position, double radius, List<long> results) => units.QueryCircle(position, radius, results);
         public IReadOnlyList<long> QueryExperienceCircle(WorldPosition position, double radius) => experience.QueryCircle(position, radius);
         public bool IsCircleFree(WorldPosition position, double radius)
         {

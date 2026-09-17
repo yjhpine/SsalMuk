@@ -29,7 +29,7 @@ namespace SsalMuk.Unity.Diagnostics
             defaults = catalog.Defaults; scheduled = scheduledSpawns;
             var baseline = catalog.CreateDefinitions();
             var definitions = new DefinitionCatalog(baseline.Units.Select(d => d.Kind == UnitKind.Player || d.Kind == UnitKind.Boss ?
-                new UnitDefinition("diagnostic-" + d.Kind, d.Kind, 1000000000, d.MoveSpeed, d.BodyRadius, d.ContactDamage, d.ExperienceReward) : d),
+                new UnitDefinition("diagnostic-" + d.Kind, d.Kind, 1000000000, d.MoveSpeed, d.BodyRadius, d.ContactDamage, d.ExperienceReward, d.HurtRadius, d.VisualFootOffset) : d),
                 Enum.GetValues(typeof(WeaponKind)).Cast<WeaponKind>().Select(baseline.GetWeapon));
             var streams = new SeedStreams(seed);
             Run = new RunModel(Guid.NewGuid(), seed, definitions, terrain ?? new ChunkGenerator(streams.MapSeed, defaults.CreateMapSettings()),

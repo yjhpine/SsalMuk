@@ -10,22 +10,27 @@ namespace SsalMuk.Core
         public double MaxHealth { get; }
         public double MoveSpeed { get; }
         public double BodyRadius { get; }
+        public double HurtRadius { get; }
+        public double VisualFootOffset { get; }
         public double ContactDamage { get; }
         public BigInteger ExperienceReward { get; }
 
         public UnitDefinition(string id, UnitKind kind, double maxHealth, double moveSpeed,
-            double bodyRadius, double contactDamage, BigInteger experienceReward)
+            double bodyRadius, double contactDamage, BigInteger experienceReward, double? hurtRadius = null, double? visualFootOffset = null)
         {
             if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Definition ID is required.", nameof(id));
             if (!Enum.IsDefined(typeof(UnitKind), kind)) throw new ArgumentOutOfRangeException(nameof(kind));
             RequirePositive(maxHealth, nameof(maxHealth));
             RequirePositive(moveSpeed, nameof(moveSpeed));
             RequirePositive(bodyRadius, nameof(bodyRadius));
+            RequirePositive(hurtRadius ?? bodyRadius, nameof(hurtRadius));
+            RequirePositive(visualFootOffset ?? bodyRadius, nameof(visualFootOffset));
             if (contactDamage < 0 || double.IsNaN(contactDamage) || double.IsInfinity(contactDamage))
                 throw new ArgumentOutOfRangeException(nameof(contactDamage));
             if (experienceReward.Sign < 0) throw new ArgumentOutOfRangeException(nameof(experienceReward));
             Id = id; Kind = kind; MaxHealth = maxHealth; MoveSpeed = moveSpeed;
             BodyRadius = bodyRadius; ContactDamage = contactDamage; ExperienceReward = experienceReward;
+            HurtRadius = hurtRadius ?? bodyRadius; VisualFootOffset = visualFootOffset ?? bodyRadius;
         }
 
         private static void RequirePositive(double value, string parameter)

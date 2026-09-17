@@ -30,7 +30,7 @@ namespace SsalMuk.Unity
         {
             if (body == null) throw new System.InvalidOperationException("Unit sprite renderer is missing.");
             if (walkPivot == null || hitScaleRoot == null) PrepareHierarchy();
-            UnitId = unit.Id; var kind = unit.Kind; double radius = unit.BodyRadius;
+            UnitId = unit.Id; var kind = unit.Kind; double radius = unit.Definition.VisualFootOffset;
             transform.localPosition = WorldRenderOrigin.ToVector(relative);
             var art = catalog.Visuals.Unit(kind); body.sprite = art.Sprite; body.sharedMaterial = catalog.WorldMaterial;
             hit.Observe(unit.HitSequence, unit.LastHitAt); hit.Sample(now, catalog.Visuals);

@@ -43,13 +43,13 @@ namespace SsalMuk.Core
                 var origin = shot.Position; var travel = shot.Velocity * (hi - lo); shot.PreviousPosition = origin;
                 double a = Fraction(lo, frameFrom, frameTo), b = Fraction(hi, frameFrom, frameTo);
                 double earliest = double.PositiveInfinity; long? first = null;
-                double queryRadius = travel.Length + movement.MaximumDisplacement + movement.LargestBodyRadius + shot.Radius;
+                double queryRadius = travel.Length + movement.MaximumDisplacement + movement.LargestHurtRadius + shot.Radius;
                 foreach (long id in run.World.Query.QueryCircle(origin, queryRadius))
                 {
                     if (!run.World.Units.TryGet(id, out var unit) || unit.Kind == UnitKind.Player || !unit.IsAlive) continue;
                     var previous = Previous(unit); var enemyTravel = previous.DisplacementTo(unit.Position);
                     var relative = origin.DisplacementTo(previous.Offset(enemyTravel * a));
-                    if (!CircleContact.Interval(relative, enemyTravel * (b - a) - travel, unit.BodyRadius + shot.Radius, out double enter, out _)) continue;
+                    if (!CircleContact.Interval(relative, enemyTravel * (b - a) - travel, unit.HurtRadius + shot.Radius, out double enter, out _)) continue;
                     if (enter < earliest || (enter == earliest && (!first.HasValue || id < first.Value))) { earliest = enter; first = id; }
                 }
                 shot.UpdatedAt = hi;
@@ -69,12 +69,12 @@ namespace SsalMuk.Core
         private void Explode(ProjectileModel shot, double time, double frameFrom, double frameTo)
         {
             double fraction = Fraction(time, frameFrom, frameTo);
-            foreach (long id in run.World.Query.QueryCircle(shot.Position, shot.Stats.Range + movement.LargestBodyRadius + movement.MaximumDisplacement))
+            foreach (long id in run.World.Query.QueryCircle(shot.Position, shot.Stats.Range + movement.LargestHurtRadius + movement.MaximumDisplacement))
             {
                 if (!run.World.Units.TryGet(id, out var unit) || unit.Kind == UnitKind.Player || !unit.IsAlive) continue;
                 var previous = Previous(unit); var atImpact = previous.Offset(previous.DisplacementTo(unit.Position) * fraction);
                 var relative = shot.Position.DisplacementTo(atImpact);
-                if (relative.Length > shot.Stats.Range + unit.BodyRadius + 1e-10) continue;
+                if (relative.Length > shot.Stats.Range + unit.HurtRadius + 1e-10) continue;
                 damage.TryApply(new DamageRequest(shot.Key, run.Player.Id, unit.Id, shot.Stats.Damage,
                     relative == DVec2.Zero ? shot.Direction : relative.Normalized), time);
             }

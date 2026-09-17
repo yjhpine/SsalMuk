@@ -26,7 +26,7 @@ namespace SsalMuk.Core
             if (baseline.Kind == UnitKind.Player) return baseline;
             double scale = 1 + time / 300, health = baseline.MaxHealth * scale, damage = baseline.ContactDamage * scale;
             if (double.IsInfinity(health) || double.IsInfinity(damage)) throw new NumericRangeException("Spawn difficulty exceeds numeric range.");
-            return new UnitDefinition(baseline.Id, baseline.Kind, health, baseline.MoveSpeed, baseline.BodyRadius, damage, baseline.ExperienceReward);
+            return new UnitDefinition(baseline.Id, baseline.Kind, health, baseline.MoveSpeed, baseline.BodyRadius, damage, baseline.ExperienceReward, baseline.HurtRadius, baseline.VisualFootOffset);
         }
         private static void RequireTime(double time)
         { if (time < 0 || double.IsNaN(time) || double.IsInfinity(time)) throw new ArgumentOutOfRangeException(nameof(time)); }

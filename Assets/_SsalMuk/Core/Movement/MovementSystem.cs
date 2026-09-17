@@ -11,12 +11,14 @@ namespace SsalMuk.Core
         private readonly PlayerModel player;
         private readonly CrowdSolver crowds;
         private readonly MovementSettings settings;
+        private readonly List<UnitModel> units = new List<UnitModel>();
         private readonly Dictionary<long, DVec2> intents = new Dictionary<long, DVec2>();
         private readonly Dictionary<long, EnemyFsm> enemies = new Dictionary<long, EnemyFsm>();
         private readonly Dictionary<long, WorldPosition> previousPositions = new Dictionary<long, WorldPosition>();
         private bool disposed;
         public IReadOnlyDictionary<long, WorldPosition> PreviousPositions { get; }
         public double LargestBodyRadius { get; private set; }
+        public double LargestHurtRadius { get; private set; }
         public double MaximumDisplacement { get; private set; }
         public NavigationService Navigation => navigation;
         public EnemyFsm GetEnemyFsm(long id) => enemies.TryGetValue(id, out var fsm) ? fsm : throw new ArgumentException("No enemy FSM for this ID.");
@@ -50,7 +52,7 @@ namespace SsalMuk.Core
             if (disposed) throw new ObjectDisposedException(nameof(MovementSystem));
             if (dt <= 0 || double.IsNaN(dt) || double.IsInfinity(dt)) throw new ArgumentOutOfRangeException(nameof(dt));
             navigation.Advance(settings.NavigationNodeBudget);
-            var units = new List<UnitModel>(world.Units.Units); units.Sort((a, b) => a.Id.CompareTo(b.Id));
+            units.Clear(); units.AddRange(world.Units.Units); units.Sort((a, b) => a.Id.CompareTo(b.Id));
             double largest = 0; previousPositions.Clear();
             foreach (var unit in units)
             {
@@ -73,6 +75,7 @@ namespace SsalMuk.Core
                     direction = unit.Kind != UnitKind.Air && intents.TryGetValue(unit.Id, out var resumeInput) ? resumeInput : fsm.NormalDirection();
                 unit.MoveIntent = movementSeconds > 0 ? direction : DVec2.Zero;
                 var displacement = direction * (unit.Definition.MoveSpeed * movementSeconds);
+                displacement = crowds.Steer(world, unit, displacement, largest);
                 if (knockback.IsActive)
                 {
                     displacement += knockback.Velocity * pushedSeconds;
@@ -82,24 +85,23 @@ namespace SsalMuk.Core
                 if (unit.Kind == UnitKind.Air) world.MoveUnit(unit.Id, unit.Position.Offset(displacement));
                 else
                 {
-                    displacement = crowds.Constrain(world, unit, displacement, largest);
                     world.MoveUnit(unit.Id, CircleSweep.MoveAndSlide(world.Query, unit.Position, displacement, unit.BodyRadius, settings.SlideContacts));
                 }
             }
-            crowds.Resolve(world, dt);
             MaximumDisplacement = 0;
             foreach (var unit in units) MaximumDisplacement = Math.Max(MaximumDisplacement, previousPositions[unit.Id].DistanceTo(unit.Position));
         }
         private void TrackRadius(UnitModel unit)
         {
             LargestBodyRadius = Math.Max(LargestBodyRadius, unit.BodyRadius);
+            LargestHurtRadius = Math.Max(LargestHurtRadius, unit.HurtRadius);
             if (unit.Kind != UnitKind.Player) enemies.Add(unit.Id, new EnemyFsm(unit, player, world, navigation));
         }
         private void Forget(UnitModel unit)
         {
             if (!unit.IsAlive && enemies.TryGetValue(unit.Id, out var fsm)) fsm.Tick(0);
             intents.Remove(unit.Id); enemies.Remove(unit.Id); previousPositions.Remove(unit.Id);
-            navigation.ForgetUnit(unit.Id); crowds.Forget(unit.Id);
+            navigation.ForgetUnit(unit.Id);
         }
         public void Dispose() { if (disposed) return; disposed = true; world.Units.Removed -= Forget; world.Units.Registered -= TrackRadius; enemies.Clear(); }
     }

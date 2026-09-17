@@ -25,7 +25,7 @@ namespace SsalMuk.Core
             double previousProgress = Math.Max(0, Math.Min(1, (lo - attack.StartedAt) / attack.ActiveSeconds));
             double progress = hi >= attack.StartedAt + attack.ActiveSeconds ? 1 :
                 Math.Max(previousProgress, Math.Min(1, (hi - attack.StartedAt) / attack.ActiveSeconds));
-            double queryRadius = attack.Stats.Range + definition.Width + movement.LargestBodyRadius + movement.MaximumDisplacement + playerTravel.Length;
+            double queryRadius = attack.Stats.Range + definition.Width + movement.LargestHurtRadius + movement.MaximumDisplacement + playerTravel.Length;
             foreach (long id in run.World.Query.QueryCircle(originEnd, queryRadius))
             {
                 if (!run.World.Units.TryGet(id, out var enemy) || enemy.Kind == UnitKind.Player || !enemy.IsAlive) continue;
@@ -35,12 +35,12 @@ namespace SsalMuk.Core
                 var relativeEnd = originEnd.DisplacementTo(previousEnemy.Offset(enemyTravel * endFraction));
                 var localStart = AttackGeometry.Rotate(relativeStart, -angle); var localEnd = AttackGeometry.Rotate(relativeEnd, -angle);
                 bool hit;
-                if (attack.Kind == WeaponKind.Sword) hit = AttackGeometry.SwordSweepContains(localStart, localEnd, enemy.BodyRadius, attack.Stats.Range, previousProgress, progress);
-                else if (attack.Kind == WeaponKind.Spear) hit = AttackGeometry.SpearSweepContains(localStart, localEnd, enemy.BodyRadius, attack.Stats.Range, definition.Width, previousProgress, progress);
+                if (attack.Kind == WeaponKind.Sword) hit = AttackGeometry.SwordSweepContains(localStart, localEnd, enemy.HurtRadius, attack.Stats.Range, previousProgress, progress);
+                else if (attack.Kind == WeaponKind.Spear) hit = AttackGeometry.SpearSweepContains(localStart, localEnd, enemy.HurtRadius, attack.Stats.Range, definition.Width, previousProgress, progress);
                 else
                 {
                     double phase = CopyLayout.Phase(attack.Key.Copy);
-                    hit = AttackGeometry.AxeSweepContains(localStart, localEnd, enemy.BodyRadius, attack.Stats.Range, definition.Width,
+                    hit = AttackGeometry.AxeSweepContains(localStart, localEnd, enemy.HurtRadius, attack.Stats.Range, definition.Width,
                         phase + previousProgress * Math.PI * 2, phase + progress * Math.PI * 2);
                 }
                 if (!hit) continue;

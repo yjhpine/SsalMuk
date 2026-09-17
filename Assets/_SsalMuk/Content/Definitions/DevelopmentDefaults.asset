@@ -17,28 +17,36 @@ MonoBehaviour:
     kind: 0
     maxHealth: 100
     moveSpeed: 3
-    bodyRadius: 0.28
+    bodyRadius: 0.24896384411547556
+    hurtRadius: 0.3423252856587789
+    visualFootOffset: 0.28
     contactDamage: 0
     experienceReward: 0
   - id: normal
     kind: 1
     maxHealth: 10
     moveSpeed: 1.5
-    bodyRadius: 0.26
+    bodyRadius: 0.25999999046325684
+    hurtRadius: 0.3574999868869782
+    visualFootOffset: 0.26
     contactDamage: 5
     experienceReward: 1
   - id: air
     kind: 2
     maxHealth: 6
     moveSpeed: 6
-    bodyRadius: 0.22
+    bodyRadius: 0.2119999885559082
+    hurtRadius: 0.2914999842643738
+    visualFootOffset: 0.22
     contactDamage: 5
     experienceReward: 1
   - id: boss
     kind: 3
     maxHealth: 600
     moveSpeed: 1.1
-    bodyRadius: 0.75
+    bodyRadius: 0.9
+    hurtRadius: 1.2375
+    visualFootOffset: 0.75
     contactDamage: 15
     experienceReward: 30
   weapons:
@@ -80,7 +88,7 @@ MonoBehaviour:
     projectileLifetime: 3
   obstacleChance: 0.2
   initialEnemyCount: 12
-  crowdIterations: 6
+  crowdAvoidanceStrength: 0.65
   navigationNodeBudget: 512
   firstLevelCost: 5
   levelCostStep: 3

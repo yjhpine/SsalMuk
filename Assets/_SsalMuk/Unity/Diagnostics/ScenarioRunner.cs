@@ -171,7 +171,7 @@ namespace SsalMuk.Unity.Diagnostics
         private UnitModel Spawn(RunModel run, UnitKind kind, WorldPosition at, double health = 1000000000, double? damage = null, DVec2? direction = null)
         {
             var original = run.Definitions.GetUnit(kind);
-            var definition = new UnitDefinition("scenario-" + kind, kind, health, original.MoveSpeed, original.BodyRadius, damage ?? original.ContactDamage, original.ExperienceReward);
+            var definition = new UnitDefinition("scenario-" + kind, kind, health, original.MoveSpeed, original.BodyRadius, damage ?? original.ContactDamage, original.ExperienceReward, original.HurtRadius, original.VisualFootOffset);
             UnitFactory factory = kind == UnitKind.Air ? (UnitFactory)new AirEnemyFactory(run.World.Units) : new GroundEnemyFactory(run.World.Units);
             return factory.Spawn(new UnitSpawnRequest(run.Id, kind, at, definition, direction));
         }

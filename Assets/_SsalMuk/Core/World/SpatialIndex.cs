@@ -68,7 +68,14 @@ namespace SsalMuk.Core
 
         public IReadOnlyList<long> QueryCircle(WorldPosition origin, double radius, Func<long, bool> accepts = null)
         {
-            RequireRadius(radius); var result = new List<long>();
+            var result = new List<long>(); QueryCircle(origin, radius, result, accepts); return result.AsReadOnly();
+        }
+
+        public void QueryCircle(WorldPosition origin, double radius, List<long> result, Func<long, bool> accepts = null)
+        {
+            RequireRadius(radius);
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            result.Clear();
             if (radius <= WorldPosition.ChunkSize && chunks.Count > 9)
             {
                 // A local circle touches at most the surrounding nine chunks. Far living entities
@@ -86,7 +93,7 @@ namespace SsalMuk.Core
                 }
             }
             else foreach (var chunk in chunks) Collect(chunk.Key, chunk.Value);
-            result.Sort(); return result.AsReadOnly();
+            result.Sort();
 
             void Collect(ChunkCoord coord, HashSet<GridCell> region)
             {

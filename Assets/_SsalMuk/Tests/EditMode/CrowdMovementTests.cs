@@ -7,12 +7,14 @@ namespace SsalMuk.Tests
     public sealed class CrowdMovementTests
     {
         [Test]
-        public void GroundBodiesSeparateWithoutDeletingUnits()
+        public void StationaryOverlappingGroundBodiesRemainStillWithoutDeletingUnits()
         {
-            using var rig = RunTestRig.Create(); rig.PlacePlayer(new DVec2(8, 0));
+            using var rig = RunTestRig.Create(enableAi: false, enableCombat: false); rig.PlacePlayer(new DVec2(8, 0));
             long a = rig.Spawn(UnitKind.Normal, new DVec2(0, 0)); long b = rig.Spawn(UnitKind.Normal, new DVec2(0.1, 0));
+            rig.Movement.SetMoveIntent(a, DVec2.Zero); rig.Movement.SetMoveIntent(b, DVec2.Zero);
             rig.Advance(0.2);
-            Assert.That(rig.Unit(a).Position.DistanceTo(rig.Unit(b).Position), Is.GreaterThanOrEqualTo(rig.Unit(a).BodyRadius + rig.Unit(b).BodyRadius - 0.05));
+            Assert.That(rig.Unit(a).Position, Is.EqualTo(WorldPosition.FromLocal(DVec2.Zero)));
+            Assert.That(rig.Unit(b).Position, Is.EqualTo(WorldPosition.FromLocal(new DVec2(0.1, 0))));
             Assert.That(rig.Unit(a).IsAlive && rig.Unit(b).IsAlive, Is.True);
         }
 
@@ -60,7 +62,7 @@ namespace SsalMuk.Tests
             Assert.That(result.Local.X, Is.LessThanOrEqualTo(4.740001));
             Assert.That(result.Local.Y, Is.GreaterThan(4));
             var player = (PlayerModel)WorldStoreTests.Spawn(wall, UnitKind.Player, NavigationTests.P(4.5, 10));
-            var movement = new MovementSystem(wall, new NavigationService(wall), player, new MovementSettings(crowdIterations: 8));
+            var movement = new MovementSystem(wall, new NavigationService(wall), player);
             for (int i = 0; i < 12; i++)
             {
                 var unit = WorldStoreTests.Spawn(wall, UnitKind.Normal, NavigationTests.P(3.5 + (i % 3) * 0.3, 2.5 + (i / 3) * 0.3));
