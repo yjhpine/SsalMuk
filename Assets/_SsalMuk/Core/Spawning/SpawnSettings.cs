@@ -16,9 +16,11 @@ namespace SsalMuk.Core
         public int CreationBudget { get; }
         public double AirDepartureMargin { get; }
         public int NormalPopulationCap { get; }
+        public SurroundWaveSettings SurroundWaves { get; }
         public SpawnSettings(double normalBaseRate = 1, double normalRateGrowth = 1.0 / 120, double airInterval = 20,
             int airBaseCount = 8, double airCountGrowthSeconds = 120, double airSpacing = 0.65, double groundMargin = 1.2,
-            double groundBand = 5, int positionAttempts = 32, int creationBudget = 64, double airDepartureMargin = 4, int normalPopulationCap = 500)
+            double groundBand = 5, int positionAttempts = 32, int creationBudget = 64, double airDepartureMargin = 4, int normalPopulationCap = 500,
+            SurroundWaveSettings surroundWaves = null)
         {
             foreach (double value in new[] { normalBaseRate, airInterval, airCountGrowthSeconds, airSpacing, groundMargin, groundBand, airDepartureMargin })
                 WeaponDefinition.RequirePositive(value, nameof(value));
@@ -30,6 +32,7 @@ namespace SsalMuk.Core
             GroundMargin = groundMargin; GroundBand = groundBand; PositionAttempts = positionAttempts; CreationBudget = creationBudget;
             AirDepartureMargin = airDepartureMargin;
             NormalPopulationCap = normalPopulationCap;
+            SurroundWaves = surroundWaves ?? new SurroundWaveSettings();
         }
     }
 }

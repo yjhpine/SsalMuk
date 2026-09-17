@@ -17,7 +17,7 @@ namespace SsalMuk.Tests
         {
             using var rig = RunTestRig.Create(enableAi: false);
             if (kind != WeaponKind.Sword) rig.Equip(kind);
-            rig.Upgrade(kind, UpgradeKind.Copies, 2);
+            rig.Upgrade(kind, UpgradeKind.Copies, 4);
             rig.Spawn(UnitKind.Normal, new DVec2(8, 0), 1000);
             using var weapon = new WeaponRuntime(rig.Run, kind, rig.Movement, rig.Damage);
             var shots = new List<AttackInstance>();

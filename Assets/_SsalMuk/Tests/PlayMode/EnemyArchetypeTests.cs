@@ -31,6 +31,10 @@ namespace SsalMuk.Tests
             run.Clock.Advance(15000);
             yield return WaitForBoss(director, 1);
             Assert.That(director.SpawnedCount(UnitKind.Boss), Is.EqualTo(1));
+            // The new surrounding burst shares the creation budget; the air group can follow a few ticks later.
+            deadline = Time.realtimeSinceStartupAsDouble + 5;
+            while (!run.Units.OfType<AirEnemyModel>().Any() && Time.realtimeSinceStartupAsDouble < deadline) yield return new WaitForFixedUpdate();
+            Assert.That(run.Units.OfType<AirEnemyModel>().Any(), Is.True);
             var boss = run.Units.Single(x => x.Kind == UnitKind.Boss); double health = boss.Health;
             Assert.That(run.World.Query.IsCircleFree(boss.Position, boss.BodyRadius), Is.True);
             var camera = Camera.main;

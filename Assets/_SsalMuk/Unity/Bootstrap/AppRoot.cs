@@ -47,7 +47,8 @@ namespace SsalMuk.Unity
             var catalog = Resources.Load<GameCatalog>("Bootstrap/GameCatalog");
             var cameraObject = new GameObject("RuntimeCamera", typeof(Camera)); cameraObject.transform.SetParent(transform, false);
             cameraObject.tag = "MainCamera"; cameraObject.transform.localPosition = new Vector3(0, 0, -10);
-            var camera = cameraObject.GetComponent<Camera>(); camera.orthographic = true; camera.orthographicSize = 10;
+            var camera = cameraObject.GetComponent<Camera>(); camera.orthographic = true;
+            camera.orthographicSize = catalog != null ? catalog.Defaults.CameraOrthographicSize : 8;
             camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = UiFactory.Ink;
             var lightObject = new GameObject("RuntimeLight", typeof(Light)); lightObject.transform.SetParent(transform, false);
             lightObject.GetComponent<Light>().type = LightType.Directional;

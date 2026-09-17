@@ -22,7 +22,17 @@ namespace SsalMuk.Core
         private bool IsActive => !disposed && run.Phase == RunPhase.Running && run.Player != null && run.Player.IsAlive;
         private bool IsValid(RewardCommand command) => IsActive && CurrentOffer != null && run.Player.Growth.PendingChoices > 0 &&
             command.RunId == run.Id && command.OfferId == CurrentOffer.Id && command.Slot >= 0 && command.Slot < CurrentOffer.Choices.Count &&
-            command.OwnershipVersion == CurrentOffer.OwnershipVersion && command.OwnershipVersion == run.Player.Weapons.OwnershipVersion;
+            command.OwnershipVersion == CurrentOffer.OwnershipVersion && command.OwnershipVersion == run.Player.Weapons.OwnershipVersion &&
+            IsAvailable(CurrentOffer.Choices[command.Slot]);
+        private bool IsAvailable(RewardId reward) => reward.IsUpgrade ?
+            run.Player.Weapons.Owns(reward.Weapon) && run.Player.Weapons.Get(reward.Weapon).CanUpgrade(reward.UpgradeKind) :
+            !run.Player.Weapons.Owns(reward.Weapon);
+        private bool OfferStillAvailable()
+        {
+            if (CurrentOffer == null || CurrentOffer.OwnershipVersion != run.Player.Weapons.OwnershipVersion) return false;
+            foreach (var reward in CurrentOffer.Choices) if (!IsAvailable(reward)) return false;
+            return true;
+        }
         public bool TryQueueChoice(Guid runId, long offerId, int slot)
         {
             if (queued.HasValue || CurrentOffer == null) return false;
@@ -43,9 +53,10 @@ namespace SsalMuk.Core
         public void RefreshOffer()
         {
             if (!IsActive || run.Player.Growth.PendingChoices <= 0) { CurrentOffer = null; return; }
-            if (CurrentOffer != null && CurrentOffer.OwnershipVersion == run.Player.Weapons.OwnershipVersion) return;
+            if (OfferStillAvailable()) return;
             long next = checked(lastOfferId + 1);
-            CurrentOffer = new OfferSnapshot(next, run.Player.Weapons.OwnershipVersion, generator.Generate(run.Player.Weapons.Kinds, random, weights));
+            CurrentOffer = new OfferSnapshot(next, run.Player.Weapons.OwnershipVersion,
+                generator.Generate(run.Player.Weapons.Kinds, random, weights, (weapon, upgrade) => run.Player.Weapons.Get(weapon).CanUpgrade(upgrade)));
             lastOfferId = next;
         }
         public void Dispose() { disposed = true; CurrentOffer = null; queued = null; }

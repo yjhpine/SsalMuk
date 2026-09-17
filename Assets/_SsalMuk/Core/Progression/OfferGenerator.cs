@@ -4,7 +4,8 @@ namespace SsalMuk.Core
 {
     public sealed class OfferGenerator
     {
-        public IReadOnlyList<RewardId> Generate(IReadOnlyCollection<WeaponKind> owned, IRandomSource random, RewardWeights weights)
+        public IReadOnlyList<RewardId> Generate(IReadOnlyCollection<WeaponKind> owned, IRandomSource random, RewardWeights weights,
+            Func<WeaponKind, UpgradeKind, bool> canUpgrade = null)
         {
             if (owned == null || owned.Count == 0) throw new ArgumentException("At least one owned weapon is required.", nameof(owned));
             if (random == null || weights == null) throw new ArgumentNullException(nameof(random));
@@ -13,7 +14,11 @@ namespace SsalMuk.Core
             var acquisitions = new List<RewardId>(); var upgrades = new List<RewardId>();
             foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind)))
             {
-                if (set.Contains(kind)) foreach (UpgradeKind upgrade in Enum.GetValues(typeof(UpgradeKind))) upgrades.Add(RewardId.Upgrade(kind, upgrade));
+                if (set.Contains(kind))
+                {
+                    foreach (UpgradeKind upgrade in Enum.GetValues(typeof(UpgradeKind)))
+                        if (canUpgrade == null || canUpgrade(kind, upgrade)) upgrades.Add(RewardId.Upgrade(kind, upgrade));
+                }
                 else if (weights.Acquisition > 0) acquisitions.Add(RewardId.Acquire(kind));
             }
             if (acquisitions.Count + upgrades.Count < 3) throw new ArgumentException("Reward settings cannot produce three distinct choices.");

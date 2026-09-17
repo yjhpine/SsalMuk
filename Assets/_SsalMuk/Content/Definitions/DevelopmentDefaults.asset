@@ -114,3 +114,12 @@ MonoBehaviour:
   spawnPositionAttempts: 32
   spawnCreationBudget: 64
   airDepartureMargin: 4
+  surroundWaveBaseCount: 80
+  surroundWaveCountStep: 20
+  surroundWaveHealthStep: 0.2
+  surroundWaveDamageStep: 0.1
+  surroundWaveFastClearSeconds: 45
+  surroundWaveFastKillFraction: 0.8
+  surroundWaveRemainingFraction: 0.25
+  surroundWaveReservationSeconds: 5
+  cameraOrthographicSize: 8

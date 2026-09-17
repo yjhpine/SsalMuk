@@ -40,12 +40,25 @@ namespace SsalMuk.Unity
         [SerializeField] private int spawnPositionAttempts = 32;
         [SerializeField] private int spawnCreationBudget = 64;
         [SerializeField] private double airDepartureMargin = 4;
+        [SerializeField, Min(0)] private int surroundWaveBaseCount = 80;
+        [SerializeField, Min(1)] private int surroundWaveCountStep = 20;
+        [SerializeField] private double surroundWaveHealthStep = .2;
+        [SerializeField] private double surroundWaveDamageStep = .1;
+        [SerializeField] private double surroundWaveFastClearSeconds = 45;
+        [SerializeField] private double surroundWaveFastKillFraction = .8;
+        [SerializeField] private double surroundWaveRemainingFraction = .25;
+        [SerializeField] private double surroundWaveReservationSeconds = 5;
+        [SerializeField, Min(.1f)] private float cameraOrthographicSize = 8;
+        public float CameraOrthographicSize => cameraOrthographicSize > 0 && !float.IsInfinity(cameraOrthographicSize)
+            ? cameraOrthographicSize : throw new ArgumentOutOfRangeException(nameof(cameraOrthographicSize));
         public int InitialEnemyCount => initialEnemyCount >= 0 ? initialEnemyCount : throw new ArgumentOutOfRangeException(nameof(initialEnemyCount));
         public MapSettings CreateMapSettings() => new MapSettings(obstacleChance, maximumBodyRadius: CreateCatalog().Units.Max(unit => unit.BodyRadius));
         public MovementSettings CreateMovementSettings() => new MovementSettings(navigationNodeBudget: navigationNodeBudget, crowdAvoidanceStrength: crowdAvoidanceStrength);
         public RewardWeights CreateRewardWeights() => new RewardWeights(acquisitionWeight, upgradeWeight);
         public SpawnSettings CreateSpawnSettings() => new SpawnSettings(normalBaseRate, normalRateGrowth, airInterval, airBaseCount,
-            airCountGrowthSeconds, airSpacing, groundSpawnMargin, groundSpawnBand, spawnPositionAttempts, spawnCreationBudget, airDepartureMargin, normalPopulationCap);
+            airCountGrowthSeconds, airSpacing, groundSpawnMargin, groundSpawnBand, spawnPositionAttempts, spawnCreationBudget, airDepartureMargin, normalPopulationCap,
+            new SurroundWaveSettings(surroundWaveBaseCount, surroundWaveCountStep, surroundWaveHealthStep, surroundWaveDamageStep,
+                surroundWaveFastClearSeconds, surroundWaveFastKillFraction, surroundWaveRemainingFraction, surroundWaveReservationSeconds));
         public GrowthSettings CreateGrowthSettings()
         {
             if (!BigInteger.TryParse(firstLevelCost, NumberStyles.Integer, CultureInfo.InvariantCulture, out var first) ||
@@ -75,7 +88,7 @@ namespace SsalMuk.Unity
         {
             get
             {
-                try { CreateCatalog(); CreateGrowthSettings(); CreatePickupSettings(); CreateRewardWeights(); CreateSpawnSettings(); return ""; }
+                try { CreateCatalog(); CreateGrowthSettings(); CreatePickupSettings(); CreateRewardWeights(); CreateSpawnSettings(); _ = CameraOrthographicSize; return ""; }
                 catch (ArgumentException error) { return error.Message; }
             }
         }

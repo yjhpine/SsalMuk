@@ -7,7 +7,8 @@ namespace SsalMuk.Tests
 {
     public sealed class SpawnDirectorTests
     {
-        private static SpawnSettings BossOnly() => new SpawnSettings(normalBaseRate: 0.0001, normalRateGrowth: 0, airInterval: 10000);
+        private static SpawnSettings BossOnly() => new SpawnSettings(normalBaseRate: 0.0001, normalRateGrowth: 0, airInterval: 10000,
+            surroundWaves: new SurroundWaveSettings(baseCount: 0));
         [Test]
         public void BossesOverlapAndLaterDifficultyDoesNotHealAnExistingBoss()
         {

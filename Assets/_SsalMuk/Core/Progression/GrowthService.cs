@@ -14,6 +14,8 @@ namespace SsalMuk.Core
             if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(count));
             if (!run.Player.Weapons.Owns(kind)) throw new InvalidOperationException("Only an owned weapon can be upgraded.");
             var state = run.Player.Weapons.Get(kind); BigInteger next = state.GetLevel(upgrade) + amount;
+            if (upgrade == UpgradeKind.Repeats && next > WeaponState.MaximumRepeatLevel)
+                throw new InvalidOperationException("Repeat upgrades stop at level two (three strikes per burst).");
             StatCalculator.Calculate(run.Definitions.GetWeapon(kind), state, run.GrowthSettings, upgrade, next);
             state.SetLevel(upgrade, next);
         }

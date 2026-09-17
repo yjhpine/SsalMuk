@@ -99,10 +99,10 @@ namespace SsalMuk.Tests
             Assert.That(rig.Simulation.Weapons.Count, Is.EqualTo(4));
             long target = rig.Spawn(UnitKind.Normal, new DVec2(4, 0), 10000); rig.Movement.SetMoveIntent(target, DVec2.Zero);
             rig.Advance(0.5);
-            Assert.That(rig.Simulation.Weapons[WeaponKind.Sword].LaunchCount, Is.EqualTo(9));
-            Assert.That(rig.Simulation.Weapons[WeaponKind.Spear].LaunchCount, Is.EqualTo(6));
-            Assert.That(rig.Simulation.Weapons[WeaponKind.Axe].LaunchCount, Is.EqualTo(6));
-            Assert.That(rig.Simulation.Weapons[WeaponKind.Fireball].LaunchCount, Is.EqualTo(6));
+            Assert.That(rig.Simulation.Weapons[WeaponKind.Sword].LaunchCount, Is.EqualTo(6));
+            Assert.That(rig.Simulation.Weapons[WeaponKind.Spear].LaunchCount, Is.EqualTo(4));
+            Assert.That(rig.Simulation.Weapons[WeaponKind.Axe].LaunchCount, Is.EqualTo(4));
+            Assert.That(rig.Simulation.Weapons[WeaponKind.Fireball].LaunchCount, Is.EqualTo(4));
             Assert.That(rig.Unit(target).Health, Is.LessThan(10000));
         }
         [TestCase(WeaponKind.Sword), TestCase(WeaponKind.Spear), TestCase(WeaponKind.Axe)]

@@ -16,7 +16,7 @@ namespace SsalMuk.Tests
             rig.Upgrade(WeaponKind.Sword, UpgradeKind.Copies, 2);
             var state = rig.Player.Weapons.Get(WeaponKind.Sword);
             var stats = StatCalculator.Calculate(rig.Run.Definitions.GetWeapon(WeaponKind.Sword), state);
-            Assert.That(stats.Damage, Is.EqualTo(8.8).Within(1e-10)); Assert.That(stats.Copies, Is.EqualTo(new BigInteger(5)));
+            Assert.That(stats.Damage, Is.EqualTo(8.8).Within(1e-10)); Assert.That(stats.Copies, Is.EqualTo(new BigInteger(3)));
             Assert.That(stats.Repeats, Is.EqualTo(BigInteger.One)); Assert.That(stats.Range, Is.EqualTo(1.6));
             Assert.That(rig.Player.Weapons.Get(WeaponKind.Spear).GetLevel(UpgradeKind.Damage), Is.EqualTo(BigInteger.Zero));
             Assert.That(rig.Run.Definitions.GetWeapon(WeaponKind.Sword).Damage, Is.EqualTo(8));
@@ -41,7 +41,7 @@ namespace SsalMuk.Tests
             using var rig = RunTestRig.Create(); BigInteger large = BigInteger.Pow(10, 40);
             rig.Upgrade(WeaponKind.Sword, UpgradeKind.Copies, large);
             var state = rig.Player.Weapons.Get(WeaponKind.Sword);
-            Assert.That(StatCalculator.Calculate(rig.Run.Definitions.GetWeapon(WeaponKind.Sword), state).Copies, Is.EqualTo(1 + 2 * large));
+            Assert.That(StatCalculator.Calculate(rig.Run.Definitions.GetWeapon(WeaponKind.Sword), state).Copies, Is.EqualTo(1 + large));
             Assert.Throws<NumericRangeException>(() => rig.Upgrade(WeaponKind.Sword, UpgradeKind.Damage, large));
             Assert.That(state.GetLevel(UpgradeKind.Damage), Is.EqualTo(BigInteger.Zero));
         }

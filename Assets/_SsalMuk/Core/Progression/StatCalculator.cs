@@ -15,7 +15,7 @@ namespace SsalMuk.Core
             return new WeaponStats(Scaled(definition.Damage, Level(UpgradeKind.Damage), settings.DamageCoefficient, false, "Damage"),
                 Scaled(definition.Range, Level(UpgradeKind.Range), settings.RangeCoefficient, false, "Range"),
                 Scaled(definition.PeriodSeconds, Level(UpgradeKind.Speed), settings.SpeedCoefficient, true, "Period"),
-                1 + 2 * Level(UpgradeKind.Copies), 1 + Level(UpgradeKind.Repeats));
+                1 + Level(UpgradeKind.Copies), 1 + Level(UpgradeKind.Repeats));
         }
         private static double Scaled(double baseline, BigInteger level, double coefficient, bool inverse, string name)
         {
