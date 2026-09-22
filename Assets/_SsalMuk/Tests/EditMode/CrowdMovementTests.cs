@@ -52,14 +52,16 @@ namespace SsalMuk.Tests
         }
 
         [Test]
-        public void GroundChasesAroundWallWhileFarUnitsKeepMoving()
+        public void GroundStopsAtAWallWithoutRouteSearchWhileFarUnitsKeepMoving()
         {
             using var wall = NavigationTests.Layout((x, y) => x == 5 && y > 1 && y < 8);
             var player = (PlayerModel)WorldStoreTests.Spawn(wall, UnitKind.Player, NavigationTests.P(9.5, 4.5));
             var enemy = WorldStoreTests.Spawn(wall, UnitKind.Normal, NavigationTests.P(2.5, 4.5));
             var movement = new MovementSystem(wall, new NavigationService(wall), player);
             for (int i = 0; i < 600; i++) { movement.Step(0.02); Assert.That(wall.Query.IsCircleFree(enemy.Position, enemy.BodyRadius), Is.True); }
-            Assert.That(enemy.Position.DistanceTo(player.Position), Is.LessThan(1.5));
+            Assert.That(enemy.Position.Local.X, Is.LessThan(5));
+            Assert.That(enemy.Position.Local.Y, Is.EqualTo(4.5).Within(1e-8));
+            Assert.That(movement.Navigation.PendingRequestCount, Is.Zero);
             using var rig = RunTestRig.Create();
             long far = rig.Spawn(UnitKind.Normal, new DVec2(150, 16));
             double before = rig.Unit(far).Position.DistanceTo(rig.Player.Position);

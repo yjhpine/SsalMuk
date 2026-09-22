@@ -14,7 +14,7 @@ namespace SsalMuk.Core
         public NavigationService Navigation { get; }
         public AiSettings Settings { get; }
         public PickupSettings PickupSettings { get; }
-        public UnitModel FollowTarget { get; }
+        public IPlayerPosition FollowTarget { get; }
         public IReadOnlyList<UnitModel> Enemies => enemies;
         public double Time { get; internal set; }
         public DVec2 MoveIntent { get; internal set; }
@@ -22,7 +22,7 @@ namespace SsalMuk.Core
         public long? CollectionTargetId { get; internal set; }
         public double EngagementRange { get; internal set; } = 1.6;
 
-        public AiContext(UnitModel actor, WorldStore world, NavigationService navigation, AiSettings settings, PickupSettings pickupSettings = null, UnitModel followTarget = null)
+        public AiContext(UnitModel actor, WorldStore world, NavigationService navigation, AiSettings settings, PickupSettings pickupSettings = null, IPlayerPosition followTarget = null)
         {
             Actor = actor ?? throw new ArgumentNullException(nameof(actor));
             World = world ?? throw new ArgumentNullException(nameof(world));

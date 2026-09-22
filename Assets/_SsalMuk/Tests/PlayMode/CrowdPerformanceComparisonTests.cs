@@ -71,10 +71,11 @@ namespace SsalMuk.Tests
             var catalog = Resources.Load<GameCatalog>("Bootstrap/GameCatalog");
             var sourceDefinitions = catalog.Defaults.CreateCatalog();
             var definitions = new DefinitionCatalog(sourceDefinitions.Units.Select(d => new UnitDefinition(d.Id, d.Kind,
-                combat ? 1000000000 : d.MaxHealth, d.MoveSpeed, d.BodyRadius, d.ContactDamage, d.ExperienceReward,
+                combat ? 1000000000 : d.MaxHealth, !combat && d.Kind == UnitKind.Normal ? 1.5 : d.MoveSpeed, d.BodyRadius, d.ContactDamage, d.ExperienceReward,
                 d.HurtRadius, d.VisualFootOffset)), Enum.GetValues(typeof(WeaponKind)).Cast<WeaponKind>().Select(sourceDefinitions.GetWeapon));
             rig = RunTestRig.Create(seed: 260917, enableAi: combat, enableCombat: combat, definitions: definitions,
                 movementSettings: catalog.Defaults.CreateMovementSettings(), pickupSettings: catalog.Defaults.CreatePickupSettings());
+            // Fixed diagnostic normal speed 1.5 preserves the earlier comparison after gameplay speed tuning.
             // Same density and row-major layout; no player input in movement-only cases.
             int columns = (int)Math.Ceiling(Math.Sqrt(count));
             for (int i = 0; i < count; i++)

@@ -8,7 +8,7 @@ namespace SsalMuk.Tests
     public sealed class MovementOptimizationTests
     {
         [Test]
-        public void OrdinaryGroundDirectionIsReusedDuringItsDecisionCadenceWhileMotionContinues()
+        public void SharedTargetRefreshesEvenInsideTheSameGridCell()
         {
             using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
             rig.PlacePlayer(new DVec2(0.85, 0.15));
@@ -20,8 +20,8 @@ namespace SsalMuk.Tests
             rig.Movement.Step(0.02);
 
             var secondStep = afterFirst.DisplacementTo(rig.Unit(enemy).Position);
-            Assert.That(secondStep.X, Is.GreaterThan(0.02));
-            Assert.That(Math.Abs(secondStep.Y), Is.LessThan(1e-9));
+            Assert.That(secondStep.X, Is.LessThan(0));
+            Assert.That(secondStep.Y, Is.GreaterThan(0.02));
             Assert.That(secondStep.Length, Is.EqualTo(0.03).Within(1e-9));
         }
 
@@ -44,7 +44,7 @@ namespace SsalMuk.Tests
         }
 
         [Test]
-        public void CompletedFallbackRouteDoesNotBypassDirectDirectionCadence()
+        public void FarEnemyNeedsNoFallbackRouteBeforeFollowingTheSharedTarget()
         {
             using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
             rig.PlacePlayer(new DVec2(0.85, 0.15));
@@ -60,12 +60,12 @@ namespace SsalMuk.Tests
             rig.Movement.Step(0.02);
 
             var secondStep = afterDirectDecision.DisplacementTo(rig.Unit(enemy).Position);
-            Assert.That(secondStep.X, Is.GreaterThan(0.02));
-            Assert.That(Math.Abs(secondStep.Y), Is.LessThan(1e-9));
+            Assert.That(secondStep.X, Is.LessThan(0));
+            Assert.That(secondStep.Y, Is.GreaterThan(0.02));
         }
 
         [Test]
-        public void PassingAFlowAimRefreshesBeforeTheNextMovementStep()
+        public void EnemiesIgnoreAnExistingFlowFieldAndStayOutsideTerrain()
         {
             using var world = NavigationTests.Layout((x, y) => !((x == 0 && y == 0) || (x == 1 && y >= 0 && y <= 2)));
             var player = (PlayerModel)WorldStoreTests.Spawn(world, UnitKind.Player, NavigationTests.P(1.5, 2.5));
@@ -77,13 +77,13 @@ namespace SsalMuk.Tests
             Assert.That(field.IsComplete, Is.True);
 
             movement.Step(0.405);
-            Assert.That(enemy.Position.Local.X, Is.GreaterThan(1.5));
+            Assert.That(world.Query.IsCircleFree(enemy.Position, enemy.BodyRadius), Is.True);
             var afterPassingAim = enemy.Position;
             movement.Step(0.02);
 
             var nextStep = afterPassingAim.DisplacementTo(enemy.Position);
-            Assert.That(nextStep.Y, Is.GreaterThan(0.03));
-            Assert.That(nextStep.X, Is.LessThanOrEqualTo(0));
+            Assert.That(world.Query.IsCircleFree(enemy.Position, enemy.BodyRadius), Is.True);
+            Assert.That(nextStep.Length, Is.LessThanOrEqualTo(enemy.Definition.MoveSpeed * .02 + 1e-9));
         }
 
         [Test]

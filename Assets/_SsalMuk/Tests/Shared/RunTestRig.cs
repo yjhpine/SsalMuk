@@ -116,7 +116,7 @@ namespace SsalMuk.Tests
             {
                 Run.SetPlayer((PlayerModel)new PlayerFactory(Run.World.Units).Spawn(
                     new UnitSpawnRequest(Run.Id, UnitKind.Player, default, Run.Definitions.GetUnit(UnitKind.Player))));
-                Navigation = new NavigationService(Run.World); Movement = new MovementSystem(Run.World, Navigation, Run.Player, movementSettings);
+                Navigation = new NavigationService(Run.World); Movement = new MovementSystem(Run.World, Navigation, Run.Player, movementSettings, Run.Seed);
                 if (enableAi) Ai = new LowAiController(Run.Player, Run.World, Navigation, pickupSettings: Run.PickupSettings);
                 Damage = new DamageService(Run, Movement); Death = new DeathService(Run, Damage);
                 Contact = new ContactDamageSystem(Run, Movement, Damage);

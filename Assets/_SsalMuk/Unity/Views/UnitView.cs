@@ -7,7 +7,7 @@ namespace SsalMuk.Unity
     {
         [SerializeField] private SpriteRenderer body;
         [SerializeField] private Transform walkPivot, hitScaleRoot;
-        private SpriteRenderer healthBackground, healthFill;
+        private SpriteRenderer healthBackground, healthFill, chargeWarning;
         private readonly WalkAnimator walk = new WalkAnimator();
         private readonly HitFeedback hit = new HitFeedback();
         public long UnitId { get; private set; }
@@ -61,6 +61,26 @@ namespace SsalMuk.Unity
             healthBackground.transform.localScale = new Vector3(width, 0.07f, 1);
             healthFill.transform.localScale = new Vector3(width * fraction, 0.045f, 1);
             healthBackground.sortingOrder = order + 1; healthFill.sortingOrder = order + 2;
+            ShowChargeWarning(unit, catalog);
+        }
+        private void ShowChargeWarning(UnitModel unit, GameCatalog catalog)
+        {
+            var charge = (unit as GroundEnemyModel)?.Charge;
+            bool visible = charge != null && charge.Phase == EnemyState.Telegraph && unit.IsAlive && !unit.Knockback.IsActive;
+            if (!visible) { if (chargeWarning != null) chargeWarning.enabled = false; return; }
+            if (chargeWarning == null)
+            {
+                var go = new GameObject("BossChargeWarning", typeof(SpriteRenderer)); go.transform.SetParent(transform, false);
+                chargeWarning = go.GetComponent<SpriteRenderer>(); chargeWarning.sprite = catalog.SolidSprite;
+                chargeWarning.sharedMaterial = catalog.WorldMaterial; chargeWarning.color = new Color(1, .035f, .025f, .48f);
+                chargeWarning.sortingOrder = -100;
+            }
+            chargeWarning.enabled = true;
+            var center = unit.Position.DisplacementTo(charge.Origin.Offset(charge.Direction * (charge.Length / 2)));
+            chargeWarning.transform.localPosition = WorldRenderOrigin.ToVector(center);
+            chargeWarning.transform.localRotation = Quaternion.Euler(0, 0, (float)(System.Math.Atan2(charge.Direction.Y, charge.Direction.X) * 180 / System.Math.PI));
+            var size = chargeWarning.sprite.bounds.size;
+            chargeWarning.transform.localScale = new Vector3((float)(charge.Length / size.x), (float)(unit.BodyRadius * 2 / size.y), 1);
         }
         public override void ResetVisuals()
         {
@@ -69,6 +89,7 @@ namespace SsalMuk.Unity
             if (hitScaleRoot != null) hitScaleRoot.localScale = Vector3.one;
             if (body != null) { body.color = Color.white; body.flipX = false; body.transform.localRotation = Quaternion.identity; body.transform.localScale = Vector3.one; }
             if (healthBackground != null) healthBackground.enabled = healthFill.enabled = false;
+            if (chargeWarning != null) chargeWarning.enabled = false;
         }
     }
 }

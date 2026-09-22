@@ -25,7 +25,7 @@ MonoBehaviour:
   - id: normal
     kind: 1
     maxHealth: 10
-    moveSpeed: 1.5
+    moveSpeed: 3.3
     bodyRadius: 0.32499998807907104
     hurtRadius: 0.3574999868869782
     visualFootOffset: 0.26
@@ -34,7 +34,7 @@ MonoBehaviour:
   - id: air
     kind: 2
     maxHealth: 6
-    moveSpeed: 6
+    moveSpeed: 3.3
     bodyRadius: 0.26499998569488525
     hurtRadius: 0.2914999842643738
     visualFootOffset: 0.22
@@ -43,7 +43,7 @@ MonoBehaviour:
   - id: boss
     kind: 3
     maxHealth: 600
-    moveSpeed: 3.1500000000000004
+    moveSpeed: 3.6
     bodyRadius: 1.125
     hurtRadius: 1.2375
     visualFootOffset: 0.75

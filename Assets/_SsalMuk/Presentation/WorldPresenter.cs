@@ -34,7 +34,8 @@ namespace SsalMuk.Presentation
                 if (!unit.IsAlive) continue;
                 if (unit.Kind != UnitKind.Player) enemies++;
                 var relative = origin.DisplacementTo(Interpolate(unit, interpolation));
-                if (relative.Length > (visible.Contains(unit.Id) ? viewRadius + 2 : viewRadius)) continue;
+                bool telegraph = unit is GroundEnemyModel ground && ground.Charge?.Phase == EnemyState.Telegraph;
+                if (!telegraph && relative.Length > (visible.Contains(unit.Id) ? viewRadius + 2 : viewRadius)) continue;
                 nextVisible.Add(unit.Id); view.ShowUnit(unit, relative);
             }
             if (combatView != null)

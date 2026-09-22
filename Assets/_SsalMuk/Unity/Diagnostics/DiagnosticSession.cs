@@ -46,7 +46,7 @@ namespace SsalMuk.Unity.Diagnostics
         {
             initial.CreatePlayer();
             var navigation = new NavigationService(Run.World);
-            movement = new MovementSystem(Run.World, navigation, Run.Player, defaults.CreateMovementSettings());
+            movement = new MovementSystem(Run.World, navigation, Run.Player, defaults.CreateMovementSettings(), Run.Seed);
             damage = new DamageService(Run, movement); death = new DeathService(Run, damage);
             Simulation = new RunSimulation(Run, movement, new LowAiController(Run.Player, Run.World, navigation, pickupSettings: Run.PickupSettings),
                 damage, death, new ContactDamageSystem(Run, movement, damage), scheduled, defaults.CreateSpawnSettings());

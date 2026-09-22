@@ -87,7 +87,11 @@ namespace SsalMuk.Tests
             var catalog = Resources.Load<GameCatalog>("Bootstrap/GameCatalog");
             var definitions = catalog.CreateDefinitions();
             Assert.That(definitions.GetUnit(UnitKind.Boss).MoveSpeed,
-                Is.EqualTo(definitions.GetUnit(UnitKind.Player).MoveSpeed * 1.05).Within(1e-10));
+                Is.EqualTo(definitions.GetUnit(UnitKind.Player).MoveSpeed * 1.2).Within(1e-10));
+            Assert.That(definitions.GetUnit(UnitKind.Normal).MoveSpeed,
+                Is.EqualTo(definitions.GetUnit(UnitKind.Player).MoveSpeed * 1.1).Within(1e-10));
+            Assert.That(definitions.GetUnit(UnitKind.Air).MoveSpeed,
+                Is.EqualTo(definitions.GetUnit(UnitKind.Player).MoveSpeed * 1.1).Within(1e-10));
             Assert.That(catalog.Defaults.CreatePickupSettings().AttractionRadius, Is.EqualTo(1.95).Within(1e-10));
             foreach (UnitKind kind in Enum.GetValues(typeof(UnitKind)))
             {
