@@ -7,6 +7,27 @@ namespace SsalMuk.Tests
 {
     public sealed class SpawnScheduleTests
     {
+        [TestCase(0, 10, 5), TestCase(59.999, 10, 5), TestCase(60, 13, 5.8)]
+        [TestCase(299.999, 22, 8.2), TestCase(300, 35, 11), TestCase(359.999, 35, 11)]
+        [TestCase(360, 38, 11.8), TestCase(540, 47, 14.2), TestCase(600, 70, 15), TestCase(900, 115, 15)]
+        [TestCase(1200, 170, 15), TestCase(1800, 310, 15)]
+        public void NormalStatsGrowOnMinuteBoundariesWithIncreasingFiveMinuteBonuses(double seconds, double health, double damage)
+        {
+            var baseline = new UnitDefinition("normal", UnitKind.Normal, 10, 2.85, .325, 5, 1);
+            var curve = new DifficultyCurve(new SpawnSettings()); var result = curve.AtSpawn(baseline, seconds);
+            Assert.That(result.MaxHealth, Is.EqualTo(health).Within(1e-8));
+            Assert.That(result.ContactDamage, Is.EqualTo(damage).Within(1e-8));
+            Assert.That(result.MoveSpeed, Is.EqualTo(baseline.MoveSpeed));
+            Assert.That(baseline.MaxHealth, Is.EqualTo(10)); Assert.That(baseline.ContactDamage, Is.EqualTo(5));
+        }
+        [TestCase(0), TestCase(300), TestCase(600), TestCase(3600)]
+        public void BossContactDamageStaysSixtyWhileHealthStillScales(double seconds)
+        {
+            var baseline = new UnitDefinition("boss", UnitKind.Boss, 600, 3.6, 1.125, 60, 30);
+            var result = new DifficultyCurve(new SpawnSettings()).AtSpawn(baseline, seconds);
+            Assert.That(result.ContactDamage, Is.EqualTo(60));
+            Assert.That(result.MaxHealth, Is.EqualTo(600 * (1 + seconds / 300)));
+        }
         [Test]
         public void BossDeadlinesAreNeverSkippedOrRepeatedAcrossLongUpdates()
         {
@@ -29,7 +50,8 @@ namespace SsalMuk.Tests
             using var rig = RunTestRig.Create(); var baseline = rig.Run.Definitions.GetUnit(UnitKind.Boss); var atFive = curve.AtSpawn(baseline, 300);
             var atTen = curve.AtSpawn(baseline, 600);
             Assert.That(atFive.MaxHealth, Is.EqualTo(baseline.MaxHealth * 2)); Assert.That(atTen.MaxHealth, Is.EqualTo(baseline.MaxHealth * 3));
-            Assert.That(atFive.ContactDamage, Is.EqualTo(baseline.ContactDamage * 2));
+            Assert.That(atFive.ContactDamage, Is.EqualTo(baseline.ContactDamage));
+            Assert.That(atTen.ContactDamage, Is.EqualTo(baseline.ContactDamage));
             Assert.That(atFive.ExperienceReward, Is.EqualTo(baseline.ExperienceReward)); Assert.That(atFive.MoveSpeed, Is.EqualTo(baseline.MoveSpeed));
             Assert.That(atFive.MaxHealth, Is.EqualTo(baseline.MaxHealth * 2));
             Assert.Throws<ArgumentOutOfRangeException>(() => new SpawnSettings(creationBudget: 0));

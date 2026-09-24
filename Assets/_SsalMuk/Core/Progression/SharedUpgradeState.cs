@@ -21,11 +21,11 @@ namespace SsalMuk.Core
         public double SpeedMultiplier => Factor(SharedUpgradeKind.MoveSpeed, .1, 1);
         public double HealingPerSecond => Factor(SharedUpgradeKind.Regeneration, .1, 0);
         public double PickupMultiplier => Factor(SharedUpgradeKind.PickupRange, .2, 1);
-        public BigInteger ExperienceFor(BigInteger raw)
+        public BigInteger ExperienceHundredthsFor(BigInteger raw)
         {
             if (raw <= 0) throw new ArgumentOutOfRangeException(nameof(raw));
-            // Positive values: exact integer arithmetic, halves round up, even beyond double precision.
-            return (raw * (4 + GetLevel(SharedUpgradeKind.Experience)) + 2) / 4;
+            // Exact hundredths preserve every 15% bonus, including values beyond floating-point precision.
+            return raw * (100 + 15 * GetLevel(SharedUpgradeKind.Experience));
         }
         internal void Upgrade(SharedUpgradeKind kind, BigInteger count)
         {

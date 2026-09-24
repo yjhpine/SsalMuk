@@ -47,8 +47,8 @@ namespace SsalMuk.Core
         {
             var unit = world.Units.Get(id);
             if (seconds <= 0 || double.IsNaN(seconds) || double.IsInfinity(seconds)) throw new ArgumentOutOfRangeException(nameof(seconds));
-            // Charge armor blocks displacement only; damage and hit feedback remain in DamageService.
-            if (unit is GroundEnemyModel ground && ground.Charge?.Phase == EnemyState.Charge) return;
+            // Armor covers the locked warning and charge; damage and hit feedback remain in DamageService.
+            if (unit is GroundEnemyModel ground && ground.Charge?.HasSuperArmor == true) return;
             unit.Knockback = new KnockbackState(displacement / seconds, seconds);
             navigation.InvalidateDirection(id);
         }

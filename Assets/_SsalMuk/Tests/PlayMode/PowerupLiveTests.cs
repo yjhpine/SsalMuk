@@ -43,14 +43,21 @@ namespace SsalMuk.Tests
             long far = run.World.AddExperience(run.Player.Position.Offset(new DVec2(800, 0)), 2, run.Clock.ElapsedSeconds);
             foreach (PowerupKind kind in Enum.GetValues(typeof(PowerupKind))) run.World.AddItem(kind, run.Player.Position);
             runner.Simulation.Step(.02); presenter.Refresh(run);
-            Assert.That(run.Player.Effects.RangeMultiplier, Is.EqualTo(10));
+            Assert.That(run.Player.Effects.RangeMultiplier, Is.EqualTo(3));
             Assert.That(run.Player.MoveSpeed, Is.EqualTo(run.Player.Definition.MoveSpeed * 1.5).Within(1e-8));
             Assert.That(run.World.TryGetExperience(far, out var orb), Is.True);
             Assert.That(orb.State, Is.EqualTo(ExperienceState.Attracting));
             var hud = Object.FindAnyObjectByType<HudView>(); new HudPresenter(hud).Refresh(run); yield return null;
-            Assert.That(hud.StatusText.text, Does.Contain("무적").And.Contain("범위 ×10").And.Contain("이속 ×1.5"));
+            Assert.That(hud.StatusText.text, Does.Contain("무적").And.Contain("범위 ×3").And.Contain("이속 ×1.5"));
             ScreenCapture.CaptureScreenshot(Path.Combine(directory, "active-effects.png"));
             yield return new WaitForEndOfFrame(); yield return null;
+            new GrowthService(run).UpgradeShared(SharedUpgradeKind.Experience);
+            run.World.AddExperience(run.Player.Position, 1, run.Clock.ElapsedSeconds); runner.Simulation.Step(.02);
+            new HudPresenter(hud).Refresh(run);
+            Assert.That(run.Player.Growth.ExperienceRemainderHundredths, Is.EqualTo(15));
+            Assert.That(hud.StatusText.text, Does.Contain("경험치 +15%"));
+            var experienceLabel = hud.GetComponentsInChildren<UnityEngine.UI.Text>().Single(label => label.name == "Experience");
+            Assert.That(experienceLabel.text, Does.Contain("1.15"));
             new ProgressionService(run).AddExperience(10000);
             for (int attempt = 0; attempt < 64; attempt++)
             {

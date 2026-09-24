@@ -4,11 +4,12 @@ namespace SsalMuk.Core
 {
     public sealed class BossCharge
     {
-        public const double WindupSeconds = .5, CooldownSeconds = 5, RepeatChance = .3, SpeedMultiplier = 4;
+        public const double WindupSeconds = .5, CooldownSeconds = 5, RepeatChance = .3, SpeedMultiplier = 5.2;
         private readonly IRandomSource random;
         private double remainingWindup, remainingDistance, cooldown, speed;
         private bool repeatQueued, extraCharge;
         public EnemyState Phase { get; private set; } = EnemyState.Chase;
+        public bool HasSuperArmor => Phase == EnemyState.Telegraph || Phase == EnemyState.Charge;
         public WorldPosition Origin { get; private set; }
         public WorldPosition End { get; private set; }
         public DVec2 Direction { get; private set; }
@@ -37,7 +38,8 @@ namespace SsalMuk.Core
                 extraCharge = repeatQueued; repeatQueued = false;
                 Origin = actor.Position; Direction = delta.Normalized; Length = delta.Length * 2;
                 End = Origin.Offset(delta * 2); remainingDistance = Length;
-                speed = target.MoveSpeed * SpeedMultiplier; remainingWindup = WindupSeconds; Phase = EnemyState.Telegraph;
+                speed = Math.Round(target.MoveSpeed * SpeedMultiplier, 1, MidpointRounding.AwayFromZero);
+                remainingWindup = WindupSeconds; Phase = EnemyState.Telegraph;
             }
             double activeSeconds = dt;
             if (Phase == EnemyState.Telegraph)

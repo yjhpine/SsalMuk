@@ -56,7 +56,7 @@ namespace SsalMuk.Presentation
         private static string SharedName(SharedUpgradeKind kind) => kind == SharedUpgradeKind.MoveSpeed ? "이동속도" :
             kind == SharedUpgradeKind.Regeneration ? "체력 회복" : kind == SharedUpgradeKind.PickupRange ? "흡수 반경" : "경험치 획득";
         private static string SharedDescription(SharedUpgradeKind kind) => kind == SharedUpgradeKind.MoveSpeed ? "기본 이동속도 +10%" :
-            kind == SharedUpgradeKind.Regeneration ? "초당 체력 회복 +0.1" : kind == SharedUpgradeKind.PickupRange ? "기본 흡수 반경 +20%" : "경험치 +25% · 구슬별 반올림";
+            kind == SharedUpgradeKind.Regeneration ? "초당 체력 회복 +0.1" : kind == SharedUpgradeKind.PickupRange ? "기본 흡수 반경 +20%" : "경험치 +15% · 소수점 누적";
         private static string UpgradeName(UpgradeKind kind) => kind == UpgradeKind.Damage ? "공격력" : kind == UpgradeKind.Copies ? "개수" :
             kind == UpgradeKind.Repeats ? "연속 공격" : kind == UpgradeKind.Speed ? "공격 속도" : "범위";
         private static string UpgradeDescription(WeaponKind weapon, UpgradeKind kind) => kind == UpgradeKind.Damage ? "한 번의 공격이 더 강해집니다" : kind == UpgradeKind.Copies ?

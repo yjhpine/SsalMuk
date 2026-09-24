@@ -5,17 +5,27 @@ namespace SsalMuk.Tests
 {
     public sealed class BossChargeTests
     {
-        [TestCase(0, false), TestCase(2, false), TestCase(0, true), TestCase(2, true)]
-        public void ChargeUsesFourTimesTheUpgradedAndBoostedPlayerSpeed(int upgrades, bool boost)
+        [TestCase(0, false, 15.6), TestCase(2, false, 18.7), TestCase(0, true, 23.4), TestCase(2, true, 28.1)]
+        public void ChargeUsesFivePointTwoTimesCurrentPlayerSpeedRoundedToOneDecimal(int upgrades, bool boost, double expectedSpeed)
         {
             using var rig = RunTestRig.Create(enableAi: false);
             if (upgrades > 0) new GrowthService(rig.Run).UpgradeShared(SharedUpgradeKind.MoveSpeed, upgrades);
             if (boost) { rig.World.AddItem(PowerupKind.MoveSpeed, rig.Player.Position); rig.Advance(.02); }
             rig.PlacePlayer(new DVec2(3, 0));
             var boss = rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero, 1000));
-            double speed = 3 * (1 + .1 * upgrades) * (boost ? 1.5 : 1);
             rig.Movement.Step(.5); var start = boss.Position; rig.Movement.Step(.1);
-            Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(speed * 4 * .1).Within(1e-8));
+            Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(expectedSpeed * .1).Within(1e-8));
+        }
+
+        [TestCase(3.625, 18.9), TestCase(3.614, 18.8)]
+        public void ChargeSpeedRoundsHalfUpAtTheSecondDecimal(double playerSpeed, double expectedSpeed)
+        {
+            using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
+            var boss = rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero));
+            var target = new SpeedTarget(playerSpeed);
+            var charge = new BossCharge(new FixedRandom(1));
+            charge.TryMove(boss, target, .5, out _); charge.TryMove(boss, target, .1, out var move);
+            Assert.That(move.X, Is.EqualTo(expectedSpeed * .1).Within(1e-9));
         }
 
         [Test]
@@ -31,7 +41,7 @@ namespace SsalMuk.Tests
                 Assert.That(rig.Hit(boss.Id, 1), Is.True);
                 Assert.That(boss.Knockback.IsActive, Is.False);
                 var start = boss.Position; rig.Movement.Step(.02);
-                Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(.24).Within(1e-8));
+                Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(.312).Within(1e-8));
                 Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Charge));
             }
             Assert.That(boss.Health, Is.EqualTo(995));
@@ -100,25 +110,50 @@ namespace SsalMuk.Tests
             var charge = new BossCharge(new FixedRandom(1));
             charge.TryMove(boss, target, .49, out var before); Assert.That(before, Is.EqualTo(DVec2.Zero));
             Assert.That(charge.Phase, Is.EqualTo(EnemyState.Telegraph));
-            charge.TryMove(boss, target, .02, out var crossing); Assert.That(crossing.X, Is.EqualTo(.12).Within(1e-9));
-            charge.TryMove(boss, target, 10, out var final); Assert.That(final.X, Is.EqualTo(5.88).Within(1e-9));
+            charge.TryMove(boss, target, .02, out var crossing); Assert.That(crossing.X, Is.EqualTo(.156).Within(1e-9));
+            charge.TryMove(boss, target, 10, out var final); Assert.That(final.X, Is.EqualTo(5.844).Within(1e-9));
         }
 
         [Test]
-        public void KnockbackCancelsTheWarningAndDeathPreventsACharge()
+        public void TelegraphIgnoresRepeatedKnockbackKeepsItsWarningAndStillAllowsDeath()
         {
             using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
             rig.PlacePlayer(new DVec2(3, 0));
-            long id = rig.Spawn(UnitKind.Boss, DVec2.Zero);
+            long id = rig.Spawn(UnitKind.Boss, DVec2.Zero, 1000);
             rig.Movement.Step(.02);
             var boss = (GroundEnemyModel)rig.Unit(id);
             Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Telegraph));
-            rig.Movement.AddKnockback(id, new DVec2(-1, 0), .1); rig.Movement.Step(.02);
-            Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Chase));
-            Assert.That(rig.Movement.GetEnemyFsm(id).CurrentState, Is.EqualTo(EnemyState.Knockback));
+            var origin = boss.Position; var end = boss.Charge.End; double health = boss.Health;
+            for (int i = 0; i < 24; i++)
+            {
+                Assert.That(rig.Hit(id, 1), Is.True);
+                rig.Movement.AddKnockback(id, new DVec2(-1, 0), .1);
+                Assert.That(boss.Knockback.IsActive, Is.False);
+                rig.Movement.Step(.02);
+                Assert.That(boss.Position, Is.EqualTo(origin));
+                Assert.That(boss.Charge.End, Is.EqualTo(end));
+                Assert.That(boss.Charge.Phase, Is.EqualTo(i == 23 ? EnemyState.Charge : EnemyState.Telegraph));
+            }
+            Assert.That(boss.Health, Is.EqualTo(health - 24));
+            Assert.That(boss.HitSequence, Is.EqualTo(24));
+            rig.Movement.Step(.02);
+            Assert.That(origin.DisplacementTo(boss.Position).X, Is.EqualTo(.312).Within(1e-9));
             rig.Hit(id, 10000); var position = boss.Position; rig.Movement.Step(.02);
             Assert.That(boss.Position, Is.EqualTo(position));
             Assert.That(rig.Movement.GetEnemyFsm(id).CurrentState, Is.EqualTo(EnemyState.Dead));
+        }
+
+        [Test]
+        public void LethalDamageDuringTelegraphStillPreventsCharge()
+        {
+            using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
+            rig.PlacePlayer(new DVec2(3, 0));
+            var boss = (GroundEnemyModel)rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero));
+            rig.Movement.Step(.02); var origin = boss.Position;
+            rig.Hit(boss.Id, 10000); rig.Movement.Step(1);
+            Assert.That(boss.IsAlive, Is.False);
+            Assert.That(boss.Position, Is.EqualTo(origin));
+            Assert.That(rig.Movement.GetEnemyFsm(boss.Id).CurrentState, Is.EqualTo(EnemyState.Dead));
         }
 
         [Test]
@@ -150,6 +185,7 @@ namespace SsalMuk.Tests
                 Assert.That(boss.Position.Local.X, Is.EqualTo(6).Within(1e-9));
                 Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Chase));
             }
+            else boss.Charge.Cancel(); // A terrain cancellation still starts the ordinary cooldown.
             var beforeHits = boss.Position;
             // Real accepted damage refreshes the .15s push every .1s for six seconds.
             for (int i = 0; i < 300; i++)
@@ -183,6 +219,13 @@ namespace SsalMuk.Tests
             Assert.That(boss.Charge.Phase, Is.EqualTo(blocked ? EnemyState.Chase : EnemyState.Telegraph));
         }
 
+        private sealed class SpeedTarget : IPlayerPosition
+        {
+            public bool IsAlive => true;
+            public WorldPosition Position => WorldPosition.FromLocal(new DVec2(10, 0));
+            public double MoveSpeed { get; }
+            public SpeedTarget(double speed) => MoveSpeed = speed;
+        }
         private sealed class FixedRandom : IRandomSource
         {
             private readonly double value;

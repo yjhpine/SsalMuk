@@ -16,7 +16,7 @@ namespace SsalMuk.Core
     public sealed class PowerupSettings
     {
         public double DropChance { get; }
-        public const double Duration = 10, SpeedMultiplier = 1.5, RangeMultiplier = 10;
+        public const double Duration = 10, SpeedMultiplier = 1.5, RangeMultiplier = 3;
         public PowerupSettings(double dropChance = .02)
         {
             if (double.IsNaN(dropChance) || dropChance < 0 || dropChance > 1) throw new ArgumentOutOfRangeException(nameof(dropChance));

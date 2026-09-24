@@ -7,12 +7,13 @@ namespace SsalMuk.Core
     {
         private readonly RunModel run;
         public ProgressionService(RunModel run) => this.run = run ?? throw new ArgumentNullException(nameof(run));
-        public bool AddExperience(BigInteger amount)
+        public bool AddExperience(BigInteger amount) => AddExperienceHundredths(amount * 100);
+        public bool AddExperienceHundredths(BigInteger amount)
         {
             if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
             if (run.Phase != RunPhase.Running || run.Player == null || !run.Player.IsAlive) return false;
             var growth = run.Player.Growth; var settings = run.GrowthSettings;
-            BigInteger available = growth.ExperienceIntoLevel + amount, lo = 0, hi = 1;
+            BigInteger available = BigInteger.DivRem(growth.ExperienceHundredthsIntoLevel + amount, 100, out var remainder), lo = 0, hi = 1;
             while (settings.CostForLevels(growth.Level, hi) <= available) { lo = hi; hi *= 2; }
             while (hi - lo > 1)
             {
@@ -20,6 +21,7 @@ namespace SsalMuk.Core
                 if (settings.CostForLevels(growth.Level, mid) <= available) lo = mid; else hi = mid;
             }
             growth.ExperienceIntoLevel = available - settings.CostForLevels(growth.Level, lo);
+            growth.ExperienceRemainderHundredths = (int)remainder;
             growth.Level += lo; growth.PendingChoices += lo; return true;
         }
     }

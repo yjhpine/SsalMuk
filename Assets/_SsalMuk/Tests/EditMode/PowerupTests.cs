@@ -65,7 +65,7 @@ namespace SsalMuk.Tests
             rig.Simulation.Weapons[kind].Launched += shot => observed = shot.Stats.Range;
             rig.World.AddItem(PowerupKind.AttackRange, rig.Player.Position);
             rig.Advance(.02);
-            Assert.That(observed, Is.EqualTo(ordinary * 10).Within(1e-8));
+            Assert.That(observed, Is.EqualTo(ordinary * 3).Within(1e-8));
             rig.Advance(10.02);
             rig.Advance(2);
             Assert.That(observed, Is.EqualTo(ordinary).Within(1e-8));

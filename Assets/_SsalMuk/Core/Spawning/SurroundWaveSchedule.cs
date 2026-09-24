@@ -26,7 +26,7 @@ namespace SsalMuk.Core
             Number = nextOrdinal; nextOrdinal = following;
             tracked.Clear(); sampleCount = fastKills = 0; sampleStart = now;
             double health = baseline.MaxHealth * (1 + (Stage - 1.0) * settings.HealthStep);
-            double damage = baseline.ContactDamage * (1 + (Stage - 1.0) * settings.DamageStep);
+            double damage = Math.Min(DifficultyCurve.NormalDamageCap, baseline.ContactDamage * (1 + (Stage - 1.0) * settings.DamageStep));
             if (double.IsInfinity(health) || double.IsInfinity(damage)) throw new NumericRangeException("Wave difficulty exceeds numeric range.");
             var definition = new UnitDefinition(baseline.Id, baseline.Kind, health, baseline.MoveSpeed, baseline.BodyRadius,
                 damage, baseline.ExperienceReward, baseline.HurtRadius, baseline.VisualFootOffset);

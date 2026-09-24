@@ -16,5 +16,13 @@ namespace SsalMuk.Core
             if (numerator <= 0) return 0; if (numerator >= denominator) return 1;
             return (double)(numerator * 10000 / denominator) / 10000;
         }
+        public static string FormatHundredths(BigInteger value)
+        {
+            if (value < 0) throw new ArgumentOutOfRangeException(nameof(value));
+            var whole = BigInteger.DivRem(value, 100, out var fraction);
+            string formatted = Format(whole);
+            return fraction.IsZero || whole >= 100000000 ? formatted :
+                formatted + "." + ((int)fraction).ToString("D2", CultureInfo.InvariantCulture).TrimEnd('0');
+        }
     }
 }

@@ -49,7 +49,7 @@ namespace SsalMuk.Core
                 var flight = towardPlayer.Normalized * Math.Min(towardPlayer.Length, Math.Max(settings.FlightSpeed, orb.MagnetFlightSpeed) * dt * (1 - fraction));
                 if (CircleContact.Interval(playerAtStart.DisplacementTo(orb.Position), flight - travel * (1 - fraction),
                     player.BodyRadius + settings.OrbRadius, out _, out _) && world.TryCollectExperience(run.Id, id, out var value))
-                    progression.AddExperience(player.Upgrades.ExperienceFor(value));
+                    progression.AddExperienceHundredths(player.Upgrades.ExperienceHundredthsFor(value));
                 else world.MoveExperience(run.Id, id, orb.Position.Offset(flight));
             }
         }

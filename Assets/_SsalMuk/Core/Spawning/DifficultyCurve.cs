@@ -3,6 +3,7 @@ namespace SsalMuk.Core
 {
     public sealed class DifficultyCurve
     {
+        public const double NormalDamageCap = 15;
         private readonly SpawnSettings settings;
         public DifficultyCurve(SpawnSettings settings) { this.settings = settings ?? throw new ArgumentNullException(nameof(settings)); }
         public double NormalDeadline(long ordinal)
@@ -24,7 +25,20 @@ namespace SsalMuk.Core
         {
             if (baseline == null) throw new ArgumentNullException(nameof(baseline)); RequireTime(time);
             if (baseline.Kind == UnitKind.Player) return baseline;
-            double scale = 1 + time / 300, health = baseline.MaxHealth * scale, damage = baseline.ContactDamage * scale;
+            double health, damage;
+            if (baseline.Kind == UnitKind.Normal)
+            {
+                double minute = Math.Floor(time / 60), milestone = Math.Floor(minute / 5);
+                double bonusSum = milestone * (milestone + 1) / 2;
+                health = baseline.MaxHealth + 3 * minute + 10 * bonusSum;
+                damage = Math.Min(NormalDamageCap, baseline.ContactDamage + .8 * minute + 2 * bonusSum);
+            }
+            else
+            {
+                double scale = 1 + time / 300;
+                health = baseline.MaxHealth * scale;
+                damage = baseline.Kind == UnitKind.Boss ? baseline.ContactDamage : baseline.ContactDamage * scale;
+            }
             if (double.IsInfinity(health) || double.IsInfinity(damage)) throw new NumericRangeException("Spawn difficulty exceeds numeric range.");
             return new UnitDefinition(baseline.Id, baseline.Kind, health, baseline.MoveSpeed, baseline.BodyRadius, damage, baseline.ExperienceReward, baseline.HurtRadius, baseline.VisualFootOffset);
         }

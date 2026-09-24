@@ -84,7 +84,8 @@ namespace SsalMuk.Unity
                 weapons.Select(entry => entry == null ? throw new ArgumentException("A weapon definition entry is missing.") : entry.ToDefinition()));
             double playerSpeed = catalog.GetUnit(UnitKind.Player).MoveSpeed;
             return new DefinitionCatalog(catalog.Units.Select(unit => unit.Kind == UnitKind.Player ? unit :
-                new UnitDefinition(unit.Id, unit.Kind, unit.MaxHealth, playerSpeed * (unit.Kind == UnitKind.Boss ? 1.2 : unit.Kind == UnitKind.Normal ? .95 : 1.1),
+                new UnitDefinition(unit.Id, unit.Kind, unit.MaxHealth, unit.Kind == UnitKind.Boss
+                    ? Math.Round(playerSpeed * 1.2, 1, MidpointRounding.AwayFromZero) : playerSpeed * (unit.Kind == UnitKind.Normal ? .95 : 1.1),
                     unit.BodyRadius, unit.ContactDamage, unit.ExperienceReward, unit.HurtRadius, unit.VisualFootOffset)),
                 Enum.GetValues(typeof(WeaponKind)).Cast<WeaponKind>().Select(catalog.GetWeapon));
         }
@@ -103,7 +104,7 @@ namespace SsalMuk.Unity
             new UnitEntry("player", UnitKind.Player, 100, 3, .24896384, 0, "0", .34232528, .28),
             new UnitEntry("normal", UnitKind.Normal, 10, 2.85, .325, 5, "1", .3575, .26),
             new UnitEntry("air", UnitKind.Air, 6, 3.3, .265, 5, "1", .2915, .22),
-            new UnitEntry("boss", UnitKind.Boss, 600, 3.6, 1.125, 15, "30", 1.2375, .75)
+            new UnitEntry("boss", UnitKind.Boss, 600, 3.6, 1.125, 60, "30", 1.2375, .75)
         };
 
         [Serializable]

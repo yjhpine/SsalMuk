@@ -23,11 +23,11 @@ namespace SsalMuk.Presentation
                 string active = "";
                 if (effects.InvincibilityUntil > now) active += "무적 " + Math.Ceiling(effects.InvincibilityUntil - now) + "초   ";
                 if (effects.SpeedUntil > now) active += "이속 ×1.5 " + Math.Ceiling(effects.SpeedUntil - now) + "초   ";
-                if (effects.RangeUntil > now) active += "범위 ×10 " + Math.Ceiling(effects.RangeUntil - now) + "초";
+                if (effects.RangeUntil > now) active += "범위 ×3 " + Math.Ceiling(effects.RangeUntil - now) + "초";
                 string upgrades = "이속 +" + NumberFormatter.Format(player.Upgrades.GetLevel(SharedUpgradeKind.MoveSpeed) * 10) +
                     "% · 회복 " + player.Upgrades.HealingPerSecond.ToString("0.0", CultureInfo.InvariantCulture) + "/초 · 흡수 +" +
                     NumberFormatter.Format(player.Upgrades.GetLevel(SharedUpgradeKind.PickupRange) * 20) + "% · 경험치 +" +
-                    NumberFormatter.Format(player.Upgrades.GetLevel(SharedUpgradeKind.Experience) * 25) + "%";
+                    NumberFormatter.Format(player.Upgrades.GetLevel(SharedUpgradeKind.Experience) * 15) + "%";
                 statusView.ShowStatus(upgrades + (active.Length > 0 ? "\n" + active : ""));
             }
             if (shownRun != run.Id || shownOwnership != player.Weapons.OwnershipVersion)
@@ -39,8 +39,8 @@ namespace SsalMuk.Presentation
             var growth = player.Growth; var nextCost = run.GrowthSettings.CostForLevels(player.Level, 1);
             view.Show(true, player.Health.ToString("0", CultureInfo.InvariantCulture) + " / " + player.Definition.MaxHealth.ToString("0", CultureInfo.InvariantCulture),
                 player.Health / player.Definition.MaxHealth, "Lv. " + NumberFormatter.Format(player.Level),
-                "경험치 " + NumberFormatter.Format(growth.ExperienceIntoLevel) + " / " + NumberFormatter.Format(nextCost),
-                NumberFormatter.Fraction(growth.ExperienceIntoLevel, nextCost), FormatTime(run.Clock.ElapsedSeconds), "처치 " + NumberFormatter.Format(run.Kills), weapons);
+                "경험치 " + NumberFormatter.FormatHundredths(growth.ExperienceHundredthsIntoLevel) + " / " + NumberFormatter.Format(nextCost),
+                NumberFormatter.Fraction(growth.ExperienceHundredthsIntoLevel, nextCost * 100), FormatTime(run.Clock.ElapsedSeconds), "처치 " + NumberFormatter.Format(run.Kills), weapons);
         }
         public static string FormatTime(double elapsed)
         {

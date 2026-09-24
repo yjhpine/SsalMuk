@@ -47,7 +47,7 @@ MonoBehaviour:
     bodyRadius: 1.125
     hurtRadius: 1.2375
     visualFootOffset: 0.75
-    contactDamage: 15
+    contactDamage: 60
     experienceReward: 30
   weapons:
   - kind: 0

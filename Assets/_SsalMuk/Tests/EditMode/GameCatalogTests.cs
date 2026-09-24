@@ -41,11 +41,25 @@ namespace SsalMuk.Tests
             catalog.Configure(definitions, prefab, Visuals());
             var core = catalog.CreateDefinitions();
             Assert.That(core.GetUnit(UnitKind.Player).MaxHealth, Is.EqualTo(100));
-            Assert.That(core.GetUnit(UnitKind.Normal).MoveSpeed, Is.EqualTo(1.5));
-            Assert.That(core.GetUnit(UnitKind.Air).MoveSpeed, Is.EqualTo(6));
+            Assert.That(core.GetUnit(UnitKind.Normal).MoveSpeed, Is.EqualTo(2.85).Within(1e-9));
+            Assert.That(core.GetUnit(UnitKind.Air).MoveSpeed, Is.EqualTo(3.3).Within(1e-9));
             Assert.That(core.GetUnit(UnitKind.Boss).MaxHealth, Is.EqualTo(600));
+            Assert.That(core.GetUnit(UnitKind.Boss).ContactDamage, Is.EqualTo(60));
             Assert.That(catalog.UnitViewPrefab, Is.SameAs(prefab));
             Assert.That(catalog.GetSprite(UnitKind.Air), Is.SameAs(sprite));
+        }
+
+        [Test]
+        public void ActiveCatalogUsesSixtyBossDamageAndChaseSpeedRoundsToOneDecimal()
+        {
+            var active = Resources.Load<GameCatalog>("Bootstrap/GameCatalog").CreateDefinitions();
+            Assert.That(active.GetUnit(UnitKind.Boss).ContactDamage, Is.EqualTo(60));
+            var serialized = new SerializedObject(definitions);
+            serialized.FindProperty("units").GetArrayElementAtIndex(0).FindPropertyRelative("moveSpeed").doubleValue = 3.146;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            var configured = definitions.CreateCatalog();
+            Assert.That(configured.GetUnit(UnitKind.Boss).MoveSpeed, Is.EqualTo(3.8));
+            Assert.That(configured.GetUnit(UnitKind.Normal).MoveSpeed, Is.EqualTo(3.146 * .95).Within(1e-9));
         }
 
         [Test]

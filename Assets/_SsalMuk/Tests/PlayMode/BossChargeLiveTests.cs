@@ -48,18 +48,26 @@ namespace SsalMuk.Tests
             Directory.CreateDirectory(directory); ScreenCapture.CaptureScreenshot(Path.Combine(directory, "telegraph.png"));
             yield return new WaitForEndOfFrame();
             TestContext.WriteLine("Boss charge screenshot: " + directory);
-            movement.Step(.48); presenter.Refresh(run);
-            Assert.That(warning.enabled, Is.False);
             var damage = (DamageService)typeof(RunSimulation).GetField("damage",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(runner.Simulation);
+            Assert.That(boss.Definition.ContactDamage, Is.EqualTo(60));
             double health = boss.Health;
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.That(damage.TryApply(new DamageRequest(new HitKey(run.Id, run.AllocateAttackId(), 0, 0),
+                    run.Player.Id, boss.Id, 5, new DVec2(1, 0)), run.Clock.ElapsedSeconds), Is.True);
+                Assert.That(boss.Knockback.IsActive, Is.False);
+                presenter.Refresh(run); Assert.That(warning.enabled, Is.True);
+                movement.Step(.24); presenter.Refresh(run);
+            }
+            Assert.That(warning.enabled, Is.False);
             Assert.That(damage.TryApply(new DamageRequest(new HitKey(run.Id, run.AllocateAttackId(), 0, 0),
                 run.Player.Id, boss.Id, 7, new DVec2(1, 0)), run.Clock.ElapsedSeconds), Is.True);
-            Assert.That(boss.Health, Is.EqualTo(health - 7));
-            Assert.That(boss.HitSequence, Is.EqualTo(1));
+            Assert.That(boss.Health, Is.EqualTo(health - 17));
+            Assert.That(boss.HitSequence, Is.EqualTo(3));
             Assert.That(boss.Knockback.IsActive, Is.False);
             var start = boss.Position; movement.Step(.1);
-            Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(-run.Player.MoveSpeed * .4).Within(1e-8));
+            Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(-1.56).Within(1e-8));
             Object.Destroy(app.gameObject); yield return null; yield return null;
             Assert.That(warning == null || !warning.enabled, Is.True);
         }
