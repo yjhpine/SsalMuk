@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SsalMuk.Core
 {
-    public sealed class RunModel : IRunReadModel, IDisposable
+    public sealed class RunModel : IRunReadModel, IItemReadModel, IDisposable
     {
         public Guid Id { get; }
         public Guid RunId => Id;
@@ -32,10 +32,17 @@ namespace SsalMuk.Core
         }
         private long lastAttackId;
         public long AllocateAttackId() => lastAttackId = checked(lastAttackId + 1);
+        public WeaponStats CurrentWeaponStats(WeaponKind kind)
+        {
+            var stats = StatCalculator.Calculate(Definitions.GetWeapon(kind), Player.Weapons.Get(kind), GrowthSettings);
+            return new WeaponStats(stats.Damage, stats.Range * Player.Effects.RangeMultiplier, stats.PeriodSeconds,
+                stats.Copies, stats.Repeats, stats.BurstFraction);
+        }
         public RunPhase Phase { get; internal set; } = RunPhase.MainMenu;
         public WorldPosition ViewOrigin => Player?.Position ?? new WorldPosition(default, new DVec2(16.5, 16.5));
         public IReadOnlyCollection<UnitModel> Units => World.Units.Units;
         public IReadOnlyCollection<ExperienceRecord> Experience => World.Experience;
+        public IReadOnlyCollection<PowerupRecord> Items => World.Items;
         public IReadOnlyCollection<ChunkData> Terrain => World.CachedTerrain;
         public RunModel(Guid id, int seed, DefinitionCatalog definitions, IChunkGenerator generator, double fixedStep = 0.02,
             GrowthSettings growthSettings = null, PickupSettings pickupSettings = null, RewardWeights rewardWeights = null)

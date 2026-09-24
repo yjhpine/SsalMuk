@@ -14,6 +14,6 @@ namespace SsalMuk.Core
         public WorldPosition Position { get; private set; }
         public double MoveSpeed { get; private set; }
         public void Refresh(PlayerModel player)
-        { IsAlive = player.IsAlive; Position = player.Position; MoveSpeed = player.Definition.MoveSpeed; }
+        { IsAlive = player.IsAlive; Position = player.Position; MoveSpeed = player.MoveSpeed; }
     }
 }

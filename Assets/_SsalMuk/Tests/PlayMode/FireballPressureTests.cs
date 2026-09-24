@@ -36,7 +36,7 @@ namespace SsalMuk.Tests
             var catalog = Resources.Load<GameCatalog>("Bootstrap/GameCatalog");
             rig = RunTestRig.Create(enableAi: false);
             rig.Equip(WeaponKind.Fireball);
-            rig.Upgrade(WeaponKind.Fireball, UpgradeKind.Copies, 10);
+            rig.Upgrade(WeaponKind.Fireball, UpgradeKind.Copies, 5);
             rig.Upgrade(WeaponKind.Fireball, UpgradeKind.Repeats, 2);
             rig.Upgrade(WeaponKind.Fireball, UpgradeKind.Speed, 10);
             long target = rig.Spawn(UnitKind.Normal, new DVec2(40, 0), 1000000000);
@@ -73,7 +73,7 @@ namespace SsalMuk.Tests
             File.WriteAllText(Path.Combine(directory, "report.json"), JsonUtility.ToJson(report, true));
             TestContext.WriteLine("Fireball pressure evidence: " + directory);
             Assert.That(report.samples, Is.EqualTo(150));
-            Assert.That(report.launches, Is.EqualTo(286));
+            Assert.That(report.launches, Is.EqualTo(156));
             Assert.That(rig.Unit(target).Health, Is.EqualTo(1000000000));
             Assert.That(rig.World.Units.Count, Is.EqualTo(2));
             var projectiles = rig.Simulation.Projectiles;
@@ -85,7 +85,7 @@ namespace SsalMuk.Tests
     [Serializable]
     public sealed class FireballPressureReport
     {
-        public string scope = "6 simulation seconds, 300 rendered frames, last 150 measured; 11 copies, 3 repeats, speed +10; stationary player and distant target; no AI/spawning/XP; not FPS evidence";
+        public string scope = "6 simulation seconds, 300 rendered frames, last 150 measured; 6 copies, 3 repeats, speed +10; stationary player and distant target; no AI/spawning/XP; not FPS evidence";
         public int samples, peakProjectiles, finalProjectiles;
         public long launches;
         public double meanModelMs, meanViewMs, meanProjectiles;

@@ -8,6 +8,7 @@ namespace SsalMuk.Core
         public Guid RunId { get; }
         public UnitDefinition Definition { get; }
         public UnitKind Kind => Definition.Kind;
+        public virtual double MoveSpeed => Definition.MoveSpeed;
         public double BodyRadius => Definition.BodyRadius;
         public double HurtRadius => Definition.HurtRadius;
         public double Health { get; internal set; }

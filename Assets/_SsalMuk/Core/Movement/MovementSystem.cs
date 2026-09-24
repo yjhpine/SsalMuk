@@ -76,7 +76,7 @@ namespace SsalMuk.Core
                 if (fsm != null && knockback.IsActive && movementSeconds > 0)
                     direction = unit.Kind != UnitKind.Air && intents.TryGetValue(unit.Id, out var resumeInput) ? resumeInput : fsm.NormalDirection();
                 unit.MoveIntent = movementSeconds > 0 ? direction : DVec2.Zero;
-                var displacement = direction * (unit.Definition.MoveSpeed * movementSeconds);
+                var displacement = direction * (unit.MoveSpeed * movementSeconds);
                 if (knockback.IsActive)
                 {
                     displacement += knockback.Velocity * pushedSeconds;
@@ -89,7 +89,7 @@ namespace SsalMuk.Core
                     var destination = CircleSweep.MoveAndSlide(world.Query, unit.Position, displacement, unit.BodyRadius, settings.SlideContacts);
                     var actual = unit.Position.DisplacementTo(destination);
                     world.MoveUnit(unit.Id, destination);
-                    if (unit is GroundEnemyModel ground && ground.Charge?.Phase == EnemyState.Charge && displacement != DVec2.Zero && (actual - displacement).Length > 1e-6)
+                    if (unit is GroundEnemyModel ground && ground.Charge?.LastMoveWasCharge == true && displacement != DVec2.Zero && (actual - displacement).Length > 1e-6)
                         ground.Charge.Cancel();
                 }
                 if (knockback.IsActive && !unit.Knockback.IsActive) navigation.InvalidateDirection(unit.Id);

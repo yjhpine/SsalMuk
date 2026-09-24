@@ -12,10 +12,14 @@ namespace SsalMuk.Core
         private readonly HashSet<long> attractingIds = new HashSet<long>();
         private readonly SpatialIndex unitIndex = new SpatialIndex();
         private readonly SpatialIndex experienceIndex = new SpatialIndex();
+        private readonly Dictionary<long, PowerupRecord> items = new Dictionary<long, PowerupRecord>();
+        private readonly SpatialIndex itemIndex = new SpatialIndex();
+        private long lastItemId;
         private long lastExperienceId;
         private bool disposed;
         public UnitRegistry Units { get; }
         public IReadOnlyCollection<ExperienceRecord> Experience => experience.Values;
+        public IReadOnlyCollection<PowerupRecord> Items => items.Values;
         public IReadOnlyCollection<long> AttractingExperienceIds => attractingIds;
         public int CachedChunkCount => terrain.Count;
         public IReadOnlyCollection<ChunkData> CachedTerrain => terrain.Values;
@@ -64,6 +68,20 @@ namespace SsalMuk.Core
             experienceIndex.Upsert(id, position); lastExperienceId = id; return id;
         }
         public bool TryGetExperience(long id, out ExperienceRecord record) => experience.TryGetValue(id, out record);
+        public long AddItem(PowerupKind kind, WorldPosition position)
+        {
+            RequireActive();
+            if (!Enum.IsDefined(typeof(PowerupKind), kind)) throw new ArgumentOutOfRangeException(nameof(kind));
+            long id = checked(lastItemId + 1);
+            items.Add(id, new PowerupRecord(id, kind, position)); itemIndex.Upsert(id, position); lastItemId = id; return id;
+        }
+        public bool TryGetItem(long id, out PowerupRecord item) => items.TryGetValue(id, out item);
+        public IReadOnlyList<long> QueryItems(WorldPosition position, double radius) => itemIndex.QueryCircle(position, radius);
+        public bool RemoveItem(Guid runId, long id)
+        {
+            if (disposed || runId != Units.RunId || !items.Remove(id)) return false;
+            itemIndex.Remove(id); return true;
+        }
         public bool TryBeginAttraction(Guid runId, long id, double startedAt = 0)
         {
             if (disposed || runId != Units.RunId) return false;
@@ -91,7 +109,7 @@ namespace SsalMuk.Core
             if (disposed) return; disposed = true;
             Units.Registered -= OnRegistered; Units.Removed -= OnRemoved;
             foreach (var unit in new List<UnitModel>(Units.Units)) Units.Remove(unit.Id);
-            terrain.Clear(); experience.Clear(); attractingIds.Clear(); unitIndex.Clear(); experienceIndex.Clear();
+            terrain.Clear(); experience.Clear(); attractingIds.Clear(); unitIndex.Clear(); experienceIndex.Clear(); items.Clear(); itemIndex.Clear();
         }
     }
 }

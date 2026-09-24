@@ -23,7 +23,7 @@ namespace SsalMuk.Core
                     var stats = getStats() ?? throw new ArgumentException("A weapon needs calculated stats.");
                     groupStart = dueStrike; groupPeriod = stats.PeriodSeconds; groupFraction = stats.BurstFraction;
                     groupEnd = groupStart + groupPeriod; RequireLater(groupStart, groupEnd);
-                    repeatCount = stats.Repeats; repeat = BigInteger.Zero;
+                    repeatCount = BigInteger.Min(stats.Repeats, WeaponState.MaximumRepeatLevel + 1); repeat = BigInteger.Zero;
                     if (repeatCount > 1) RequireLater(groupStart, groupStart + groupPeriod * groupFraction / (double)(repeatCount - 1));
                     inGroup = true;
                 }

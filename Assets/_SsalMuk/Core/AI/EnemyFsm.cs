@@ -22,15 +22,11 @@ namespace SsalMuk.Core
         {
             if (dt < 0 || double.IsNaN(dt) || double.IsInfinity(dt)) throw new ArgumentOutOfRangeException(nameof(dt));
             context.Time += dt;
-            if (charge != null)
+            if (charge != null && charge.TryMove(context.Actor, context.FollowTarget, dt, out var displacement))
             {
-                if (!context.Actor.IsAlive || context.Actor.Knockback.IsActive) charge.Cancel();
-                else if (charge.TryMove(context.Actor, context.FollowTarget, dt, out var displacement))
-                {
-                    CurrentState = charge.Phase;
-                    context.MoveIntent = dt > 0 ? displacement / (context.Actor.Definition.MoveSpeed * dt) : DVec2.Zero;
-                    return;
-                }
+                CurrentState = charge.Phase;
+                context.MoveIntent = dt > 0 ? displacement / (context.Actor.MoveSpeed * dt) : DVec2.Zero;
+                return;
             }
             var next = !context.Actor.IsAlive ? EnemyState.Dead : context.Actor.Knockback.IsActive ? EnemyState.Knockback : NormalState;
             if (next != CurrentState) { if ((int)CurrentState < states.Length) states[(int)CurrentState].Exit(context); CurrentState = next; states[(int)CurrentState].Enter(context); }

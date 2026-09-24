@@ -13,14 +13,21 @@ namespace SsalMuk.Core
         public WorldPosition End { get; private set; }
         public DVec2 Direction { get; private set; }
         public double Length { get; private set; }
+        public bool LastMoveWasCharge { get; private set; }
         public BossCharge(IRandomSource random) => this.random = random ?? throw new ArgumentNullException(nameof(random));
 
         // Returns a displacement, so the final charge step cannot overshoot the locked endpoint.
         public bool TryMove(UnitModel actor, IPlayerPosition target, double dt, out DVec2 displacement)
         {
-            displacement = DVec2.Zero;
+            displacement = DVec2.Zero; LastMoveWasCharge = false;
             if (dt < 0 || double.IsNaN(dt) || double.IsInfinity(dt)) throw new ArgumentOutOfRangeException(nameof(dt));
-            if (!actor.IsAlive || actor.Knockback.IsActive || !target.IsAlive) { Cancel(); return true; }
+            if (!actor.IsAlive || actor.Knockback.IsActive || !target.IsAlive)
+            {
+                Cancel();
+                // Being pushed blocks charging, but does not pause or restart the wait between charges.
+                cooldown = Math.Max(0, cooldown - dt);
+                return false;
+            }
             if (dt == 0) return Phase != EnemyState.Chase;
             if (Phase == EnemyState.Chase)
             {
@@ -42,6 +49,7 @@ namespace SsalMuk.Core
             }
             double distance = Math.Min(remainingDistance, speed * activeSeconds);
             displacement = Direction * distance; remainingDistance -= distance;
+            LastMoveWasCharge = distance > 0;
             if (remainingDistance <= 1e-9)
             {
                 repeatQueued = !extraCharge && random.NextUnit() < RepeatChance;
@@ -51,6 +59,9 @@ namespace SsalMuk.Core
         }
 
         public void Cancel()
-        { Phase = EnemyState.Chase; cooldown = CooldownSeconds; repeatQueued = false; remainingDistance = 0; }
+        {
+            if (Phase == EnemyState.Chase && !repeatQueued) return;
+            Phase = EnemyState.Chase; cooldown = CooldownSeconds; repeatQueued = false; remainingDistance = 0;
+        }
     }
 }

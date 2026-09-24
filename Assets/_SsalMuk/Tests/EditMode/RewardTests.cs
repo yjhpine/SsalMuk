@@ -16,7 +16,7 @@ namespace SsalMuk.Tests
             {
                 var offer = new OfferGenerator().Generate(owned, new SeededRandom(seed), RewardWeights.TestDefaults());
                 Assert.That(offer.Count, Is.EqualTo(3)); Assert.That(offer.Distinct().Count(), Is.EqualTo(3));
-                Assert.That(offer.All(reward => owned.Contains(reward.Weapon) == reward.IsUpgrade), Is.True);
+                Assert.That(offer.All(reward => reward.IsSharedUpgrade || owned.Contains(reward.Weapon) == reward.IsUpgrade), Is.True);
             }
         }
         [Test]
@@ -43,7 +43,8 @@ namespace SsalMuk.Tests
             Assert.That(rig.Player.Growth.PendingChoices, Is.EqualTo(pending));
             rig.Choose(first.Id, 0); rig.Advance(0.02);
             Assert.That(rig.Player.Growth.PendingChoices, Is.EqualTo(pending - 1));
-            if (reward.IsUpgrade) Assert.That(rig.Player.Weapons.Get(reward.Weapon).GetLevel(reward.UpgradeKind), Is.EqualTo(BigInteger.One));
+            if (reward.IsSharedUpgrade) Assert.That(rig.Player.Upgrades.GetLevel(reward.SharedKind), Is.EqualTo(BigInteger.One));
+            else if (reward.IsUpgrade) Assert.That(rig.Player.Weapons.Get(reward.Weapon).GetLevel(reward.UpgradeKind), Is.EqualTo(BigInteger.One));
             else Assert.That(rig.Player.Weapons.Owns(reward.Weapon), Is.True);
             Assert.That(rig.CurrentOffer.Id, Is.GreaterThan(first.Id));
             Assert.That(rig.Choose(first.Id, 0), Is.False);
@@ -69,7 +70,7 @@ namespace SsalMuk.Tests
                 Assert.That(rig.CurrentOffer, Is.Not.Null); var offer = rig.CurrentOffer;
                 int slot = Enumerable.Range(0, 3).FirstOrDefault(index => !offer.Choices[index].IsUpgrade);
                 Assert.That(rig.Choose(offer.Id, slot), Is.True); rig.Advance(0.02);
-                Assert.That(rig.CurrentOffer.Choices.All(x => rig.Player.Weapons.Owns(x.Weapon) == x.IsUpgrade), Is.True);
+                Assert.That(rig.CurrentOffer.Choices.All(x => x.IsSharedUpgrade || rig.Player.Weapons.Owns(x.Weapon) == x.IsUpgrade), Is.True);
             }
             Assert.That(rig.Player.Weapons.Kinds.Count, Is.EqualTo(4));
             Assert.That(rig.CurrentOffer.Choices.All(x => x.IsUpgrade), Is.True);

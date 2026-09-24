@@ -14,8 +14,10 @@ namespace SsalMuk.Core
         public NavigationService Navigation { get; }
         public AiSettings Settings { get; }
         public PickupSettings PickupSettings { get; }
+        public double PickupRadius => PickupSettings.AttractionRadius * (Actor is PlayerModel player ? player.Upgrades.PickupMultiplier : 1);
         public IPlayerPosition FollowTarget { get; }
         public IReadOnlyList<UnitModel> Enemies => enemies;
+        public UnitModel EngagementTarget { get; private set; }
         public double Time { get; internal set; }
         public DVec2 MoveIntent { get; internal set; }
         public DVec2 BreakoutDirection { get; internal set; }
@@ -35,14 +37,18 @@ namespace SsalMuk.Core
 
         internal void Observe(double dt)
         {
-            Time += dt; enemies.Clear(); velocities.Clear();
+            Time += dt; enemies.Clear(); velocities.Clear(); EngagementTarget = null;
+            double bestScore = double.PositiveInfinity;
             var next = new Dictionary<long, WorldPosition>();
             foreach (long id in World.Query.QueryCircle(Actor.Position, Settings.SearchDistance))
             {
                 if (!World.Units.TryGet(id, out var enemy) || enemy.Kind == UnitKind.Player || !enemy.IsAlive) continue;
                 enemies.Add(enemy);
                 velocities[id] = previous.TryGetValue(id, out var position) ? position.DisplacementTo(enemy.Position) / dt :
-                    enemy.Position.DisplacementTo(Actor.Position).Normalized * enemy.Definition.MoveSpeed;
+                    enemy.Position.DisplacementTo(Actor.Position).Normalized * enemy.MoveSpeed;
+                double score = TargetResolver.WeightedDistance(Actor, enemy, Settings);
+                if (score < bestScore || (score == bestScore && (EngagementTarget == null || enemy.Id < EngagementTarget.Id)))
+                { EngagementTarget = enemy; bestScore = score; }
                 next[id] = enemy.Position;
             }
             previous = next;
@@ -58,21 +64,17 @@ namespace SsalMuk.Core
 
         public DVec2 EngageNearestEnemy()
         {
-            UnitModel nearest = null; double distance = double.PositiveInfinity;
-            foreach (var enemy in enemies)
-            {
-                double candidate = Actor.Position.DistanceTo(enemy.Position);
-                if (candidate < distance || (candidate == distance && (nearest == null || enemy.Id < nearest.Id)))
-                { nearest = enemy; distance = candidate; }
-            }
-            if (nearest == null || distance < 1e-10) return DVec2.Zero;
+            var nearest = EngagementTarget;
+            if (nearest == null) return DVec2.Zero;
+            double distance = Actor.Position.DistanceTo(nearest.Position);
+            if (distance < 1e-10) return DVec2.Zero;
             // Stay inside the weapon's real hit reach, with room between contact bodies.
             double desired = Math.Max(Actor.BodyRadius + nearest.BodyRadius + .12, EngagementRange + nearest.HurtRadius * .5 - .15);
             var toward = Actor.Position.DisplacementTo(nearest.Position).Normalized;
             // Brake before reaching the target distance; emergency prediction then uses that same intent.
-            double speed = Math.Max(-.35, Math.Min(1, (distance - desired) / (Actor.Definition.MoveSpeed * Settings.EmergencyContactSeconds)));
+            double speed = Math.Max(-.35, Math.Min(1, (distance - desired) / (Actor.MoveSpeed * Settings.EmergencyContactSeconds)));
             var intent = toward * speed;
-            return CanMove(intent, Actor.Definition.MoveSpeed * Settings.EmergencyContactSeconds) ? intent : DVec2.Zero;
+            return CanMove(intent, Actor.MoveSpeed * Settings.EmergencyContactSeconds) ? intent : DVec2.Zero;
         }
 
         public double BlockedFraction()
@@ -100,7 +102,7 @@ namespace SsalMuk.Core
 
         public bool ImminentContact()
         {
-            var ownVelocity = MoveIntent * Actor.Definition.MoveSpeed;
+            var ownVelocity = MoveIntent * Actor.MoveSpeed;
             double horizon = Settings.EmergencyContactSeconds;
             double protectedFor = Math.Max(0, Actor.InvulnerableUntil - Time);
             foreach (var enemy in enemies)
@@ -122,11 +124,11 @@ namespace SsalMuk.Core
 
         public double EscapeRisk(DVec2 direction)
         {
-            double score = RiskAt(direction * (Actor.Definition.MoveSpeed * Settings.EmergencyContactSeconds));
+            double score = RiskAt(direction * (Actor.MoveSpeed * Settings.EmergencyContactSeconds));
             foreach (var enemy in enemies)
             {
                 double time = ContactTime(Actor.Position.DisplacementTo(enemy.Position),
-                    velocities[enemy.Id] - direction * Actor.Definition.MoveSpeed, Actor.BodyRadius + enemy.BodyRadius);
+                    velocities[enemy.Id] - direction * Actor.MoveSpeed, Actor.BodyRadius + enemy.BodyRadius);
                 if (time <= Settings.EmergencyContactSeconds) score += 50 * (1 + Settings.EmergencyContactSeconds - time);
             }
             return score;

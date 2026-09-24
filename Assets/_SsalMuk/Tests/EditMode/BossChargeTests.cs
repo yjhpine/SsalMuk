@@ -5,6 +5,19 @@ namespace SsalMuk.Tests
 {
     public sealed class BossChargeTests
     {
+        [TestCase(0, false), TestCase(2, false), TestCase(0, true), TestCase(2, true)]
+        public void ChargeUsesTwiceTheUpgradedAndBoostedPlayerSpeed(int upgrades, bool boost)
+        {
+            using var rig = RunTestRig.Create(enableAi: false);
+            if (upgrades > 0) new GrowthService(rig.Run).UpgradeShared(SharedUpgradeKind.MoveSpeed, upgrades);
+            if (boost) { rig.World.AddItem(PowerupKind.MoveSpeed, rig.Player.Position); rig.Advance(.02); }
+            rig.PlacePlayer(new DVec2(3, 0));
+            var boss = rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero, 1000));
+            double speed = 3 * (1 + .1 * upgrades) * (boost ? 1.5 : 1);
+            rig.Movement.Step(.5); var start = boss.Position; rig.Movement.Step(.1);
+            Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(speed * 2 * .1).Within(1e-8));
+        }
+
         [TestCase(.299999, true)]
         [TestCase(.3, false)]
         public void RepeatThresholdAllowsOnlyOneExtraChargeThenFiveSecondsOfCooldown(double roll, bool repeats)
@@ -77,6 +90,55 @@ namespace SsalMuk.Tests
             Assert.That(boss.Position.Local.X, Is.LessThan(5));
             Assert.That(world.Query.IsCircleFree(boss.Position, boss.BodyRadius), Is.True);
             Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Chase));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void RepeatedHitsLetCooldownElapseAndChargeResumesAfterKnockback(bool finishFirstCharge)
+        {
+            using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
+            rig.PlacePlayer(new DVec2(3, 0));
+            long id = rig.Spawn(UnitKind.Boss, DVec2.Zero, 10000);
+            var boss = (GroundEnemyModel)rig.Unit(id);
+            rig.Movement.Step(.02);
+            Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Telegraph));
+            if (finishFirstCharge)
+            {
+                rig.Movement.Step(.48); rig.Movement.Step(1);
+                Assert.That(boss.Position.Local.X, Is.EqualTo(6).Within(1e-9));
+                Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Chase));
+            }
+            var beforeHits = boss.Position;
+            // Real accepted damage refreshes the .15s push every .1s for six seconds.
+            for (int i = 0; i < 300; i++)
+            {
+                if (i % 5 == 0) Assert.That(rig.Hit(id, .01), Is.True);
+                rig.Movement.Step(.02);
+                Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Chase));
+                Assert.That(rig.Movement.GetEnemyFsm(id).CurrentState, Is.EqualTo(EnemyState.Knockback));
+            }
+            Assert.That(boss.Health, Is.EqualTo(9999.4).Within(1e-7));
+            Assert.That(beforeHits.DisplacementTo(boss.Position).X, Is.GreaterThan(1));
+            rig.Movement.Step(.1); Assert.That(boss.Knockback.IsActive, Is.False);
+            rig.Movement.Step(.02);
+            Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Telegraph), "Repeated hits must not restart the five-second cooldown.");
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void WallOnTheFinalChargeStepCancelsTheQueuedExtraCharge(bool blocked)
+        {
+            using var world = NavigationTests.Layout((x, y) => blocked && x == 5);
+            var player = (PlayerModel)WorldStoreTests.Spawn(world, UnitKind.Player, NavigationTests.P(9.5, 4.5));
+            var boss = (GroundEnemyModel)WorldStoreTests.Spawn(world, UnitKind.Boss, NavigationTests.P(2.5, 4.5));
+            // Seed zero queues an extra charge for boss ID 2; the open layout is the control.
+            using var movement = new MovementSystem(world, new NavigationService(world), player, seed: 0);
+            movement.Step(.5); movement.Step(4);
+            Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Chase));
+            if (blocked) Assert.That(boss.Position.Local.X, Is.LessThan(5));
+            else Assert.That(boss.Position.Local.X, Is.EqualTo(16.5).Within(1e-9));
+            movement.Step(.02);
+            Assert.That(boss.Charge.Phase, Is.EqualTo(blocked ? EnemyState.Chase : EnemyState.Telegraph));
         }
 
         private sealed class FixedRandom : IRandomSource

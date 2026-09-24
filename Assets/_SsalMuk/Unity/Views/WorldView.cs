@@ -6,11 +6,12 @@ using UnityEngine;
 
 namespace SsalMuk.Unity
 {
-    public sealed class WorldView : MonoBehaviour, ICombatWorldView
+    public sealed class WorldView : MonoBehaviour, ICombatWorldView, IItemWorldView
     {
         private GameCatalog catalog;
         private ViewLayer<UnitView> units;
         private ViewLayer<ExperienceView> experience;
+        private ViewLayer<PowerupView> items;
         private ViewLayer<AttackView> attacks, explosions;
         private ViewLayer<ProjectileView> projectiles;
         private readonly Dictionary<ChunkCoord, TerrainView> terrain = new Dictionary<ChunkCoord, TerrainView>();
@@ -22,10 +23,11 @@ namespace SsalMuk.Unity
         public int VisibleUnitCount => units?.ActiveCount ?? 0;
         public int VisibleExperienceCount => experience?.ActiveCount ?? 0;
         public int VisibleAttackCount => (attacks?.ActiveCount ?? 0) + (explosions?.ActiveCount ?? 0) + (projectiles?.ActiveCount ?? 0);
-        public int RetainedViewCount => (units?.RetainedCount ?? 0) + (experience?.RetainedCount ?? 0) + (attacks?.RetainedCount ?? 0) + (explosions?.RetainedCount ?? 0) + (projectiles?.RetainedCount ?? 0);
+        public int RetainedViewCount => (units?.RetainedCount ?? 0) + (experience?.RetainedCount ?? 0) + (items?.RetainedCount ?? 0) + (attacks?.RetainedCount ?? 0) + (explosions?.RetainedCount ?? 0) + (projectiles?.RetainedCount ?? 0);
         public IEnumerable<UnitView> UnitViews => units == null ? Array.Empty<UnitView>() : units.ActiveViews;
         public IEnumerable<ExperienceView> ExperienceViews => experience == null ? Array.Empty<ExperienceView>() : experience.ActiveViews;
         public IEnumerable<AttackView> AttackViews => attacks == null ? Array.Empty<AttackView>() : attacks.ActiveViews;
+        public IEnumerable<PowerupView> ItemViews => items == null ? Array.Empty<PowerupView>() : items.ActiveViews;
         public void Initialize(GameCatalog catalog) { this.catalog = catalog; catalog.ValidatePresentation(); }
         public void BeginFrame(Guid nextRun)
         {
@@ -34,13 +36,14 @@ namespace SsalMuk.Unity
                 ReleasePools(); runId = nextRun; hasTime = false;
                 units = new ViewLayer<UnitView>(runId, () => Instantiate(catalog.UnitViewPrefab, transform).GetComponent<UnitView>());
                 experience = new ViewLayer<ExperienceView>(runId, () => { var view = Create<ExperienceView>("Experience"); view.Initialize(catalog); return view; });
+                items = new ViewLayer<PowerupView>(runId, () => { var view = Create<PowerupView>("Item"); view.Initialize(catalog); return view; });
                 attacks = new ViewLayer<AttackView>(runId, () => { var view = Create<AttackView>("Attack"); view.Initialize(catalog); return view; });
                 explosions = new ViewLayer<AttackView>(runId, () => { var view = Create<AttackView>("Explosion"); view.Initialize(catalog); return view; });
                 projectiles = new ViewLayer<ProjectileView>(runId, () => { var view = Create<ProjectileView>("Fireball"); view.Initialize(catalog); return view; });
                 foreach (var view in terrain.Values) if (view != null) Destroy(view.gameObject);
                 terrain.Clear();
             }
-            units.BeginFrame(); experience.BeginFrame(); attacks.BeginFrame(); explosions.BeginFrame(); projectiles.BeginFrame(); seenTerrain.Clear();
+            units.BeginFrame(); experience.BeginFrame(); items.BeginFrame(); attacks.BeginFrame(); explosions.BeginFrame(); projectiles.BeginFrame(); seenTerrain.Clear();
         }
         private T Create<T>(string name) where T : PooledView
         { var go = new GameObject(name); go.transform.SetParent(transform, false); return go.AddComponent<T>(); }
@@ -58,6 +61,7 @@ namespace SsalMuk.Unity
             view.SetRelativeOrigin(relativeOrigin);
         }
         public void ShowUnit(UnitModel unit, DVec2 relativePosition) => units.Show(unit.Id).Show(unit, relativePosition, catalog, frameTime, frameDelta);
+        public void ShowItem(PowerupRecord item, DVec2 relative) => items.Show(item.Id).Show(item, relative);
         public void ShowExperience(ExperienceRecord record, ExperienceTier tier, DVec2 relative, double radius)
             => experience.Show(record.Id).Show(record, tier, WorldRenderOrigin.ToVector(relative), radius);
         public void ShowAttack(AttackShapeSnapshot shape, DVec2 relative) => attacks.Show(shape.Key.AttackId).Show(shape, relative);
@@ -65,11 +69,11 @@ namespace SsalMuk.Unity
         public void ShowExplosion(ExplosionSnapshot explosion, DVec2 relative, double lifetime) => explosions.Show(explosion.Key.AttackId).ShowExplosion(explosion, relative, frameTime, lifetime);
         public void EndFrame(double elapsedSeconds, int enemyCount)
         {
-            units.EndFrame(); experience.EndFrame(); attacks.EndFrame(); explosions.EndFrame(); projectiles.EndFrame();
+            units.EndFrame(); experience.EndFrame(); items.EndFrame(); attacks.EndFrame(); explosions.EndFrame(); projectiles.EndFrame();
             terrainReturns.Clear(); foreach (var coord in terrain.Keys) if (!seenTerrain.Contains(coord)) terrainReturns.Add(coord);
             foreach (var coord in terrainReturns) { if (terrain[coord] != null) Destroy(terrain[coord].gameObject); terrain.Remove(coord); }
         }
-        private void ReleasePools() { units?.Dispose(); experience?.Dispose(); attacks?.Dispose(); explosions?.Dispose(); projectiles?.Dispose(); }
+        private void ReleasePools() { units?.Dispose(); experience?.Dispose(); items?.Dispose(); attacks?.Dispose(); explosions?.Dispose(); projectiles?.Dispose(); }
         private void OnDestroy() => ReleasePools();
     }
 }

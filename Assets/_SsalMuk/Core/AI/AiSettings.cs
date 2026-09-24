@@ -15,22 +15,26 @@ namespace SsalMuk.Core
         public double NoProgressSeconds { get; }
         public double RiskWeight { get; }
         public double DistanceWeight { get; }
+        public double BossTargetWeight { get; }
+        public int ExperiencePriorityThreshold { get; }
 
         public AiSettings(double searchDistance = 12, double emergencyContactSeconds = 0.35, int directionCount = 16,
             double probeDistance = 2.4, double enterBlockedFraction = 0.7, double releaseBlockedFraction = 0.35,
             double minimumHoldSeconds = 0.45, double releaseStableSeconds = 0.45, double noProgressSeconds = 0.8,
-            double riskWeight = 2, double distanceWeight = 1)
+            double riskWeight = 2, double distanceWeight = 1, double bossTargetWeight = 3, int experiencePriorityThreshold = 8)
         {
             foreach (double value in new[] { searchDistance, emergencyContactSeconds, probeDistance, minimumHoldSeconds,
-                releaseStableSeconds, noProgressSeconds, riskWeight, distanceWeight })
+                releaseStableSeconds, noProgressSeconds, riskWeight, distanceWeight, bossTargetWeight })
                 if (value <= 0 || double.IsNaN(value) || double.IsInfinity(value)) throw new ArgumentOutOfRangeException(nameof(value));
             if (directionCount < 4 || directionCount > 128) throw new ArgumentOutOfRangeException(nameof(directionCount));
+            if (experiencePriorityThreshold < 1) throw new ArgumentOutOfRangeException(nameof(experiencePriorityThreshold));
             if (!(releaseBlockedFraction >= 0 && releaseBlockedFraction < enterBlockedFraction && enterBlockedFraction <= 1))
                 throw new ArgumentOutOfRangeException(nameof(enterBlockedFraction));
             SearchDistance = searchDistance; EmergencyContactSeconds = emergencyContactSeconds; DirectionCount = directionCount;
             ProbeDistance = probeDistance; EnterBlockedFraction = enterBlockedFraction; ReleaseBlockedFraction = releaseBlockedFraction;
             MinimumHoldSeconds = minimumHoldSeconds; ReleaseStableSeconds = releaseStableSeconds; NoProgressSeconds = noProgressSeconds;
             RiskWeight = riskWeight; DistanceWeight = distanceWeight;
+            BossTargetWeight = bossTargetWeight; ExperiencePriorityThreshold = experiencePriorityThreshold;
         }
     }
 }

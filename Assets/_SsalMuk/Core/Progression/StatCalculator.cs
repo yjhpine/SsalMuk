@@ -12,10 +12,13 @@ namespace SsalMuk.Core
             if (definition == null || state == null) throw new ArgumentNullException(nameof(state));
             if (definition.Kind != state.Kind) throw new ArgumentException("The weapon state and definition must match.");
             BigInteger Level(UpgradeKind kind) => replacement == kind ? next : state.GetLevel(kind);
+            BigInteger copies = 1 + Level(UpgradeKind.Copies), repeats = 1 + Level(UpgradeKind.Repeats);
+            if (copies > WeaponState.MaximumCopies(state.Kind) || repeats > WeaponState.MaximumRepeatLevel + 1)
+                throw new ArgumentOutOfRangeException(nameof(state), "Weapon copies and repeats must respect their explicit limits.");
             return new WeaponStats(Scaled(definition.Damage, Level(UpgradeKind.Damage), settings.DamageCoefficient, false, "Damage"),
                 Scaled(definition.Range, Level(UpgradeKind.Range), settings.RangeCoefficient, false, "Range"),
                 Scaled(definition.PeriodSeconds, Level(UpgradeKind.Speed), settings.SpeedCoefficient, true, "Period"),
-                1 + Level(UpgradeKind.Copies), 1 + Level(UpgradeKind.Repeats));
+                copies, repeats);
         }
         private static double Scaled(double baseline, BigInteger level, double coefficient, bool inverse, string name)
         {

@@ -25,7 +25,8 @@ namespace SsalMuk.Tests
             {
                 shots.Add(shot);
                 Assert.That(shot.Origin, Is.EqualTo(rig.Player.Position));
-                double degrees = new[] { 0, 15, -15, 30, -30 }[shots.Count - 1];
+                double step = kind == WeaponKind.Fireball ? 30 : 40;
+                double degrees = new[] { 0, step, -step, step * 2, -step * 2 }[shots.Count - 1];
                 Assert.That(Math.Atan2(shot.Direction.Y, shot.Direction.X), Is.EqualTo(degrees * Math.PI / 180).Within(1e-10));
                 var shape = new AttackShapeSnapshot(shot, rig.Run.Definitions.GetWeapon(kind));
                 double sweepStart = kind == WeaponKind.Sword ? -Math.PI / 6 : 0;
@@ -89,7 +90,7 @@ namespace SsalMuk.Tests
             Assert.That(definitions.GetUnit(UnitKind.Boss).MoveSpeed,
                 Is.EqualTo(definitions.GetUnit(UnitKind.Player).MoveSpeed * 1.2).Within(1e-10));
             Assert.That(definitions.GetUnit(UnitKind.Normal).MoveSpeed,
-                Is.EqualTo(definitions.GetUnit(UnitKind.Player).MoveSpeed * 1.1).Within(1e-10));
+                Is.EqualTo(definitions.GetUnit(UnitKind.Player).MoveSpeed * .95).Within(1e-10));
             Assert.That(definitions.GetUnit(UnitKind.Air).MoveSpeed,
                 Is.EqualTo(definitions.GetUnit(UnitKind.Player).MoveSpeed * 1.1).Within(1e-10));
             Assert.That(catalog.Defaults.CreatePickupSettings().AttractionRadius, Is.EqualTo(1.95).Within(1e-10));

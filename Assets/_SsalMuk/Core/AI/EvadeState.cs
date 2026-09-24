@@ -7,7 +7,7 @@ namespace SsalMuk.Core
         public void Tick(AiContext context, double dt)
         {
             double best = double.PositiveInfinity; context.MoveIntent = DVec2.Zero;
-            double probe = context.Actor.Definition.MoveSpeed * context.Settings.EmergencyContactSeconds;
+            double probe = context.Actor.MoveSpeed * context.Settings.EmergencyContactSeconds;
             for (int i = 0; i < context.Settings.DirectionCount; i++)
             {
                 var direction = context.Direction(i);

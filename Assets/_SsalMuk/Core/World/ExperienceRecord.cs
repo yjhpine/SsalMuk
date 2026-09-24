@@ -13,6 +13,7 @@ namespace SsalMuk.Core
         public WorldPosition PreviousPosition { get; internal set; }
         public double CreatedAt { get; }
         public double AttractionStartedAt { get; internal set; }
+        public double MagnetFlightSpeed { get; internal set; }
         internal ExperienceRecord(long id, WorldPosition position, BigInteger value, double createdAt)
         { Id = id; Position = PreviousPosition = position; Value = value; State = ExperienceState.Grounded; CreatedAt = createdAt; }
     }

@@ -9,6 +9,7 @@ namespace SsalMuk.Core
         private readonly DamageService damage;
         private readonly HashSet<long> queued = new HashSet<long>();
         private bool disposed;
+        public event Action<UnitModel> EnemyKilled;
         public DeathService(RunModel run, DamageService damage)
         {
             this.run = run ?? throw new ArgumentNullException(nameof(run)); this.damage = damage ?? throw new ArgumentNullException(nameof(damage));
@@ -31,9 +32,10 @@ namespace SsalMuk.Core
                     var position = enemy.Kind == UnitKind.Air ? DropPlacement.NearestFreeFloor(run.World, enemy.Position, run.Player.BodyRadius) : enemy.Position;
                     run.World.AddExperience(position, enemy.Definition.ExperienceReward, run.Clock.ElapsedSeconds);
                 }
+                EnemyKilled?.Invoke(enemy);
                 run.World.Units.Remove(id); run.Kills = nextKills;
             }
         }
-        public void Dispose() { if (disposed) return; disposed = true; damage.Accepted -= OnHit; queued.Clear(); }
+        public void Dispose() { if (disposed) return; disposed = true; damage.Accepted -= OnHit; queued.Clear(); EnemyKilled = null; }
     }
 }

@@ -13,6 +13,7 @@ namespace SsalMuk.Core
         private readonly ContactDamageSystem contact;
         private readonly DamageService damage;
         private readonly AirDepartureSystem airDepartures;
+        private readonly PowerupSystem powerups;
         public event Action<CombatEvent> DamageAccepted;
         private bool disposed;
         private WorldRect? viewBounds;
@@ -34,8 +35,9 @@ namespace SsalMuk.Core
         {
             this.run = run; this.movement = movement; this.ai = ai; this.death = death; this.contact = contact; this.damage = damage;
             Progression = new ProgressionService(run); Collector = new ExperienceCollector(run, movement, Progression);
+            powerups = new PowerupSystem(run, movement, death);
             var weapons = new Dictionary<WeaponKind, WeaponRuntime>();
-            foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind))) weapons.Add(kind, new WeaponRuntime(run, kind, movement, damage));
+            foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind))) weapons.Add(kind, new WeaponRuntime(run, kind, movement, damage, aiSettings: ai?.Settings));
             Weapons = new ReadOnlyDictionary<WeaponKind, WeaponRuntime>(weapons); Sword = weapons[WeaponKind.Sword];
             ai?.ConfigureEngagementRange(MeleeEngagementRange);
             damage.Accepted += ForwardHit;
@@ -56,9 +58,11 @@ namespace SsalMuk.Core
                 if (!run.Player.IsAlive) { Finish(); break; }
                 run.Rewards.Step();
                 double from = run.Clock.ElapsedSeconds; run.Clock.Advance(); double to = run.Clock.ElapsedSeconds;
+                powerups.UpdateEffects(run.Clock.FixedStep);
                 Spawns?.Tick(to, viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
                 if (ai != null) { ai.Tick(run.Clock.FixedStep); movement.SetMoveIntent(run.Player.Id, run.Player.MoveIntent); }
                 movement.Step(run.Clock.FixedStep);
+                powerups.CollectAfterMovement();
                 Weapons[WeaponKind.Fireball].Projectiles.SetViewBounds(viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
                 foreach (var kind in run.Player.Weapons.Kinds) Weapons[kind].Tick(from, to);
                 death.Flush(); contact.Step(from, to);
@@ -73,7 +77,7 @@ namespace SsalMuk.Core
             double range = 0;
             foreach (var kind in run.Player.Weapons.Kinds)
                 if (kind != WeaponKind.Fireball)
-                    range = Math.Max(range, StatCalculator.Calculate(run.Definitions.GetWeapon(kind), run.Player.Weapons.Get(kind), run.GrowthSettings).Range);
+                    range = Math.Max(range, run.CurrentWeaponStats(kind).Range);
             return range;
         }
         private void ForwardHit(CombatEvent hit) => DamageAccepted?.Invoke(hit);
@@ -84,6 +88,7 @@ namespace SsalMuk.Core
             damage.Accepted -= ForwardHit; DamageAccepted = null;
             Spawns?.Dispose();
             airDepartures.Dispose();
+            powerups.Dispose();
             if (ReferenceEquals(run.Combat, this)) run.Combat = null;
             foreach (var weapon in Weapons.Values) weapon.Dispose();
         }

@@ -36,12 +36,13 @@ namespace SsalMuk.Tests
             }
         }
         [Test]
-        public void HugeCopyCountsStayExactAndUnrepresentableDamageIsRejectedAtomically()
+        public void ExcessiveCopyCountsAndUnrepresentableDamageAreRejectedAtomically()
         {
             using var rig = RunTestRig.Create(); BigInteger large = BigInteger.Pow(10, 40);
-            rig.Upgrade(WeaponKind.Sword, UpgradeKind.Copies, large);
             var state = rig.Player.Weapons.Get(WeaponKind.Sword);
-            Assert.That(StatCalculator.Calculate(rig.Run.Definitions.GetWeapon(WeaponKind.Sword), state).Copies, Is.EqualTo(1 + large));
+            Assert.Throws<InvalidOperationException>(() => rig.Upgrade(WeaponKind.Sword, UpgradeKind.Copies, large));
+            Assert.That(state.GetLevel(UpgradeKind.Copies), Is.EqualTo(BigInteger.Zero));
+            Assert.That(StatCalculator.Calculate(rig.Run.Definitions.GetWeapon(WeaponKind.Sword), state).Copies, Is.EqualTo(BigInteger.One));
             Assert.Throws<NumericRangeException>(() => rig.Upgrade(WeaponKind.Sword, UpgradeKind.Damage, large));
             Assert.That(state.GetLevel(UpgradeKind.Damage), Is.EqualTo(BigInteger.Zero));
         }

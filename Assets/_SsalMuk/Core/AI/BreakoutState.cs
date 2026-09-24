@@ -13,7 +13,7 @@ namespace SsalMuk.Core
             if (DVec2.Dot(progressAnchor.DisplacementTo(context.Actor.Position), context.BreakoutDirection) > 0.12)
             { progressAnchor = context.Actor.Position; lastProgress = context.Time; }
             bool stalled = context.Time - lastProgress >= context.Settings.NoProgressSeconds;
-            if (stalled || !context.CanMove(context.BreakoutDirection, Math.Max(0.35, context.Actor.Definition.MoveSpeed * dt))) Choose(context, stalled);
+            if (stalled || !context.CanMove(context.BreakoutDirection, Math.Max(0.35, context.Actor.MoveSpeed * dt))) Choose(context, stalled);
             context.MoveIntent = context.BreakoutDirection;
         }
         private void Choose(AiContext context, bool reconsider = false)

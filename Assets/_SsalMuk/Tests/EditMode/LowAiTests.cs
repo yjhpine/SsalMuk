@@ -128,5 +128,99 @@ namespace SsalMuk.Tests
             Assert.That(player.MoveIntent.Length, Is.GreaterThan(0));
             Assert.That(world.Query.SweepCircle(player.Position, player.MoveIntent, player.BodyRadius), Is.Null);
         }
+
+        [Test]
+        public void ApproachUsesTheSameWeightedBossTargetAsAttacks()
+        {
+            using var rig = RunTestRig.Create(enableCombat: false);
+            rig.Spawn(UnitKind.Normal, new DVec2(-3, 0));
+            long boss = rig.Spawn(UnitKind.Boss, new DVec2(6, 0));
+            rig.Ai.Tick(.02);
+            Assert.That(rig.Player.BrainState, Is.EqualTo(BrainState.Collect));
+            Assert.That(rig.Player.TargetId, Is.EqualTo(boss));
+            Assert.That(rig.Player.MoveIntent.X, Is.GreaterThan(.9));
+        }
+
+        [TestCase(1, false)]
+        [TestCase(7, false)]
+        [TestCase(8, true)]
+        public void ReachableExperienceAccumulationCanOutweighBossApproach(int count, bool collect)
+        {
+            using var rig = RunTestRig.Create(enableCombat: false);
+            long boss = rig.Spawn(UnitKind.Boss, new DVec2(6, 0));
+            for (int i = 0; i < count; i++) rig.DropXp(new DVec2(-4, i * .1), 1);
+            rig.Ai.Tick(.02);
+            Assert.That(rig.Player.BrainState, Is.EqualTo(BrainState.Collect));
+            Assert.That(rig.Player.TargetId, Is.EqualTo(boss));
+            Assert.That(rig.Player.CollectionTargetId.HasValue, Is.EqualTo(collect));
+            if (collect) Assert.That(rig.Player.MoveIntent.X, Is.LessThan(-.9));
+            else Assert.That(rig.Player.MoveIntent.X, Is.GreaterThan(.9));
+        }
+
+        [Test]
+        public void UnreachableExperienceHoardDoesNotOutweighBossApproach()
+        {
+            using var world = NavigationTests.Layout((x, y) =>
+                ((x == 6 || x == 10) && y >= 6 && y <= 10) || ((y == 6 || y == 10) && x >= 6 && x <= 10));
+            var player = (PlayerModel)WorldStoreTests.Spawn(world, UnitKind.Player, NavigationTests.P(3.5, 8.5));
+            var boss = WorldStoreTests.Spawn(world, UnitKind.Boss, NavigationTests.P(3.5, 13.5));
+            var navigation = new NavigationService(world); var ai = new LowAiController(player, world, navigation);
+            for (int i = 0; i < 8; i++) world.AddExperience(NavigationTests.P(8.5, 8.5), 1000);
+            world.AddExperience(NavigationTests.P(3.5, 5.5), 1);
+            for (int i = 0; i < 100; i++) { ai.Tick(.02); navigation.Advance(1024); }
+            Assert.That(player.BrainState, Is.EqualTo(BrainState.Collect));
+            Assert.That(player.TargetId, Is.EqualTo(boss.Id));
+            Assert.That(player.CollectionTargetId, Is.Null);
+            Assert.That(player.MoveIntent.Y, Is.GreaterThan(.9));
+        }
+
+        [Test]
+        public void NearbyItemIsApproachedWithoutUsingItsIdentityAsAnExperienceTarget()
+        {
+            using var rig = RunTestRig.Create(enableCombat: false);
+            long boss = rig.Spawn(UnitKind.Boss, new DVec2(6, 0));
+            rig.World.AddItem(PowerupKind.MoveSpeed, WorldPosition.FromLocal(new DVec2(-4, 0)));
+            rig.Ai.Tick(.02);
+            Assert.That(rig.Player.TargetId, Is.EqualTo(boss));
+            Assert.That(rig.Player.CollectionTargetId, Is.Null);
+            Assert.That(rig.Player.MoveIntent.X, Is.LessThan(-.9));
+        }
+
+        [Test]
+        public void CloserAbundantExperienceKeepsPriorityOverADistantItem()
+        {
+            using var rig = RunTestRig.Create(enableCombat: false);
+            rig.Spawn(UnitKind.Boss, new DVec2(0, 8));
+            rig.World.AddItem(PowerupKind.AttackRange, WorldPosition.FromLocal(new DVec2(-8, 0)));
+            long xp = rig.DropXp(new DVec2(3, 0), 8);
+            rig.Ai.Tick(.02);
+            Assert.That(rig.Player.CollectionTargetId, Is.EqualTo(xp));
+            Assert.That(rig.Player.MoveIntent.X, Is.GreaterThan(.9));
+        }
+
+        [Test]
+        public void UnreachableItemDoesNotHideReachableExperienceWithTheSameIdentity()
+        {
+            using var world = NavigationTests.Layout((x, y) =>
+                ((x == 6 || x == 10) && y >= 6 && y <= 10) || ((y == 6 || y == 10) && x >= 6 && x <= 10));
+            var player = (PlayerModel)WorldStoreTests.Spawn(world, UnitKind.Player, NavigationTests.P(3.5, 8.5));
+            var navigation = new NavigationService(world); var ai = new LowAiController(player, world, navigation);
+            world.AddItem(PowerupKind.Invincibility, NavigationTests.P(8.5, 8.5));
+            long xp = world.AddExperience(NavigationTests.P(3.5, 5.5), 2);
+            for (int i = 0; i < 100; i++) { ai.Tick(.02); navigation.Advance(1024); }
+            Assert.That(player.CollectionTargetId, Is.EqualTo(xp));
+            Assert.That(player.MoveIntent.Y, Is.LessThan(-.9));
+        }
+
+        [Test]
+        public void ImminentContactOverridesNearbyItemSeeking()
+        {
+            using var rig = RunTestRig.Create(enableCombat: false);
+            rig.World.AddItem(PowerupKind.Invincibility, WorldPosition.FromLocal(new DVec2(3, 0)));
+            rig.Spawn(UnitKind.Normal, new DVec2(.7, 0));
+            rig.Ai.Tick(.02);
+            Assert.That(rig.Player.BrainState, Is.EqualTo(BrainState.Evade));
+            Assert.That(rig.Player.MoveIntent.X, Is.LessThan(0));
+        }
     }
 }

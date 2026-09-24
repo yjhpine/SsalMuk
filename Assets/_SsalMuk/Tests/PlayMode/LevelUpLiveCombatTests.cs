@@ -49,7 +49,8 @@ namespace SsalMuk.Tests
             app.LevelUp.Buttons[0].onClick.Invoke(); app.LevelUp.Buttons[0].onClick.Invoke();
             yield return new WaitForSeconds(0.06f);
             Assert.That(run.Player.Growth.PendingChoices, Is.EqualTo(pending - 1)); Assert.That(run.CurrentOffer.Id, Is.GreaterThan(offer.Id));
-            if (selected.IsUpgrade) Assert.That(run.Player.Weapons.Get(selected.Weapon).GetLevel(selected.UpgradeKind), Is.EqualTo(BigInteger.One));
+            if (selected.IsSharedUpgrade) Assert.That(run.Player.Upgrades.GetLevel(selected.SharedKind), Is.EqualTo(BigInteger.One));
+            else if (selected.IsUpgrade) Assert.That(run.Player.Weapons.Get(selected.Weapon).GetLevel(selected.UpgradeKind), Is.EqualTo(BigInteger.One));
             else Assert.That(run.Player.Weapons.Owns(selected.Weapon), Is.True);
             while (!File.Exists(screenshot) && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
             Assert.That(File.Exists(screenshot), Is.True);

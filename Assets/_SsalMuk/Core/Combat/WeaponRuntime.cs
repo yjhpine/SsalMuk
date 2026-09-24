@@ -15,6 +15,7 @@ namespace SsalMuk.Core
         private readonly FireballAttack fireball;
         private readonly MovementSystem movement;
         private readonly DamageService damage;
+        private readonly AiSettings aiSettings;
         private readonly AttackScheduler scheduler = new AttackScheduler();
         private readonly List<AttackInstance> active = new List<AttackInstance>();
         private bool disposed;
@@ -26,10 +27,10 @@ namespace SsalMuk.Core
         public long LaunchCount { get; private set; }
         public BigInteger PendingStrikes => scheduler.PendingStrikes;
         public double MaximumDispatchDelay { get; private set; }
-        public WeaponRuntime(RunModel run, WeaponKind kind, MovementSystem movement, DamageService damage, Func<WeaponStats> stats = null)
+        public WeaponRuntime(RunModel run, WeaponKind kind, MovementSystem movement, DamageService damage, Func<WeaponStats> stats = null, AiSettings aiSettings = null)
         {
             this.run = run ?? throw new ArgumentNullException(nameof(run)); this.damage = damage; this.movement = movement; definition = run.Definitions.GetWeapon(kind);
-            this.stats = stats ?? (() => StatCalculator.Calculate(definition, run.Player.Weapons.Get(kind), run.GrowthSettings));
+            this.stats = stats ?? (() => run.CurrentWeaponStats(kind)); this.aiSettings = aiSettings;
             sword = new SwordAttack(run, movement, damage); spear = new SpearAttack(run, movement, damage); axe = new AxeAttack(run, movement, damage);
             if (kind == WeaponKind.Fireball) { Projectiles = new ProjectileSystem(run, movement, damage); fireball = new FireballAttack(Projectiles); }
             ActiveAttacks = active.AsReadOnly();
@@ -44,13 +45,13 @@ namespace SsalMuk.Core
                 double end = Math.Min(to, cursor + run.Clock.FixedStep);
                 if (end <= cursor) throw new OverflowException("Attack simulation time lost precision.");
                 double at = cursor;
-                foreach (var reserved in scheduler.CollectDueStrikes(cursor, end, stats, TargetResolver.Resolve(run.Player, run.World.Query).HasValue))
+                foreach (var reserved in scheduler.CollectDueStrikes(cursor, end, stats, TargetResolver.Resolve(run.Player, run.World.Query, aiSettings).HasValue))
                 {
                     double due = reserved.Time;
                     MaximumDispatchDelay = Math.Max(MaximumDispatchDelay, to - due);
                     if (fireball == null) AdvanceAttacks(from, to, at, due);
                     at = due;
-                    long? target = TargetResolver.Resolve(run.Player, run.World.Query);
+                    long? target = TargetResolver.Resolve(run.Player, run.World.Query, aiSettings);
                     if (!target.HasValue) { scheduler.Reset(); break; }
                     var delta = run.Player.Position.DisplacementTo(run.World.Units.Get(target.Value).Position);
                     if (delta != DVec2.Zero) lastDirection = delta.Normalized;
@@ -58,7 +59,7 @@ namespace SsalMuk.Core
                     var previous = movement.PreviousPositions.TryGetValue(run.Player.Id, out var previousPlayer) ? previousPlayer : run.Player.Position;
                     double fraction = to > from ? Math.Max(0, Math.Min(1, (due - from) / (to - from))) : 1;
                     var origin = previous.Offset(previous.DisplacementTo(run.Player.Position) * fraction);
-                    for (BigInteger copy = 0; copy < snapshot.Copies; copy++)
+                    for (BigInteger copy = 0; copy < BigInteger.Min(snapshot.Copies, WeaponState.MaximumCopies(definition.Kind)); copy++)
                     {
                         var instance = new AttackInstance(new HitKey(run.Id, run.AllocateAttackId(), copy, reserved.Repeat), definition.Kind,
                             due, definition.ActiveSeconds, lastDirection, snapshot, origin);

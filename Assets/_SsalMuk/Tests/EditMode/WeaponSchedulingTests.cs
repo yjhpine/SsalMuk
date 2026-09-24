@@ -24,17 +24,38 @@ namespace SsalMuk.Tests
                     kind + " retained attacks whose progress rounded below one.");
             }
         }
-        [Test]
-        public void CopyIndicesAlternateLeftRightWithoutIntegerTruncation()
+        [TestCase(40, 18)] [TestCase(30, 24)]
+        public void CopyIndicesAlternateLeftRightWithoutIntegerTruncation(int degrees, int period)
         {
-            Assert.That(CopyLayout.Phase(0), Is.Zero);
-            Assert.That(CopyLayout.Phase(1), Is.EqualTo(Math.PI / 12).Within(1e-12));
-            Assert.That(CopyLayout.Phase(2), Is.EqualTo(-Math.PI / 12).Within(1e-12));
-            Assert.That(CopyLayout.Phase(3), Is.EqualTo(Math.PI / 6).Within(1e-12));
-            Assert.That(CopyLayout.Phase(4), Is.EqualTo(-Math.PI / 6).Within(1e-12));
+            Assert.That(CopyLayout.Phase(0, degrees), Is.Zero);
+            Assert.That(CopyLayout.Phase(1, degrees), Is.EqualTo(degrees * Math.PI / 180).Within(1e-12));
+            Assert.That(CopyLayout.Phase(2, degrees), Is.EqualTo(-degrees * Math.PI / 180).Within(1e-12));
+            Assert.That(CopyLayout.Phase(3, degrees), Is.EqualTo(degrees * Math.PI / 90).Within(1e-12));
+            Assert.That(CopyLayout.Phase(4, degrees), Is.EqualTo(-degrees * Math.PI / 90).Within(1e-12));
             BigInteger huge = BigInteger.Pow(10, 400);
-            Assert.That(CopyLayout.Phase(huge), Is.EqualTo(CopyLayout.Phase(huge % 48)));
-            Assert.That(CopyLayout.Phase(huge + 1), Is.EqualTo(CopyLayout.Phase((huge + 1) % 48)));
+            Assert.That(CopyLayout.Phase(huge, degrees), Is.EqualTo(CopyLayout.Phase(huge % period, degrees)));
+            Assert.That(CopyLayout.Phase(huge + 1, degrees), Is.EqualTo(CopyLayout.Phase((huge + 1) % period, degrees)));
+        }
+        [TestCase(WeaponKind.Sword, 8)] [TestCase(WeaponKind.Spear, 8)]
+        [TestCase(WeaponKind.Axe, 8)] [TestCase(WeaponKind.Fireball, 6)]
+        public void RuntimeCannotLaunchMoreThanTheWeaponCapFromInjectedStats(WeaponKind kind, int maximum)
+        {
+            using var rig = RunTestRig.Create(enableAi: false);
+            if (kind != WeaponKind.Sword) rig.Equip(kind);
+            rig.Spawn(UnitKind.Normal, new DVec2(40, 0), 1000);
+            using var runtime = new WeaponRuntime(rig.Run, kind, rig.Movement, rig.Damage,
+                () => new WeaponStats(8, 1.6, 1, copies: 20));
+            runtime.Tick(0, .02);
+            Assert.That(runtime.LaunchCount, Is.EqualTo(maximum));
+            CollectionAssert.AreEqual(Enumerable.Range(0, maximum).Select(i => new BigInteger(i)), runtime.ActiveAttacks.Select(a => a.Key.Copy));
+        }
+        [Test]
+        public void SchedulerCannotReserveMoreThanThreeRepeatsFromInjectedStats()
+        {
+            var scheduler = new AttackScheduler();
+            var due = scheduler.CollectDueStrikes(0, .99, () => new WeaponStats(8, 1.6, 1, repeats: 20), true).ToArray();
+            CollectionAssert.AreEqual(new[] { 0.0, .3, .6 }, due.Select(strike => strike.Time));
+            CollectionAssert.AreEqual(new BigInteger[] { 0, 1, 2 }, due.Select(strike => strike.Repeat));
         }
         [Test]
         public void BurstReservationsKeepTheirTimesAndReadNewSpeedOnlyForTheNextGroup()
@@ -52,13 +73,14 @@ namespace SsalMuk.Tests
         [Test]
         public void SchedulerKeepsAllDueStrikesInALongFrameAndDetectsUnrepresentableTiming()
         {
-            var scheduler = new AttackScheduler(); var stats = new WeaponStats(8, 1.6, 0.1, repeats: 4);
+            var scheduler = new AttackScheduler(); var stats = new WeaponStats(8, 1.6, 0.1, repeats: 3);
             var due = scheduler.CollectDueStrikes(0, 0.25, () => stats, true).ToArray();
-            Assert.That(due.Length, Is.EqualTo(11));
+            Assert.That(due.Length, Is.EqualTo(8));
             Assert.That(due.Select(x => x.Time), Is.Ordered);
             Assert.Throws<NumericRangeException>(() => new AttackScheduler().CollectDueStrikes(1e20, 1e20 + 1e6, () => stats, true).ToArray());
-            Assert.Throws<NumericRangeException>(() => new AttackScheduler().CollectDueStrikes(1, 1.02,
-                () => new WeaponStats(8, 1, 1, repeats: BigInteger.Pow(10, 400)), true).ToArray());
+            var bounded = new AttackScheduler().CollectDueStrikes(0, .99,
+                () => new WeaponStats(8, 1, 1, repeats: BigInteger.Pow(10, 400)), true).ToArray();
+            Assert.That(bounded.Length, Is.EqualTo(3));
         }
         [Test]
         public void RuntimeLaunchesEveryCopyAndReservedRepeatWithFreshStrikeStatsAndDirection()

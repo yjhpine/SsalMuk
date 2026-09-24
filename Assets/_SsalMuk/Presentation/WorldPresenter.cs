@@ -40,6 +40,12 @@ namespace SsalMuk.Presentation
             }
             if (combatView != null)
             {
+                if (view is IItemWorldView itemView && model is IItemReadModel itemModel)
+                    foreach (var item in itemModel.Items)
+                    {
+                        var relative = origin.DisplacementTo(item.Position);
+                        if (relative.Length <= viewRadius + 2) itemView.ShowItem(item, relative);
+                    }
                 foreach (var record in model.Experience)
                 {
                     if (record.State == ExperienceState.Collected) continue;

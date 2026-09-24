@@ -14,7 +14,7 @@ namespace SsalMuk.Core
         {
             Key = key; Kind = kind; StartedAt = startedAt; ActiveSeconds = activeSeconds;
             // The supplied direction aims at the target; snapshots and collision use this copy's physical direction.
-            Direction = AttackGeometry.Rotate(direction, CopyLayout.Phase(key.Copy)); Stats = stats; Origin = origin;
+            Direction = AttackGeometry.Rotate(direction, CopyLayout.Phase(key.Copy, CopyLayout.Degrees(kind))); Stats = stats; Origin = origin;
         }
     }
 }

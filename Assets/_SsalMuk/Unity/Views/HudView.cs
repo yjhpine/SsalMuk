@@ -4,7 +4,7 @@ using SsalMuk.Presentation;
 
 namespace SsalMuk.Unity
 {
-    public sealed class HudView : MonoBehaviour, IHudView
+    public sealed class HudView : MonoBehaviour, IHudView, IStatusHudView
     {
         private Canvas canvas;
         private RectTransform healthBar, experienceBar;
@@ -12,6 +12,7 @@ namespace SsalMuk.Unity
         public Text HealthText { get; private set; }
         public Text LevelText { get; private set; }
         public Text WeaponsText { get; private set; }
+        public Text StatusText { get; private set; }
         public void Initialize(Font font)
         {
             canvas = UiFactory.Canvas(transform, "BattleHud", 40);
@@ -27,7 +28,11 @@ namespace SsalMuk.Unity
             killsText = UiFactory.Label(canvas.transform, "Kills", font, "", 21, UiFactory.Mint, new Vector2(180, 60), new Vector2(1, 1), new Vector2(-96, -42));
             experienceBar = UiFactory.Bar(canvas.transform, "ExperienceBar", new Vector2(1280, 5), new Vector2(0.5f, 1), new Vector2(0, -94), new Color32(105, 174, 247, 255));
             canvas.gameObject.SetActive(false);
+            StatusText = UiFactory.Label(canvas.transform, "Effects", font, "", 15, Color.white, new Vector2(1000, 48),
+                new Vector2(.5f, 1), new Vector2(0, -123));
+            StatusText.gameObject.AddComponent<UnityEngine.UI.Shadow>().effectColor = new Color(0, 0, 0, .9f);
         }
+        public void ShowStatus(string status) => StatusText.text = status;
         public void Show(bool visible, string health, double healthFraction, string level, string experience, double experienceFraction, string survival, string kills, string weapons)
         {
             canvas.gameObject.SetActive(visible); if (!visible) return;

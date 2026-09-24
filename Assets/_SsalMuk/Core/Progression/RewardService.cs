@@ -24,7 +24,7 @@ namespace SsalMuk.Core
             command.RunId == run.Id && command.OfferId == CurrentOffer.Id && command.Slot >= 0 && command.Slot < CurrentOffer.Choices.Count &&
             command.OwnershipVersion == CurrentOffer.OwnershipVersion && command.OwnershipVersion == run.Player.Weapons.OwnershipVersion &&
             IsAvailable(CurrentOffer.Choices[command.Slot]);
-        private bool IsAvailable(RewardId reward) => reward.IsUpgrade ?
+        private bool IsAvailable(RewardId reward) => reward.IsSharedUpgrade ? run.Player.Upgrades.CanUpgrade(reward.SharedKind) : reward.IsUpgrade ?
             run.Player.Weapons.Owns(reward.Weapon) && run.Player.Weapons.Get(reward.Weapon).CanUpgrade(reward.UpgradeKind) :
             !run.Player.Weapons.Owns(reward.Weapon);
         private bool OfferStillAvailable()
@@ -45,7 +45,8 @@ namespace SsalMuk.Core
             if (command.HasValue && IsValid(command.Value))
             {
                 var reward = CurrentOffer.Choices[command.Value.Slot];
-                if (reward.IsUpgrade) growth.Upgrade(reward.Weapon, reward.UpgradeKind); else growth.Equip(reward.Weapon);
+                if (reward.IsSharedUpgrade) growth.UpgradeShared(reward.SharedKind);
+                else if (reward.IsUpgrade) growth.Upgrade(reward.Weapon, reward.UpgradeKind); else growth.Equip(reward.Weapon);
                 run.Player.Growth.PendingChoices--; CurrentOffer = null;
             }
             RefreshOffer();
@@ -56,7 +57,8 @@ namespace SsalMuk.Core
             if (OfferStillAvailable()) return;
             long next = checked(lastOfferId + 1);
             CurrentOffer = new OfferSnapshot(next, run.Player.Weapons.OwnershipVersion,
-                generator.Generate(run.Player.Weapons.Kinds, random, weights, (weapon, upgrade) => run.Player.Weapons.Get(weapon).CanUpgrade(upgrade)));
+                generator.Generate(run.Player.Weapons.Kinds, random, weights, (weapon, upgrade) => run.Player.Weapons.Get(weapon).CanUpgrade(upgrade),
+                    shared => run.Player.Upgrades.CanUpgrade(shared)));
             lastOfferId = next;
         }
         public void Dispose() { disposed = true; CurrentOffer = null; queued = null; }

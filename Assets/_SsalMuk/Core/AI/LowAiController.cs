@@ -12,6 +12,7 @@ namespace SsalMuk.Core
         private double enteredAt, stableFor;
         private Func<double> engagementRange;
         public IReadOnlyList<AiTransition> Transitions { get; }
+        public AiSettings Settings => context.Settings;
         public LowAiController(PlayerModel player, WorldStore world, NavigationService navigation, AiSettings settings = null, PickupSettings pickupSettings = null)
         {
             this.player = player ?? throw new ArgumentNullException(nameof(player));
@@ -46,7 +47,7 @@ namespace SsalMuk.Core
             if (!collected || player.BrainState != BrainState.Collect) states[(int)player.BrainState].Tick(context, dt);
             player.MoveIntent = context.MoveIntent; player.BreakoutDirection = context.BreakoutDirection;
             player.CollectionTargetId = context.CollectionTargetId;
-            player.TargetId = TargetResolver.Resolve(player, context.World.Query);
+            player.TargetId = TargetResolver.Resolve(player, context.World.Query, context.Settings);
         }
         private void Transition(BrainState next, string reason)
         {

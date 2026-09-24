@@ -8,6 +8,8 @@ namespace SsalMuk.Core
         private readonly RunModel run;
         public GrowthService(RunModel run) => this.run = run ?? throw new ArgumentNullException(nameof(run));
         public void Equip(WeaponKind kind) { RequireActive(); run.Player.Weapons.Equip(kind); }
+        public void UpgradeShared(SharedUpgradeKind kind, BigInteger? count = null)
+        { RequireActive(); run.Player.Upgrades.Upgrade(kind, count ?? BigInteger.One); }
         public void Upgrade(WeaponKind kind, UpgradeKind upgrade, BigInteger? count = null)
         {
             RequireActive(); BigInteger amount = count ?? BigInteger.One;
@@ -16,6 +18,8 @@ namespace SsalMuk.Core
             var state = run.Player.Weapons.Get(kind); BigInteger next = state.GetLevel(upgrade) + amount;
             if (upgrade == UpgradeKind.Repeats && next > WeaponState.MaximumRepeatLevel)
                 throw new InvalidOperationException("Repeat upgrades stop at level two (three strikes per burst).");
+            if (upgrade == UpgradeKind.Copies && next >= WeaponState.MaximumCopies(kind))
+                throw new InvalidOperationException("Copy upgrades cannot exceed this weapon's total copy limit.");
             StatCalculator.Calculate(run.Definitions.GetWeapon(kind), state, run.GrowthSettings, upgrade, next);
             state.SetLevel(upgrade, next);
         }
