@@ -4,6 +4,7 @@ namespace SsalMuk.Core
 {
     public sealed class MovementSettings
     {
+        // Retain the serialized setting's name; it now controls the central soft-separation pass.
         public double CrowdAvoidanceStrength { get; }
         public double DirectionDecisionSeconds { get; }
         public int NavigationNodeBudget { get; }

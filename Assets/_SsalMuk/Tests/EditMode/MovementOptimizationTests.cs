@@ -113,7 +113,25 @@ namespace SsalMuk.Tests
         }
 
         [Test]
-        public void DenseGroundSteeringIsDeterministicAndNeverAddsSpeed()
+        public void SustainedPursuitDoesNotCollapseTheCrowdIntoOnePoint()
+        {
+            using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
+            for (int i = 0; i < 128; i++)
+                rig.Spawn(UnitKind.Normal, new DVec2(4 + i % 16 * .58, (i / 16 - 3.5) * .58));
+            rig.Advance(12);
+            var normals = rig.Run.Units.Where(unit => unit.Kind == UnitKind.Normal).ToArray();
+            var nearest = normals.Select(unit => normals.Where(other => other.Id != unit.Id)
+                .Min(other => unit.Position.DistanceTo(other.Position))).OrderBy(distance => distance).ToArray();
+            double diameter = normals[0].BodyRadius * 2;
+            Assert.That(nearest[nearest.Length / 2], Is.GreaterThan(diameter * .67));
+            Assert.That(normals.Count(unit => unit.Position.DistanceTo(rig.Player.Position) < diameter), Is.LessThanOrEqualTo(12));
+            Assert.That(normals.Min(unit => unit.Position.DistanceTo(rig.Player.Position)), Is.LessThan(diameter),
+                "Contact must retain tangential travel so the front of the crowd can reach the player.");
+            Assert.That(normals.Length, Is.EqualTo(128));
+        }
+
+        [Test]
+        public void DenseGroundSeparationIsDeterministicAndHasBoundedPushSpeed()
         {
             using var first = RunTestRig.Create(enableAi: false, enableCombat: false);
             using var second = RunTestRig.Create(enableAi: false, enableCombat: false);
@@ -132,7 +150,7 @@ namespace SsalMuk.Tests
             foreach (var unit in first.World.Units.Units.Where(candidate => candidate.Kind == UnitKind.Normal))
             {
                 Assert.That(unit.Position, Is.EqualTo(second.Unit(unit.Id).Position));
-                Assert.That(first.Movement.PreviousPositions[unit.Id].DistanceTo(unit.Position), Is.LessThanOrEqualTo(0.03 + 1e-9));
+                Assert.That(first.Movement.PreviousPositions[unit.Id].DistanceTo(unit.Position), Is.LessThanOrEqualTo(0.075 + 1e-9));
             }
         }
     }

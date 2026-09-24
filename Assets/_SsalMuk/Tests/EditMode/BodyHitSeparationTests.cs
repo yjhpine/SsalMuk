@@ -76,7 +76,7 @@ namespace SsalMuk.Tests
             var definition = new UnitDefinition("radii", UnitKind.Normal, 10, 1, .26, 5, BigInteger.One, .3575, .2);
             var scaled = new DifficultyCurve(new SpawnSettings()).AtSpawn(definition, 300);
             Assert.That(scaled.BodyRadius, Is.EqualTo(.26)); Assert.That(scaled.HurtRadius, Is.EqualTo(.3575));
-            Assert.That(scaled.VisualFootOffset, Is.EqualTo(.2)); Assert.That(scaled.MaxHealth, Is.EqualTo(20));
+            Assert.That(scaled.VisualFootOffset, Is.EqualTo(.2)); Assert.That(scaled.MaxHealth, Is.EqualTo(22.5));
             Assert.Throws<ArgumentOutOfRangeException>(() => new UnitDefinition("bad", UnitKind.Normal, 10, 1, .26, 5, BigInteger.One, -1));
         }
 

@@ -12,7 +12,9 @@ namespace SsalMuk.Core
         private readonly SharedPlayerPosition playerPosition = new SharedPlayerPosition();
         private readonly int seed;
         private readonly MovementSettings settings;
+        private readonly CrowdSolver crowds;
         private readonly List<UnitModel> units = new List<UnitModel>();
+        private readonly HashSet<long> knockedBackThisStep = new HashSet<long>();
         private readonly Dictionary<long, DVec2> intents = new Dictionary<long, DVec2>();
         private readonly Dictionary<long, EnemyFsm> enemies = new Dictionary<long, EnemyFsm>();
         private readonly Dictionary<long, WorldPosition> previousPositions = new Dictionary<long, WorldPosition>();
@@ -30,6 +32,7 @@ namespace SsalMuk.Core
             this.player = player ?? throw new ArgumentNullException(nameof(player));
             if (player.RunId != world.Units.RunId) throw new ArgumentException("Player belongs to a different run.", nameof(player));
             this.settings = settings ?? new MovementSettings(); this.seed = seed; playerPosition.Refresh(player);
+            crowds = new CrowdSolver(this.settings);
             navigation.ConfigureDirectionCadence(this.settings.DirectionDecisionSeconds);
             PreviousPositions = new ReadOnlyDictionary<long, WorldPosition>(previousPositions);
             world.Units.Removed += Forget;
@@ -58,12 +61,13 @@ namespace SsalMuk.Core
             if (dt <= 0 || double.IsNaN(dt) || double.IsInfinity(dt)) throw new ArgumentOutOfRangeException(nameof(dt));
             navigation.AdvanceTime(dt); navigation.Advance(settings.NavigationNodeBudget);
             units.Clear(); units.AddRange(world.Units.Units); units.Sort((a, b) => a.Id.CompareTo(b.Id));
-            playerPosition.Refresh(player); previousPositions.Clear();
+            playerPosition.Refresh(player); previousPositions.Clear(); knockedBackThisStep.Clear();
             foreach (var unit in units)
             {
                 previousPositions[unit.Id] = unit.Position;
                 unit.PreviousPosition = unit.Position;
             }
+            crowds.BeginStep(units);
             foreach (var unit in units)
             {
                 enemies.TryGetValue(unit.Id, out var fsm); fsm?.Tick(dt);
@@ -73,6 +77,7 @@ namespace SsalMuk.Core
                 else if (intents.TryGetValue(unit.Id, out var input)) direction = input;
                 else direction = fsm?.MoveIntent ?? DVec2.Zero;
                 var knockback = unit.Knockback;
+                if (knockback.IsActive) knockedBackThisStep.Add(unit.Id);
                 double pushedSeconds = knockback.IsActive ? Math.Min(dt, knockback.RemainingSeconds) : 0;
                 double movementSeconds = unit.Kind == UnitKind.Player ? dt : dt - pushedSeconds;
                 if (fsm != null && knockback.IsActive && movementSeconds > 0)
@@ -88,6 +93,8 @@ namespace SsalMuk.Core
                 if (unit.Kind == UnitKind.Air) world.MoveUnit(unit.Id, unit.Position.Offset(displacement));
                 else
                 {
+                    if (unit.Kind == UnitKind.Normal && !knockback.IsActive)
+                        displacement = crowds.ConstrainNormalMovement(unit, displacement);
                     var destination = CircleSweep.MoveAndSlide(world.Query, unit.Position, displacement, unit.BodyRadius, settings.SlideContacts);
                     var actual = unit.Position.DisplacementTo(destination);
                     world.MoveUnit(unit.Id, destination);
@@ -96,6 +103,7 @@ namespace SsalMuk.Core
                 }
                 if (knockback.IsActive && !unit.Knockback.IsActive) navigation.InvalidateDirection(unit.Id);
             }
+            crowds.Resolve(world, units, knockedBackThisStep, dt);
             MaximumDisplacement = 0;
             foreach (var unit in units) MaximumDisplacement = Math.Max(MaximumDisplacement, previousPositions[unit.Id].DistanceTo(unit.Position));
         }

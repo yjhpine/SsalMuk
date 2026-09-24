@@ -102,8 +102,8 @@ MonoBehaviour:
   redExperienceThreshold: 25
   acquisitionWeight: 1
   upgradeWeight: 3
-  normalBaseRate: 1
-  normalRateGrowth: 0.008333333333333333
+  normalBaseRate: 1.5
+  normalRateGrowth: 0.0125
   normalPopulationCap: 500
   airInterval: 20
   airBaseCount: 8

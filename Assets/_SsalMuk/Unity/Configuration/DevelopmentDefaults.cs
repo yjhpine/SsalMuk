@@ -28,8 +28,8 @@ namespace SsalMuk.Unity
         [SerializeField] private string redExperienceThreshold = "25";
         [SerializeField] private double acquisitionWeight = 1;
         [SerializeField] private double upgradeWeight = 3;
-        [SerializeField] private double normalBaseRate = 1;
-        [SerializeField] private double normalRateGrowth = 1.0 / 120;
+        [SerializeField] private double normalBaseRate = 1.5;
+        [SerializeField] private double normalRateGrowth = 1.0 / 80;
         [SerializeField, Min(1)] private int normalPopulationCap = 500;
         [SerializeField] private double airInterval = 20;
         [SerializeField] private int airBaseCount = 8;

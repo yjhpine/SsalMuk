@@ -43,8 +43,8 @@ namespace SsalMuk.Tests
         public void SpawnRateIntegratesTheRisingRateAndDifficultyDoesNotMutateOldDefinitions()
         {
             var curve = new DifficultyCurve(new SpawnSettings());
-            Assert.That(curve.NormalDeadline(180), Is.EqualTo(120).Within(1e-8));
-            Assert.That(curve.NormalDeadline(480), Is.EqualTo(240).Within(1e-8));
+            Assert.That(curve.NormalDeadline(270), Is.EqualTo(120).Within(1e-8));
+            Assert.That(curve.NormalDeadline(720), Is.EqualTo(240).Within(1e-8));
             Assert.That(curve.NormalDeadline(2) - curve.NormalDeadline(1), Is.GreaterThan(curve.NormalDeadline(480) - curve.NormalDeadline(479)));
             Assert.That(curve.AirCount(20), Is.EqualTo(8)); Assert.That(curve.AirCount(120), Is.EqualTo(9));
             using var rig = RunTestRig.Create(); var baseline = rig.Run.Definitions.GetUnit(UnitKind.Boss); var atFive = curve.AtSpawn(baseline, 300);

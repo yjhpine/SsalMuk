@@ -1,7 +1,9 @@
 using System.Collections;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using SsalMuk.Core;
+using SsalMuk.Presentation;
 using SsalMuk.Unity;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -17,6 +19,38 @@ namespace SsalMuk.Tests
             if (AppRoot.Instance != null) Object.Destroy(AppRoot.Instance.gameObject);
             yield return null; yield return null;
         }
+        [UnityTest]
+        public IEnumerator RealAirWaveRendersThreeLongLanes()
+        {
+            yield return SceneManager.LoadSceneAsync(AppRoot.MainMenuScenePath); yield return null;
+            var app = AppRoot.Instance; app.Menu.StartButton.onClick.Invoke();
+            double deadline = Time.realtimeSinceStartupAsDouble + 20;
+            while (app.Coordinator.Phase != RunPhase.Running && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+            Assert.That(app.Coordinator.Phase, Is.EqualTo(RunPhase.Running));
+            var run = app.Coordinator.Run; var runner = Object.FindAnyObjectByType<BattleRunner>(); runner.enabled = false;
+            var movement = (MovementSystem)typeof(RunSimulation).GetField("movement",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(runner.Simulation);
+            movement.SetMoveIntent(run.Player.Id, DVec2.Zero);
+            var camera = Camera.main;
+            runner.Simulation.Spawns.Tick(20, new WorldRect(run.Player.Position, camera.orthographicSize * camera.aspect, camera.orthographicSize));
+            var air = run.Units.OfType<AirEnemyModel>().ToArray(); Assert.That(air.Length, Is.EqualTo(8));
+            // Isolate the real spawned formation for visual inspection, then advance its existing movement service.
+            foreach (var unit in run.Units.Where(unit => unit.Kind == UnitKind.Normal).ToArray()) run.World.Units.Remove(unit.Id);
+            var direction = air[0].OriginalDirection;
+            double distance = -air.Average(unit => DVec2.Dot(run.Player.Position.DisplacementTo(unit.Position), direction));
+            int steps = (int)System.Math.Round(distance / (air[0].MoveSpeed * .02));
+            for (int i = 0; i < steps; i++) movement.Step(.02);
+            var view = Object.FindAnyObjectByType<WorldView>(); new WorldPresenter(view).Refresh(run);
+            yield return null;
+            Assert.That(view.VisibleUnitCount, Is.EqualTo(9));
+            var across = new DVec2(-direction.Y, direction.X);
+            Assert.That(air.Select(unit => System.Math.Round(DVec2.Dot(air[0].Position.DisplacementTo(unit.Position), across), 6)).Distinct().Count(), Is.EqualTo(3));
+            string directory = Path.GetFullPath(Path.Combine(Application.dataPath, "../Logs/Validation/AirFormation", run.Id.ToString("N")));
+            Directory.CreateDirectory(directory); ScreenCapture.CaptureScreenshot(Path.Combine(directory, "three-lanes.png"));
+            yield return new WaitForEndOfFrame();
+            TestContext.WriteLine("Air formation screenshot: " + directory);
+        }
+
         [UnityTest]
         public IEnumerator RealBattleConnectsCameraBoundsAndIndependentBossDeadlines()
         {

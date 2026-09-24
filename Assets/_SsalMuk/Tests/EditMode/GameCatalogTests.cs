@@ -63,6 +63,21 @@ namespace SsalMuk.Tests
         }
 
         [Test]
+        public void PresetAndActiveCatalogIncreaseOrdinarySpawnRateByHalf()
+        {
+            foreach (var defaults in new[] { definitions, Resources.Load<GameCatalog>("Bootstrap/GameCatalog").Defaults })
+            {
+                var spawns = defaults.CreateSpawnSettings();
+                Assert.That(spawns.NormalBaseRate, Is.EqualTo(1.5));
+                Assert.That(spawns.NormalRateGrowth, Is.EqualTo(.0125).Within(1e-12));
+                Assert.That(spawns.NormalPopulationCap, Is.EqualTo(500));
+                Assert.That(spawns.AirBaseCount, Is.EqualTo(8));
+                Assert.That(spawns.AirInterval, Is.EqualTo(20));
+                Assert.That(defaults.InitialEnemyCount, Is.EqualTo(12));
+            }
+        }
+
+        [Test]
         public void MissingOrDuplicatedDisplayReferencesAreRejected()
         {
             Assert.Throws<ArgumentException>(() => catalog.Configure(null, prefab, Visuals()));
