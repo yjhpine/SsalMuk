@@ -7,30 +7,40 @@ namespace SsalMuk.Core
     {
         private readonly PlayerModel player;
         private readonly AiContext context;
-        private readonly IBehaviorState[] states = { new CollectState(), new EvadeState(), new BreakoutState() };
+        private readonly IBehaviorState[] states;
+        private readonly LootRecovery recovery = new LootRecovery();
+        private readonly CollectState collection;
         private readonly List<AiTransition> transitions = new List<AiTransition>();
         private double enteredAt, stableFor;
         private Func<double> engagementRange;
         public IReadOnlyList<AiTransition> Transitions { get; }
         public AiSettings Settings => context.Settings;
+        public CollectionTactic CollectionTactic => recovery.Tactic;
+        public long? RememberedExperienceId => recovery.TargetId;
+        public int CollectionPlanCount => collection.PlanCount;
+        public int CollectionAreaRiskEvaluations => collection.AreaRiskEvaluations;
         public LowAiController(PlayerModel player, WorldStore world, NavigationService navigation, AiSettings settings = null, PickupSettings pickupSettings = null)
         {
             this.player = player ?? throw new ArgumentNullException(nameof(player));
             context = new AiContext(player, world, navigation, settings ?? new AiSettings(), pickupSettings);
+            collection = new CollectState(recovery);
+            states = new IBehaviorState[] { collection, new EvadeState(), new BreakoutState() };
             Transitions = transitions.AsReadOnly(); states[0].Enter(context);
         }
         public void ConfigureEngagementRange(Func<double> range) => engagementRange = range ?? throw new ArgumentNullException(nameof(range));
         public void Tick(double dt)
         {
             if (dt <= 0 || double.IsNaN(dt) || double.IsInfinity(dt)) throw new ArgumentOutOfRangeException(nameof(dt));
-            if (!player.IsAlive) { player.MoveIntent = DVec2.Zero; player.TargetId = null; return; }
+            if (!player.IsAlive) { player.MoveIntent = DVec2.Zero; player.TargetId = null; player.CollectionTargetId = null; recovery.Clear(); return; }
             context.Observe(dt);
+            collection.Observe(context);
             if (engagementRange != null) context.EngagementRange = engagementRange();
             bool collected = player.BrainState == BrainState.Collect;
             // Predict contact using this tick's approach/braking, not last tick's full-speed chase.
             if (collected) states[(int)BrainState.Collect].Tick(context, dt);
             double blocked = context.BlockedFraction(); bool imminent = context.ImminentContact();
-            if (player.BrainState == BrainState.Breakout)
+            if (context.ImminentCharge()) { stableFor = 0; Transition(BrainState.Evade, "Boss charge lane is dangerous."); }
+            else if (player.BrainState == BrainState.Breakout)
             {
                 stableFor = blocked <= context.Settings.ReleaseBlockedFraction ? stableFor + dt : 0;
                 if (stableFor >= context.Settings.ReleaseStableSeconds && context.Time - enteredAt >= context.Settings.MinimumHoldSeconds)
@@ -45,6 +55,7 @@ namespace SsalMuk.Core
                     Transition(BrainState.Collect, "Contact risk stayed low.");
             }
             if (!collected || player.BrainState != BrainState.Collect) states[(int)player.BrainState].Tick(context, dt);
+            if (player.BrainState != BrainState.Collect) recovery.TrackEscape(context);
             player.MoveIntent = context.MoveIntent; player.BreakoutDirection = context.BreakoutDirection;
             player.CollectionTargetId = context.CollectionTargetId;
             player.TargetId = TargetResolver.Resolve(player, context.World.Query, context.Settings);
@@ -52,6 +63,7 @@ namespace SsalMuk.Core
         private void Transition(BrainState next, string reason)
         {
             var previous = player.BrainState; if (previous == next) return;
+            if (next != BrainState.Collect && previous == BrainState.Collect) recovery.Interrupt(context);
             states[(int)previous].Exit(context); player.BrainState = next;
             enteredAt = context.Time; stableFor = 0;
             if (transitions.Count == 64) transitions.RemoveAt(0);

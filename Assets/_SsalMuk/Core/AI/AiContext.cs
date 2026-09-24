@@ -7,8 +7,14 @@ namespace SsalMuk.Core
     public sealed class AiContext
     {
         private Dictionary<long, WorldPosition> previous = new Dictionary<long, WorldPosition>();
+        private Dictionary<long, WorldPosition> next = new Dictionary<long, WorldPosition>();
         private readonly List<UnitModel> enemies = new List<UnitModel>();
+        private readonly List<long> nearbyIds = new List<long>();
+        private readonly Dictionary<long, DVec2> relatives = new Dictionary<long, DVec2>();
         private readonly Dictionary<long, DVec2> velocities = new Dictionary<long, DVec2>();
+        private readonly List<Threat> threats = new List<Threat>();
+        private readonly List<ChargeLane> chargeLanes = new List<ChargeLane>();
+        private readonly DVec2[] directions;
         public UnitModel Actor { get; }
         public WorldStore World { get; }
         public NavigationService Navigation { get; }
@@ -30,6 +36,9 @@ namespace SsalMuk.Core
             World = world ?? throw new ArgumentNullException(nameof(world));
             Navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
             Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            directions = new DVec2[settings.DirectionCount];
+            for (int i = 0; i < directions.Length; i++)
+            { double angle = i * Math.PI * 2 / directions.Length; directions[i] = new DVec2(Math.Cos(angle), Math.Sin(angle)); }
             PickupSettings = pickupSettings ?? PickupSettings.TestDefaults(); PickupSettings.ValidateForPlayer(actor.BodyRadius);
             FollowTarget = followTarget;
             if (actor.RunId != world.Units.RunId) throw new ArgumentException("Actor belongs to a different world.");
@@ -37,28 +46,30 @@ namespace SsalMuk.Core
 
         internal void Observe(double dt)
         {
-            Time += dt; enemies.Clear(); velocities.Clear(); EngagementTarget = null;
+            Time += dt; enemies.Clear(); velocities.Clear(); relatives.Clear(); threats.Clear(); chargeLanes.Clear(); next.Clear(); EngagementTarget = null;
             double bestScore = double.PositiveInfinity;
-            var next = new Dictionary<long, WorldPosition>();
-            foreach (long id in World.Query.QueryCircle(Actor.Position, Settings.SearchDistance))
+            World.Query.QueryCircle(Actor.Position, Settings.SearchDistance, nearbyIds);
+            foreach (long id in nearbyIds)
             {
                 if (!World.Units.TryGet(id, out var enemy) || enemy.Kind == UnitKind.Player || !enemy.IsAlive) continue;
                 enemies.Add(enemy);
+                var relative = Actor.Position.DisplacementTo(enemy.Position);
+                relatives[id] = relative;
                 velocities[id] = previous.TryGetValue(id, out var position) ? position.DisplacementTo(enemy.Position) / dt :
-                    enemy.Position.DisplacementTo(Actor.Position).Normalized * enemy.MoveSpeed;
-                double score = TargetResolver.WeightedDistance(Actor, enemy, Settings);
+                    -relative.Normalized * enemy.MoveSpeed;
+                threats.Add(new Threat { Position = relative, Velocity = velocities[id], Radius = Actor.BodyRadius + enemy.BodyRadius });
+                if (enemy is GroundEnemyModel ground && ground.Charge != null && ground.Charge.HasSuperArmor)
+                    chargeLanes.Add(new ChargeLane { Start = relative, End = Actor.Position.DisplacementTo(ground.Charge.End), Radius = Actor.BodyRadius + enemy.BodyRadius + .15 });
+                double score = relative.Length / (enemy.Kind == UnitKind.Boss ? Settings.BossTargetWeight : 1);
                 if (score < bestScore || (score == bestScore && (EngagementTarget == null || enemy.Id < EngagementTarget.Id)))
                 { EngagementTarget = enemy; bestScore = score; }
                 next[id] = enemy.Position;
             }
-            previous = next;
+            var swap = previous; previous = next; next = swap;
         }
 
-        public DVec2 Direction(int index)
-        {
-            double angle = index * Math.PI * 2 / Settings.DirectionCount;
-            return new DVec2(Math.Cos(angle), Math.Sin(angle));
-        }
+        public DVec2 Direction(int index) => directions[index];
+        public DVec2 RelativeTo(UnitModel enemy) => relatives.TryGetValue(enemy.Id, out var relative) ? relative : Actor.Position.DisplacementTo(enemy.Position);
 
         public bool CanMove(DVec2 direction, double distance) => !World.Query.SweepCircle(Actor.Position, direction * distance, Actor.BodyRadius).HasValue;
 
@@ -94,7 +105,7 @@ namespace SsalMuk.Core
 
         public bool InCorridor(UnitModel enemy, DVec2 direction, double reach)
         {
-            var relative = Actor.Position.DisplacementTo(enemy.Position);
+            var relative = RelativeTo(enemy);
             double along = DVec2.Dot(relative, direction);
             double width = Actor.BodyRadius + enemy.BodyRadius + 0.08;
             return along >= 0 && along <= reach + enemy.BodyRadius && (relative - direction * along).Length <= width;
@@ -105,18 +116,18 @@ namespace SsalMuk.Core
             var ownVelocity = MoveIntent * Actor.MoveSpeed;
             double horizon = Settings.EmergencyContactSeconds;
             double protectedFor = Math.Max(0, Actor.InvulnerableUntil - Time);
-            foreach (var enemy in enemies)
-                if (CircleContact.Interval(Actor.Position.DisplacementTo(enemy.Position), (velocities[enemy.Id] - ownVelocity) * horizon,
-                    Actor.BodyRadius + enemy.BodyRadius, out _, out double exit) && exit * horizon >= protectedFor) return true;
+            foreach (var threat in threats)
+                if (CircleContact.Interval(threat.Position, (threat.Velocity - ownVelocity) * horizon,
+                    threat.Radius, out _, out double exit) && exit * horizon >= protectedFor) return true;
             return false;
         }
 
         public double RiskAt(DVec2 offset)
         {
             double risk = 0;
-            foreach (var enemy in enemies)
+            foreach (var threat in threats)
             {
-                double clearance = (Actor.Position.DisplacementTo(enemy.Position) - offset).Length - Actor.BodyRadius - enemy.BodyRadius;
+                double clearance = (threat.Position - offset).Length - threat.Radius;
                 risk += 1 / Math.Max(0.05, clearance + 0.2);
             }
             return risk;
@@ -125,14 +136,34 @@ namespace SsalMuk.Core
         public double EscapeRisk(DVec2 direction)
         {
             double score = RiskAt(direction * (Actor.MoveSpeed * Settings.EmergencyContactSeconds));
-            foreach (var enemy in enemies)
+            foreach (var threat in threats)
             {
-                double time = ContactTime(Actor.Position.DisplacementTo(enemy.Position),
-                    velocities[enemy.Id] - direction * Actor.MoveSpeed, Actor.BodyRadius + enemy.BodyRadius);
+                double time = ContactTime(threat.Position, threat.Velocity - direction * Actor.MoveSpeed, threat.Radius);
                 if (time <= Settings.EmergencyContactSeconds) score += 50 * (1 + Settings.EmergencyContactSeconds - time);
             }
+            var offset = direction * (Actor.MoveSpeed * Settings.EmergencyContactSeconds);
+            foreach (var lane in chargeLanes) score += 1000 / (.1 + LaneDistance(lane, offset));
             return score;
         }
+
+        public bool ImminentCharge()
+        {
+            var offset = MoveIntent * (Actor.MoveSpeed * Settings.EmergencyContactSeconds);
+            foreach (var lane in chargeLanes)
+                if (LaneDistance(lane, DVec2.Zero) <= lane.Radius || LaneDistance(lane, offset) <= lane.Radius) return true;
+            return false;
+        }
+
+        private static double LaneDistance(ChargeLane lane, DVec2 point)
+        {
+            var segment = lane.End - lane.Start;
+            double lengthSquared = DVec2.Dot(segment, segment);
+            double along = lengthSquared < 1e-12 ? 0 : Math.Max(0, Math.Min(1, DVec2.Dot(point - lane.Start, segment) / lengthSquared));
+            return (point - lane.Start - segment * along).Length;
+        }
+
+        private struct Threat { public DVec2 Position, Velocity; public double Radius; }
+        private struct ChargeLane { public DVec2 Start, End; public double Radius; }
 
         private static double ContactTime(DVec2 position, DVec2 velocity, double radius)
         {

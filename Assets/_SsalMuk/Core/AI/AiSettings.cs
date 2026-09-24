@@ -17,14 +17,16 @@ namespace SsalMuk.Core
         public double DistanceWeight { get; }
         public double BossTargetWeight { get; }
         public int ExperiencePriorityThreshold { get; }
+        public double CollectionPlanSeconds { get; }
 
         public AiSettings(double searchDistance = 12, double emergencyContactSeconds = 0.35, int directionCount = 16,
             double probeDistance = 2.4, double enterBlockedFraction = 0.7, double releaseBlockedFraction = 0.35,
             double minimumHoldSeconds = 0.45, double releaseStableSeconds = 0.45, double noProgressSeconds = 0.8,
-            double riskWeight = 2, double distanceWeight = 1, double bossTargetWeight = 3, int experiencePriorityThreshold = 8)
+            double riskWeight = 2, double distanceWeight = 1, double bossTargetWeight = 3, int experiencePriorityThreshold = 8,
+            double collectionPlanSeconds = .2)
         {
             foreach (double value in new[] { searchDistance, emergencyContactSeconds, probeDistance, minimumHoldSeconds,
-                releaseStableSeconds, noProgressSeconds, riskWeight, distanceWeight, bossTargetWeight })
+                releaseStableSeconds, noProgressSeconds, riskWeight, distanceWeight, bossTargetWeight, collectionPlanSeconds })
                 if (value <= 0 || double.IsNaN(value) || double.IsInfinity(value)) throw new ArgumentOutOfRangeException(nameof(value));
             if (directionCount < 4 || directionCount > 128) throw new ArgumentOutOfRangeException(nameof(directionCount));
             if (experiencePriorityThreshold < 1) throw new ArgumentOutOfRangeException(nameof(experiencePriorityThreshold));
@@ -35,6 +37,7 @@ namespace SsalMuk.Core
             MinimumHoldSeconds = minimumHoldSeconds; ReleaseStableSeconds = releaseStableSeconds; NoProgressSeconds = noProgressSeconds;
             RiskWeight = riskWeight; DistanceWeight = distanceWeight;
             BossTargetWeight = bossTargetWeight; ExperiencePriorityThreshold = experiencePriorityThreshold;
+            CollectionPlanSeconds = collectionPlanSeconds;
         }
     }
 }
