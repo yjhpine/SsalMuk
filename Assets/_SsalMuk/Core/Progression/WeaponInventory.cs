@@ -18,10 +18,11 @@ namespace SsalMuk.Core
             states.Add(kind, new WeaponState(kind)); kinds.Add(kind); OwnershipVersion = next;
         }
 
-        internal WeaponInventory()
+        internal WeaponInventory(WeaponKind startingWeapon = WeaponKind.Sword)
         {
-            states.Add(WeaponKind.Sword, new WeaponState(WeaponKind.Sword));
-            kinds.Add(WeaponKind.Sword);
+            if (!Enum.IsDefined(typeof(WeaponKind), startingWeapon)) throw new ArgumentOutOfRangeException(nameof(startingWeapon));
+            states.Add(startingWeapon, new WeaponState(startingWeapon));
+            kinds.Add(startingWeapon);
             Kinds = kinds.AsReadOnly();
         }
 

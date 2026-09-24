@@ -13,12 +13,12 @@ namespace SsalMuk.Presentation
             this.view = view ?? throw new ArgumentNullException(nameof(view));
             view.StartRequested += Start; coordinator.PhaseChanged += Refresh; Refresh(coordinator.Phase);
         }
-        private async void Start() { await coordinator.StartRunAsync(); }
+        private async void Start() { await coordinator.StartRunAsync(view.SelectedWeapon); }
         private void Refresh(RunPhase phase)
         {
             bool menu = phase == RunPhase.MainMenu;
             view.Show(phase != RunPhase.Running && phase != RunPhase.Results && phase != RunPhase.Disposed, menu,
-                !string.IsNullOrEmpty(coordinator.LastError) ? "시작 준비에 실패했습니다. 다시 시도해 주세요." : menu ? "준비가 되면 시작하세요." : "월드를 준비하고 있습니다…");
+                !string.IsNullOrEmpty(coordinator.LastError) ? "시작 준비에 실패했습니다. 다시 시도해 주세요." : menu ? "시작할 무기를 고른 뒤 게임을 시작하세요." : "월드를 준비하고 있습니다…");
         }
         public void Dispose() { view.StartRequested -= Start; coordinator.PhaseChanged -= Refresh; }
     }

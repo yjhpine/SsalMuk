@@ -16,7 +16,7 @@ namespace SsalMuk.Presentation
         public void Refresh(RunModel run)
         {
             var offer = run?.CurrentOffer;
-            if (run == null || run.Phase != RunPhase.Running || offer == null)
+            if (run == null || run.Phase != RunPhase.Running || run.IsPaused || offer == null)
             { shownRun = null; shownOffer = null; view.Show(false, false, "", titles, descriptions); return; }
             if (!ReferenceEquals(offer, shownOffer))
             {

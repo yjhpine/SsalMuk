@@ -35,12 +35,13 @@ namespace SsalMuk.Core
         }
         public bool TryQueueChoice(Guid runId, long offerId, int slot)
         {
-            if (queued.HasValue || CurrentOffer == null) return false;
+            if (run.IsPaused || queued.HasValue || CurrentOffer == null) return false;
             var command = new RewardCommand(runId, offerId, slot, CurrentOffer.OwnershipVersion);
             if (!IsValid(command)) return false; queued = command; return true;
         }
         public void Step()
         {
+            if (run.IsPaused) return;
             var command = queued; queued = null;
             if (command.HasValue && IsValid(command.Value))
             {
@@ -53,6 +54,7 @@ namespace SsalMuk.Core
         }
         public void RefreshOffer()
         {
+            if (run.IsPaused) return;
             if (!IsActive || run.Player.Growth.PendingChoices <= 0) { CurrentOffer = null; return; }
             if (OfferStillAvailable()) return;
             long next = checked(lastOfferId + 1);

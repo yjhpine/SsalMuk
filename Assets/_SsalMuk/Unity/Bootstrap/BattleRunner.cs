@@ -18,7 +18,7 @@ namespace SsalMuk.Unity
         { this.run = run; this.simulation = simulation; this.presenter = presenter; this.prepareTerrain = prepareTerrain; }
         private void FixedUpdate()
         {
-            if (run == null || run.Phase != RunPhase.Running) return;
+            if (run == null || run.Phase != RunPhase.Running || run.IsPaused) return;
             if (battleCamera == null) battleCamera = Camera.main;
             if (battleCamera != null)
             {
@@ -33,7 +33,7 @@ namespace SsalMuk.Unity
         }
         private void LateUpdate()
         {
-            if (run == null || run.Phase != RunPhase.Running) return;
+            if (run == null || run.Phase != RunPhase.Running || run.IsPaused) return;
             prepareTerrain();
             double alpha = Math.Max(0, Math.Min(1, (Time.timeAsDouble - Time.fixedTimeAsDouble) / run.Clock.FixedStep));
             double radius = battleCamera != null ? battleCamera.orthographicSize * Math.Sqrt(1 + battleCamera.aspect * battleCamera.aspect) + 1.5 : 22;

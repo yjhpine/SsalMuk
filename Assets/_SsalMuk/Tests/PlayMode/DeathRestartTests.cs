@@ -21,6 +21,58 @@ namespace SsalMuk.Tests
             yield return null; yield return null;
         }
         [UnityTest]
+        public IEnumerator MainMenuOffersAllStartingWeaponsAndHorizontalActions()
+        {
+            yield return SceneManager.LoadSceneAsync(AppRoot.MainMenuScenePath); yield return null;
+            var app = AppRoot.Instance;
+            foreach (WeaponKind kind in System.Enum.GetValues(typeof(WeaponKind)))
+                Assert.That(app.Menu.GetComponentsInChildren<UnityEngine.UI.Button>(true)
+                    .SingleOrDefault(button => button.name == "StartWeapon_" + kind), Is.Not.Null, "Missing starting weapon: " + kind);
+            var settings = app.Menu.GetComponentsInChildren<UnityEngine.UI.Button>(true).SingleOrDefault(button => button.name == "Settings");
+            var quit = app.Menu.GetComponentsInChildren<UnityEngine.UI.Button>(true).SingleOrDefault(button => button.name == "Quit");
+            Assert.That(settings, Is.Not.Null); Assert.That(quit, Is.Not.Null);
+            Canvas.ForceUpdateCanvases();
+            Assert.That(settings.transform.position.x, Is.GreaterThan(app.Menu.StartButton.transform.position.x));
+            Assert.That(quit.transform.position.x, Is.GreaterThan(settings.transform.position.x));
+            Assert.That(settings.transform.position.y, Is.EqualTo(app.Menu.StartButton.transform.position.y).Within(1));
+            Assert.That(quit.transform.position.y, Is.EqualTo(settings.transform.position.y).Within(1));
+        }
+        [UnityTest]
+        public IEnumerator MenuChoiceStartsOnlyThatWeaponAndRestartKeepsChoiceWithFreshGrowth()
+        {
+            yield return SceneManager.LoadSceneAsync(AppRoot.MainMenuScenePath); yield return null;
+            var app = AppRoot.Instance;
+            string evidence = Path.Combine(Application.dataPath, "../Logs/Validation/StartingWeapon", System.Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(evidence);
+            foreach (WeaponKind kind in System.Enum.GetValues(typeof(WeaponKind)))
+            {
+                var choice = app.Menu.GetComponentsInChildren<UnityEngine.UI.Button>(true).Single(button => button.name == "StartWeapon_" + kind);
+                choice.onClick.Invoke(); Assert.That(app.Menu.SelectedWeapon, Is.EqualTo(kind));
+                if (kind == WeaponKind.Fireball) yield return Capture(Path.Combine(evidence, "main-menu.png"));
+                app.Menu.StartButton.onClick.Invoke(); yield return WaitFor(app, RunPhase.Running);
+                var run = app.Coordinator.Run;
+                Assert.That(run.Player.Weapons.Kinds, Is.EqualTo(new[] { kind }));
+                var runner = Object.FindAnyObjectByType<BattleRunner>(); runner.enabled = false;
+                var target = new UnitDefinition("starter-target", UnitKind.Normal, 10000, .01, .26, 0, 1);
+                new GroundEnemyFactory(run.World.Units).Spawn(new UnitSpawnRequest(run.Id, UnitKind.Normal, run.Player.Position.Offset(new DVec2(1.4, 0)), target));
+                runner.Simulation.Step(1);
+                foreach (WeaponKind weapon in System.Enum.GetValues(typeof(WeaponKind)))
+                    Assert.That(runner.Simulation.Weapons[weapon].LaunchCount, weapon == kind ? Is.GreaterThan(0) : Is.EqualTo(0), weapon.ToString());
+                if (kind == WeaponKind.Fireball)
+                {
+                    new GrowthService(run).Upgrade(kind, UpgradeKind.Damage, 3);
+                    var oldId = run.Id; runner.enabled = true; SpawnContact(run, 1000);
+                    yield return WaitFor(app, RunPhase.Results);
+                    app.Results.RestartButton.onClick.Invoke(); yield return WaitFor(app, RunPhase.Running);
+                    Assert.That(app.Coordinator.Run.Id, Is.Not.EqualTo(oldId));
+                    Assert.That(app.Coordinator.Run.Player.Weapons.Kinds, Is.EqualTo(new[] { kind }));
+                    Assert.That(app.Coordinator.Run.Player.Weapons.Get(kind).GetLevel(UpgradeKind.Damage), Is.EqualTo(BigInteger.Zero));
+                    Assert.That(app.Coordinator.Run.Player.Level, Is.EqualTo(BigInteger.One));
+                }
+                _ = app.Coordinator.ReturnToMenuAsync(); yield return WaitFor(app, RunPhase.MainMenu);
+            }
+        }
+        [UnityTest]
         public IEnumerator RealContactShowsHudAndResultsThenButtonsStartCleanRuns()
         {
             yield return SceneManager.LoadSceneAsync(AppRoot.MainMenuScenePath); yield return null;

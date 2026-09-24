@@ -48,5 +48,21 @@ namespace SsalMuk.Unity
             fill.gameObject.AddComponent<Image>().color = color; return fill;
         }
         internal static void Fill(RectTransform rect, double value) => rect.anchorMax = new Vector2(Mathf.Clamp01((float)value), 1);
+        internal static void Secondary(UnityEngine.UI.Button button)
+        {
+            button.targetGraphic.color = new Color32(34, 53, 60, 255);
+            button.GetComponentInChildren<UnityEngine.UI.Text>().color = Color.white;
+        }
+        internal static Canvas Modal(Transform parent, string name, Font font, string title, int order)
+        {
+            var canvas = Canvas(parent, name, order);
+            var dim = Rect(canvas.transform, "Backdrop", Vector2.zero, Vector2.zero, Vector2.zero);
+            dim.anchorMax = Vector2.one; dim.offsetMin = dim.offsetMax = Vector2.zero;
+            dim.gameObject.AddComponent<UnityEngine.UI.Image>().color = new Color(0.015f, .025f, .035f, .85f);
+            var panel = Rect(canvas.transform, "Panel", new Vector2(540, 400), new Vector2(.5f, .5f), Vector2.zero);
+            panel.gameObject.AddComponent<UnityEngine.UI.Image>().color = Ink;
+            Label(canvas.transform, "Heading", font, title, 34, Color.white, new Vector2(480, 60), new Vector2(.5f, .5f), new Vector2(0, 135));
+            return canvas;
+        }
     }
 }

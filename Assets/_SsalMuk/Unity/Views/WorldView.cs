@@ -9,6 +9,7 @@ namespace SsalMuk.Unity
     public sealed class WorldView : MonoBehaviour, ICombatWorldView, IItemWorldView
     {
         private GameCatalog catalog;
+        private DisplaySettings display;
         private ViewLayer<UnitView> units;
         private ViewLayer<ExperienceView> experience;
         private ViewLayer<PowerupView> items;
@@ -28,7 +29,13 @@ namespace SsalMuk.Unity
         public IEnumerable<ExperienceView> ExperienceViews => experience == null ? Array.Empty<ExperienceView>() : experience.ActiveViews;
         public IEnumerable<AttackView> AttackViews => attacks == null ? Array.Empty<AttackView>() : attacks.ActiveViews;
         public IEnumerable<PowerupView> ItemViews => items == null ? Array.Empty<PowerupView>() : items.ActiveViews;
-        public void Initialize(GameCatalog catalog) { this.catalog = catalog; catalog.ValidatePresentation(); }
+        public void Initialize(GameCatalog catalog, DisplaySettings display = null)
+        {
+            this.catalog = catalog; catalog.ValidatePresentation(); this.display = display;
+            if (display != null) display.Changed += ApplyDarkMode;
+        }
+        private void ApplyDarkMode(bool enabled)
+        { foreach (var view in terrain.Values) if (view != null) view.SetDarkMode(enabled); }
         public void BeginFrame(Guid nextRun)
         {
             if (runId != nextRun)
@@ -56,7 +63,8 @@ namespace SsalMuk.Unity
             if (!terrain.TryGetValue(chunk.Coord, out var view))
             {
                 var go = new GameObject("Chunk " + chunk.Coord.X + "," + chunk.Coord.Y); go.transform.SetParent(transform, false);
-                view = go.AddComponent<TerrainView>(); view.Initialize(chunk, catalog.WorldMaterial, catalog.Visuals); terrain.Add(chunk.Coord, view);
+                view = go.AddComponent<TerrainView>(); view.Initialize(chunk, catalog.WorldMaterial, catalog.Visuals);
+                view.SetDarkMode(display?.DarkMode ?? false); terrain.Add(chunk.Coord, view);
             }
             view.SetRelativeOrigin(relativeOrigin);
         }
@@ -74,6 +82,7 @@ namespace SsalMuk.Unity
             foreach (var coord in terrainReturns) { if (terrain[coord] != null) Destroy(terrain[coord].gameObject); terrain.Remove(coord); }
         }
         private void ReleasePools() { units?.Dispose(); experience?.Dispose(); items?.Dispose(); attacks?.Dispose(); explosions?.Dispose(); projectiles?.Dispose(); }
-        private void OnDestroy() => ReleasePools();
+        private void OnDestroy()
+        { if (display != null) display.Changed -= ApplyDarkMode; ReleasePools(); }
     }
 }

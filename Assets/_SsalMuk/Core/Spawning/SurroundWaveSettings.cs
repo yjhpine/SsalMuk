@@ -12,7 +12,7 @@ namespace SsalMuk.Core
         public double FastKillFraction { get; }
         public double RemainingFraction { get; }
         public double ReservationSeconds { get; }
-        public SurroundWaveSettings(int baseCount = 80, int countStep = 20, double healthStep = .2, double damageStep = .1,
+        public SurroundWaveSettings(int baseCount = 80, int countStep = 20, double healthStep = .1, double damageStep = .1,
             double fastClearSeconds = 45, double fastKillFraction = .8, double remainingFraction = .25, double reservationSeconds = 5)
         {
             if (baseCount < 0 || countStep <= 0) throw new ArgumentOutOfRangeException(nameof(baseCount));

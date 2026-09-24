@@ -20,7 +20,7 @@ namespace SsalMuk.Tests
             director.Tick(600, bounds); director.Tick(600, bounds);
             var bosses = rig.Run.Units.Where(x => x.Kind == UnitKind.Boss).ToArray(); Assert.That(bosses.Length, Is.EqualTo(2));
             Assert.That(first.Health, Is.EqualTo(health));
-            Assert.That(bosses.Single(x => x.Id != first.Id).Definition.MaxHealth, Is.EqualTo(rig.Run.Definitions.GetUnit(UnitKind.Boss).MaxHealth * 3));
+            Assert.That(bosses.Single(x => x.Id != first.Id).Definition.MaxHealth, Is.EqualTo(rig.Run.Definitions.GetUnit(UnitKind.Boss).MaxHealth * 2));
             Assert.That(bosses.All(x => !bounds.Contains(x.Position, x.BodyRadius) && rig.World.Query.IsCircleFree(x.Position, x.BodyRadius)), Is.True);
             Assert.That(director.Pending, Is.Empty);
         }

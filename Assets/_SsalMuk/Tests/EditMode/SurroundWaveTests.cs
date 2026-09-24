@@ -48,7 +48,7 @@ namespace SsalMuk.Tests
             SpawnWave(director, 240, view);
             Assert.That(director.SpawnedCount(UnitKind.Normal), Is.EqualTo(80 + nextCount));
             var next = rig.Run.Units.First(unit => unit.Kind == UnitKind.Normal && unit.Position.DistanceTo(view.Center) < 50);
-            double expectedHealth = 22 * (nextCount == 100 ? 1.2 : 1);
+            double expectedHealth = 16 * (nextCount == 100 ? 1.1 : 1);
             Assert.That(next.Definition.MaxHealth, Is.EqualTo(expectedHealth).Within(1e-8));
         }
 
@@ -65,7 +65,7 @@ namespace SsalMuk.Tests
                 Assert.That(enemies.Length, Is.EqualTo(80 + (wave - 1) * 20));
                 Assert.That(enemies.All(unit => unit.Definition.ContactDamage <= 15), Is.True);
                 if (wave >= 4) Assert.That(enemies[0].Definition.ContactDamage, Is.EqualTo(15));
-                if (wave == 5) Assert.That(enemies[0].Definition.MaxHealth, Is.EqualTo(70 * 1.8).Within(1e-8));
+                if (wave == 5) Assert.That(enemies[0].Definition.MaxHealth, Is.EqualTo(40 * 1.4).Within(1e-8));
                 director.Tick(wave * 120 + 1, view);
                 foreach (var enemy in enemies) rig.Hit(enemy.Id, 10000);
                 rig.Death.Flush();

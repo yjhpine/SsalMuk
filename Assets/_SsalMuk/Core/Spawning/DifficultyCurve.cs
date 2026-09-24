@@ -30,13 +30,13 @@ namespace SsalMuk.Core
             {
                 double minute = Math.Floor(time / 60), milestone = Math.Floor(minute / 5);
                 double bonusSum = milestone * (milestone + 1) / 2;
-                health = baseline.MaxHealth + 3 * minute + 10 * bonusSum;
+                health = baseline.MaxHealth + 1.5 * minute + 5 * bonusSum;
                 damage = Math.Min(NormalDamageCap, baseline.ContactDamage + .8 * minute + 2 * bonusSum);
             }
             else
             {
                 double scale = 1 + time / 300;
-                health = baseline.MaxHealth * scale;
+                health = baseline.MaxHealth * (1 + time / 600);
                 damage = baseline.Kind == UnitKind.Boss ? baseline.ContactDamage : baseline.ContactDamage * scale;
             }
             if (double.IsInfinity(health) || double.IsInfinity(damage)) throw new NumericRangeException("Spawn difficulty exceeds numeric range.");

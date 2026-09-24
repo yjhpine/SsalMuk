@@ -116,7 +116,7 @@ MonoBehaviour:
   airDepartureMargin: 4
   surroundWaveBaseCount: 80
   surroundWaveCountStep: 20
-  surroundWaveHealthStep: 0.2
+  surroundWaveHealthStep: 0.1
   surroundWaveDamageStep: 0.1
   surroundWaveFastClearSeconds: 45
   surroundWaveFastKillFraction: 0.8

@@ -73,7 +73,7 @@ stateDiagram-v2
     MainMenu --> Loading: GameStart
     Loading --> BuildingWorld: 전투 씬 로드 완료
     BuildingWorld --> CreatingPlayer: 초기 맵과 구조물 준비
-    CreatingPlayer --> CreatingEnemies: 플레이어와 검 생성
+    CreatingPlayer --> CreatingEnemies: 플레이어와 선택한 시작 무기 생성
     CreatingEnemies --> Running: 초기 몬스터 등록 완료
     Running --> Results: 플레이어 사망
     Results --> Loading: 다시 시작
@@ -85,6 +85,8 @@ stateDiagram-v2
 ```
 
 - `RunCoordinator`가 순서를 관리한다. 초기 생성은 비활성 모델로 완료하고 `Running` 진입 시 이동·공격·생존 시계를 함께 시작한다.
+- 메뉴의 선택 무기를 `StartRunAsync`가 수락할 때 고정해 `RunModel.SetPlayer`에서 무기 하나만 초기화한다. 무기 미지정 시작은 철검이 기본이며 재시작은 직전 선택을 유지한다. 로드 중 재요청은 시작 무기를 바꾸지 않는다.
+- ESC 메뉴는 `Running` 안의 `RunModel.IsPaused`로 관리한다. `RunCoordinator.Pause/Resume`가 시계를 멈추고 재개하며 `RunSimulation`과 `BattleRunner`는 정지 중 실행하지 않는다. 보상 명령·예약 선택은 재개까지 보존한다. `Time.timeScale`이나 씬 상태는 바꾸지 않아 메뉴 입력과 설정 저장은 계속된다.
 - 연속 클릭은 하나의 전환만 실행한다. 전환 중에는 시작·재시작 버튼을 다시 수락하지 않는다.
 - 판마다 새로운 `RunId`, 시드, 모델, 난수 스트림, 예약 이벤트와 `RunScope`를 만든다.
 - 씬 로드는 비동기 완료 뒤에 다음 단계를 실행한다. Unity의 비동기 씬 로드 API를 연결점으로 사용한다. [Unity SceneManager.LoadSceneAsync](https://docs.unity3d.com/6000.4/Documentation/ScriptReference/SceneManagement.SceneManager.LoadSceneAsync.html)
@@ -295,9 +297,9 @@ AttackView는 가져온 무기 스프라이트의 bounds.min.x와 ContactFractio
 
 `SpawnDirector`는 생존 시계 하나를 기준으로 일반·공중·보스의 독립 일정을 관리한다. 난이도 곡선은 시간에 따른 생성량과 생성 시 기본 스펙을 정한다. 이미 살아 있는 적의 체력을 난이도 상승 때 갑자기 회복시키지 않도록 생성 시 스펙을 고정한다.
 
-2026-09-24 일반 성장: `m=floor(초/60)`, `b=floor(m/5)`일 때 체력은 `기본 체력 + 3m + 5b(b+1)`, 공격력은 `min(15, 기본 공격력 + 0.8m + b(b+1))`다. 5분 추가 보정은 +10/+2, +20/+4, +30/+6으로 누적한다. 웨이브의 최종 공격력도 DifficultyCurve.NormalDamageCap=15로 제한한다. 보스 공격력은 실제 카탈로그의 60으로 시간에 관계없이 유지하고 보스 체력·공중 능력치는 기존 `1+초/300` 배율을 사용한다.
+2026-09-24 체력 완화: `m=floor(초/60)`, `b=floor(m/5)`일 때 일반 체력은 `기본 체력 + 1.5m + 2.5b(b+1)`, 공격력은 `min(15, 기본 공격력 + 0.8m + b(b+1))`다. 5분 추가 보정은 +5/+2, +10/+4, +15/+6으로 누적한다. 웨이브의 최종 공격력도 DifficultyCurve.NormalDamageCap=15로 제한한다. 보스 공격력은 실제 카탈로그의 60으로 시간에 관계없이 유지한다. 보스·공중 체력 배율은 `1+초/600`, 공중 피해 배율은 기존 `1+초/300`이다.
 
-2026-09-18부터 SurroundWaveSchedule을 추가해 120초마다 전방위 일반 웨이브를 예약한다. 기본 80마리이며 직전 웨이브의 실제 생성 ID와 초반 처치를 추적한다. 45초 내 처치 비율 80% 이상이고 다음 웨이브 시 맵 전체 일반 수가 이전 생성 수의 25% 이하일 때만 한 단계 올린다. 살아 있는 개체의 수동 제거, 생성되지 않은 예약, 표본 없는 구간은 처치로 인정하지 않는다. 한 단계마다 요청 수 +20, 기본 체력 배율 +0.2, 피해 배율 +0.1이며 기존 시간 배율과 곱한다. 수치는 SurroundWaveSettings와 DevelopmentDefaults에 둔다.
+2026-09-18부터 SurroundWaveSchedule을 추가해 120초마다 전방위 일반 웨이브를 예약한다. 기본 80마리이며 직전 웨이브의 실제 생성 ID와 초반 처치를 추적한다. 45초 내 처치 비율 80% 이상이고 다음 웨이브 시 맵 전체 일반 수가 이전 생성 수의 25% 이하일 때만 한 단계 올린다. 살아 있는 개체의 수동 제거, 생성되지 않은 예약, 표본 없는 구간은 처치로 인정하지 않는다. 한 단계마다 요청 수 +20, 기본 체력 배율 +0.1, 피해 배율 +0.1이며 기존 시간 배율과 곱한다. 수치는 SurroundWaveSettings와 DevelopmentDefaults에 둔다.
 
 웨이브도 일반 상한 500을 공유하며 남은 자리만 예약한다. 현재 카메라를 확장한 사각형 밖 8각도 구역을 교차하며 지형·다른 몸통과 겹치지 않는 후보를 찾는다. 기존 생성 예산 64 안에서 보스→웨이브→나머지 예약 순으로 처리한다. 막힌 웨이브 예약은 실제 예약 후 5초까지만 재시도하며 이미 생성된 적은 제거하지 않는다. 여러 경계를 한 번에 넘겨도 각 일정 ID는 한 번만 만들고, 새 판에는 단계·예약·추적 ID가 남지 않는다.
 
@@ -321,6 +323,8 @@ AttackView는 가져온 무기 스프라이트의 bounds.min.x와 ContactFractio
 `ExperienceView`는 작은 원형 중심과 같은 색의 반투명 빛 번짐을 표시한다. 초록·파랑·빨강을 구분하고 논리 위치를 따라 비행을 보간한다. 외곽 빛의 크기는 접촉 반경을 바꾸지 않는다. 공격 에셋도 AttackShapeSnapshot의 형상·방향·진행률에 맞춰 재생하고, 에셋 자체의 피해 콜백은 연결하지 않는다.
 
 MVP UI는 MainMenu, HUD, LevelUp, Results로 나눈다. HUD에는 플레이어 체력·경험치·레벨·생존 시간·처치 수와 보유 무기를 표시한다. 적 체력 표시는 보이는 유닛 위에 붙여 실제 체력 감소와 연결한다. 레벨업 화면에는 3개 선택과 남은 선택 기회를 표시하며 전투를 계속 볼 수 있게 배치한다.
+
+2026-09-24 메뉴 확장: `MainMenuView`는 시작 무기 4종과 가로 3버튼을 구성한다. `MenuController`는 실제 ESC 입력, 세로 `PauseMenuView`, 공용 `SettingsView`를 연결하며 설정을 닫을 때 원래 메뉴로 복귀한다. 모달은 아래 메뉴의 입력을 차단하고 정지 중 레벨업 View는 숨긴다. `DisplaySettings`는 다크모드 기본값·PlayerPrefs 저장·변경 이벤트만 담당하며 `RunScope`가 `WorldView`에 전달한다. `TerrainView`는 원래/어두운 메시 색 배열을 한 번 만들고 설정 변경 때만 교체한다. 새 청크에도 현재 설정을 적용하고 공유 머티리얼이나 유닛 색은 수정하지 않는다.
 
 View는 체력 계산·후보 생성·씬 수명을 결정하지 않는다. Presenter는 이벤트 구독을 수명 안에서만 유지하고 View가 없어도 모델은 진행한다. 버튼 이벤트가 한 프레임에 여러 번 도착해도 모델의 명령 검증을 통과해야 보상이 적용된다.
 

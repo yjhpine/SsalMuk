@@ -10,6 +10,67 @@ namespace SsalMuk.Tests
 {
     public sealed class RunCoordinatorTests
     {
+        [TestCase(WeaponKind.Sword), TestCase(WeaponKind.Spear), TestCase(WeaponKind.Axe), TestCase(WeaponKind.Fireball)]
+        public async Task StartingWeaponIsChosenBeforePlayerCreation(WeaponKind kind)
+        {
+            using var coordinator = new RunCoordinator(new GateLoader { Immediate = true }, () => new ObservedBuilder());
+            await coordinator.StartRunAsync(kind);
+            Assert.That(coordinator.Run.Player.Weapons.Kinds, Is.EqualTo(new[] { kind }));
+            Assert.That(coordinator.Run.Player.Weapons.Get(kind).GetLevel(UpgradeKind.Damage), Is.EqualTo(BigInteger.Zero));
+        }
+        [Test]
+        public async Task RepeatedStartDuringLoadCannotChangeTheChosenWeapon()
+        {
+            var loader = new GateLoader(); using var coordinator = new RunCoordinator(loader, () => new ObservedBuilder());
+            var first = coordinator.StartRunAsync(WeaponKind.Fireball);
+            Assert.That(coordinator.StartRunAsync(WeaponKind.Axe), Is.SameAs(first));
+            loader.Release(); await first;
+            Assert.That(coordinator.Run.Player.Weapons.Kinds, Is.EqualTo(new[] { WeaponKind.Fireball }));
+            await coordinator.ReturnToMenuAsync(); await coordinator.StartRunAsync(WeaponKind.Spear);
+            Assert.That(coordinator.Run.Player.Weapons.Kinds, Is.EqualTo(new[] { WeaponKind.Spear }));
+        }
+        [Test]
+        public void InvalidStartingWeaponIsRejectedBeforeLoading()
+        {
+            int builds = 0;
+            using var coordinator = new RunCoordinator(new GateLoader(), () => { builds++; return new ObservedBuilder(); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => coordinator.StartRunAsync((WeaponKind)999));
+            Assert.That(coordinator.Phase, Is.EqualTo(RunPhase.MainMenu)); Assert.That(builds, Is.Zero);
+        }
+        [Test]
+        public void PauseFreezesSimulationAndPreservesQueuedUpgradeUntilResume()
+        {
+            using var rig = RunTestRig.Create(scheduledSpawns: true);
+            rig.Spawn(UnitKind.Normal, new DVec2(1.4, 0), 10000);
+            rig.GrantExperience(5); rig.Advance(.2);
+            var offer = rig.CurrentOffer; Assert.That(offer, Is.Not.Null);
+            Assert.That(rig.Choose(offer.Id, 0), Is.True);
+            double time = rig.Clock.ElapsedSeconds, health = rig.Player.Health;
+            var positions = rig.World.Units.Units.ToDictionary(unit => unit.Id, unit => unit.Position);
+            long attacks = rig.Simulation.Sword.LaunchCount; var pending = rig.Player.Growth.PendingChoices;
+            Assert.That(rig.Coordinator.Pause(), Is.True); Assert.That(rig.Coordinator.Pause(), Is.False);
+            rig.Advance(2); rig.Run.Rewards.Step(); rig.Run.Rewards.RefreshOffer();
+            Assert.That(rig.Clock.IsRunning, Is.False); Assert.That(rig.Clock.ElapsedSeconds, Is.EqualTo(time));
+            Assert.That(rig.Player.Health, Is.EqualTo(health)); Assert.That(rig.Simulation.Sword.LaunchCount, Is.EqualTo(attacks));
+            Assert.That(rig.World.Units.Count, Is.EqualTo(positions.Count));
+            foreach (var unit in rig.World.Units.Units) Assert.That(unit.Position, Is.EqualTo(positions[unit.Id]));
+            Assert.That(rig.CurrentOffer, Is.SameAs(offer)); Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.True);
+            Assert.That(rig.Player.Growth.PendingChoices, Is.EqualTo(pending));
+            Assert.That(rig.Coordinator.Resume(), Is.True); Assert.That(rig.Coordinator.Resume(), Is.False);
+            rig.Advance(.02);
+            Assert.That(rig.Clock.ElapsedSeconds, Is.EqualTo(time + .02).Within(1e-9));
+            Assert.That(rig.Player.Growth.PendingChoices, Is.EqualTo(pending - 1));
+        }
+        [Test]
+        public async Task PausedRunRejectsNewRewardInputAndMenuDoesNotInheritPause()
+        {
+            using var rig = RunTestRig.Create(enableAi: false); rig.GrantExperience(5); rig.Advance(.02);
+            rig.Coordinator.Pause(); Assert.That(rig.Choose(rig.CurrentOffer.Id, 0), Is.False);
+            await rig.Coordinator.ReturnToMenuAsync();
+            Assert.That(rig.Coordinator.Pause(), Is.False); Assert.That(rig.Coordinator.Resume(), Is.False);
+            await rig.Coordinator.StartRunAsync();
+            Assert.That(rig.Run.IsPaused, Is.False); Assert.That(rig.Clock.IsRunning, Is.True);
+        }
         [Test]
         public async Task DoubleStartWaitsForSceneAndBuildsOneRunInOrder()
         {

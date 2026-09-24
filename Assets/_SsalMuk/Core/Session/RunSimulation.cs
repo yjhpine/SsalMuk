@@ -49,7 +49,7 @@ namespace SsalMuk.Core
         public void SetViewBounds(WorldRect bounds) => viewBounds = bounds;
         public void Step(double dt)
         {
-            if (disposed || run.Phase != RunPhase.Running) return;
+            if (disposed || run.Phase != RunPhase.Running || run.IsPaused) return;
             double count = dt / run.Clock.FixedStep;
             if (dt < 0 || double.IsNaN(dt) || double.IsInfinity(dt) || count > int.MaxValue || Math.Abs(count - Math.Round(count)) > 1e-8)
                 throw new ArgumentOutOfRangeException(nameof(dt), "Simulation uses whole fixed steps.");

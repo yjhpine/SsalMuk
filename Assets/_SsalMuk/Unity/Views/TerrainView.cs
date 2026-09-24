@@ -7,6 +7,8 @@ namespace SsalMuk.Unity
     public sealed class TerrainView : MonoBehaviour
     {
         private Mesh mesh;
+        private Color[] normalColors, darkColors;
+        private bool darkMode;
         private readonly List<SpriteRenderer> furniture = new List<SpriteRenderer>();
         public string Fingerprint { get; private set; }
         public void Initialize(ChunkData chunk, Material material, VisualCatalog visuals = null)
@@ -22,6 +24,9 @@ namespace SsalMuk.Unity
                 Quad(x + 0.07f, y + 0.83f, 0.86f, 0.09f, new Color32(100, 128, 107, 255));
             }
             mesh = new Mesh { name = "RuntimeChunk" }; mesh.SetVertices(vertices); mesh.SetColors(colors); mesh.SetUVs(0, uv); mesh.SetTriangles(triangles, 0); mesh.RecalculateBounds();
+            normalColors = colors.ToArray(); darkColors = new Color[normalColors.Length];
+            for (int i = 0; i < normalColors.Length; i++)
+            { var color = normalColors[i]; darkColors[i] = new Color(color.r * .12f, color.g * .12f, color.b * .12f, color.a); }
             gameObject.AddComponent<MeshFilter>().sharedMesh = mesh;
             var renderer = gameObject.AddComponent<MeshRenderer>(); renderer.sharedMaterial = material; renderer.sortingOrder = -1000;
             foreach (var placement in chunk.Furniture)
@@ -49,6 +54,11 @@ namespace SsalMuk.Unity
             transform.localPosition = WorldRenderOrigin.ToVector(relativeOrigin);
             foreach (var sprite in furniture)
                 sprite.sortingOrder = 1000 - Mathf.RoundToInt((float)relativeOrigin.Y * 30 + sprite.transform.localPosition.y * 30);
+        }
+        public void SetDarkMode(bool enabled)
+        {
+            if (mesh == null || darkMode == enabled) return;
+            darkMode = enabled; mesh.colors = enabled ? darkColors : normalColors;
         }
         private void OnDestroy() { if (mesh != null) Destroy(mesh); }
     }

@@ -14,6 +14,17 @@ namespace SsalMuk.Core
         public RunPhase Phase { get; private set; } = RunPhase.MainMenu;
         public RunModel Run => builder?.Run;
         public RunResult Result { get; private set; }
+        public WeaponKind StartingWeapon { get; private set; } = WeaponKind.Sword;
+        public bool Pause()
+        {
+            if (Phase != RunPhase.Running || Run == null || Run.IsPaused) return false;
+            Run.IsPaused = true; Run.Clock.Stop(); return true;
+        }
+        public bool Resume()
+        {
+            if (Phase != RunPhase.Running || Run == null || !Run.IsPaused) return false;
+            Run.IsPaused = false; Run.Clock.Start(); return true;
+        }
         public Task RestartAsync()
         {
             if (Phase == RunPhase.Disposed) throw new ObjectDisposedException(nameof(RunCoordinator));
@@ -37,10 +48,15 @@ namespace SsalMuk.Core
         public event Action<RunPhase> PhaseChanged;
         public RunCoordinator(ISceneLoader sceneLoader, Func<IRunBuilder> createBuilder)
         { this.sceneLoader = sceneLoader ?? throw new ArgumentNullException(nameof(sceneLoader)); this.createBuilder = createBuilder ?? throw new ArgumentNullException(nameof(createBuilder)); }
-        public Task StartRunAsync()
+        public Task StartRunAsync(WeaponKind? startingWeapon = null)
         {
             if (Phase == RunPhase.Disposed) throw new ObjectDisposedException(nameof(RunCoordinator));
             if (Phase != RunPhase.MainMenu) return pending ?? Task.CompletedTask;
+            if (startingWeapon.HasValue)
+            {
+                if (!Enum.IsDefined(typeof(WeaponKind), startingWeapon.Value)) throw new ArgumentOutOfRangeException(nameof(startingWeapon));
+                StartingWeapon = startingWeapon.Value;
+            }
             return BeginStart();
         }
         private Task BeginStart()
@@ -53,6 +69,7 @@ namespace SsalMuk.Core
             try
             {
                 builder = createBuilder() ?? throw new InvalidOperationException("Run builder is missing.");
+                builder.Run.StartingWeapon = StartingWeapon;
                 builder.Run.Clock.Stop(); builder.Run.Phase = RunPhase.Loading; builder.Run.Completed += OnCompleted;
                 await sceneLoader.LoadBattleAsync();
                 if (attempt != generation || Phase == RunPhase.Disposed) return;

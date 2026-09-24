@@ -8,6 +8,7 @@ namespace SsalMuk.Unity
     public sealed class RunScope : IRunBuilder
     {
         private readonly GameCatalog catalog;
+        private readonly DisplaySettings display;
         private readonly InitialRunBuilder builder;
         private GameObject root;
         private WorldPresenter presenter;
@@ -19,9 +20,9 @@ namespace SsalMuk.Unity
         private bool disposed;
         public static int ActiveCount { get; private set; }
         public RunModel Run { get; }
-        public RunScope(GameCatalog catalog)
+        public RunScope(GameCatalog catalog, DisplaySettings display = null)
         {
-            this.catalog = catalog; catalog.ValidatePresentation();
+            this.catalog = catalog; this.display = display; catalog.ValidatePresentation();
             Guid id = Guid.NewGuid(); int seed = BitConverter.ToInt32(id.ToByteArray(), 0);
             var definitions = catalog.CreateDefinitions(); var streams = new SeedStreams(seed);
             Run = new RunModel(id, seed, definitions, new ChunkGenerator(streams.MapSeed, catalog.Defaults.CreateMapSettings()),
@@ -47,7 +48,7 @@ namespace SsalMuk.Unity
             if (root == null)
             {
                 root = new GameObject("Run " + Run.Id.ToString("N")); var view = root.AddComponent<WorldView>();
-                view.Initialize(catalog); presenter = new WorldPresenter(view);
+                view.Initialize(catalog, display); presenter = new WorldPresenter(view);
             }
             presenter.Refresh(Run);
         }

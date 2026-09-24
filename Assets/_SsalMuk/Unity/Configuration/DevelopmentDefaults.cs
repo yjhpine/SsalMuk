@@ -42,7 +42,7 @@ namespace SsalMuk.Unity
         [SerializeField] private double airDepartureMargin = 4;
         [SerializeField, Min(0)] private int surroundWaveBaseCount = 80;
         [SerializeField, Min(1)] private int surroundWaveCountStep = 20;
-        [SerializeField] private double surroundWaveHealthStep = .2;
+        [SerializeField] private double surroundWaveHealthStep = .1;
         [SerializeField] private double surroundWaveDamageStep = .1;
         [SerializeField] private double surroundWaveFastClearSeconds = 45;
         [SerializeField] private double surroundWaveFastKillFraction = .8;

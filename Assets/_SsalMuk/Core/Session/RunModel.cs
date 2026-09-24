@@ -19,6 +19,8 @@ namespace SsalMuk.Core
         public RunClock Clock { get; }
         public ICombatReadModel Combat { get; internal set; }
         public PlayerModel Player { get; private set; }
+        public WeaponKind StartingWeapon { get; internal set; } = WeaponKind.Sword;
+        public bool IsPaused { get; internal set; }
         public long Kills { get; internal set; }
         public RunResult Result { get; private set; }
         public event Action<RunResult> Completed;
@@ -59,7 +61,7 @@ namespace SsalMuk.Core
         {
             if (Player != null || player == null || player.RunId != Id || !World.Units.TryGet(player.Id, out var registered) || !ReferenceEquals(registered, player))
                 throw new ArgumentException("The run needs one registered player from its own world.", nameof(player));
-            Player = player;
+            player.InitializeStartingWeapon(StartingWeapon); Player = player;
         }
         public void Dispose()
         {
