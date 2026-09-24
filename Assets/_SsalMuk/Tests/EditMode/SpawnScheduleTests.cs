@@ -7,6 +7,13 @@ namespace SsalMuk.Tests
 {
     public sealed class SpawnScheduleTests
     {
+        [TestCase(0, 12), TestCase(20, 12), TestCase(49.999, 12), TestCase(50, 13)]
+        [TestCase(550, 23), TestCase(599.999, 23), TestCase(600, 24), TestCase(3600, 24), TestCase(double.MaxValue, 24)]
+        public void AirWavesGrowFromTwelveToTwentyFourAndStayCapped(double seconds, long count)
+        {
+            Assert.That(new DifficultyCurve(new SpawnSettings()).AirCount(seconds), Is.EqualTo(count));
+        }
+
         [TestCase(0, 10, 5), TestCase(59.999, 10, 5), TestCase(60, 11.5, 5.8)]
         [TestCase(299.999, 16, 8.2), TestCase(300, 22.5, 11), TestCase(359.999, 22.5, 11)]
         [TestCase(360, 24, 11.8), TestCase(540, 28.5, 14.2), TestCase(600, 40, 15), TestCase(900, 62.5, 15)]
@@ -46,7 +53,7 @@ namespace SsalMuk.Tests
             Assert.That(curve.NormalDeadline(270), Is.EqualTo(120).Within(1e-8));
             Assert.That(curve.NormalDeadline(720), Is.EqualTo(240).Within(1e-8));
             Assert.That(curve.NormalDeadline(2) - curve.NormalDeadline(1), Is.GreaterThan(curve.NormalDeadline(480) - curve.NormalDeadline(479)));
-            Assert.That(curve.AirCount(20), Is.EqualTo(8)); Assert.That(curve.AirCount(120), Is.EqualTo(9));
+            Assert.That(curve.AirCount(20), Is.EqualTo(12)); Assert.That(curve.AirCount(120), Is.EqualTo(14));
             using var rig = RunTestRig.Create(); var baseline = rig.Run.Definitions.GetUnit(UnitKind.Boss); var atFive = curve.AtSpawn(baseline, 300);
             var atTen = curve.AtSpawn(baseline, 600);
             Assert.That(atFive.MaxHealth, Is.EqualTo(baseline.MaxHealth * 1.5)); Assert.That(atTen.MaxHealth, Is.EqualTo(baseline.MaxHealth * 2));

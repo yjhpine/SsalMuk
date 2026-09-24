@@ -18,7 +18,7 @@ namespace SsalMuk.Core
         public long AirCount(double time)
         {
             RequireTime(time); double increase = Math.Floor(time / settings.AirCountGrowthSeconds);
-            if (increase >= long.MaxValue - (double)settings.AirBaseCount) throw new NumericRangeException("Air wave count exceeds its integer representation.");
+            if (increase >= settings.AirMaximumCount - settings.AirBaseCount) return settings.AirMaximumCount;
             return checked(settings.AirBaseCount + (long)increase);
         }
         public UnitDefinition AtSpawn(UnitDefinition baseline, double time)

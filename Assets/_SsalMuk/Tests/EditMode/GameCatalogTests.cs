@@ -71,8 +71,12 @@ namespace SsalMuk.Tests
                 Assert.That(spawns.NormalBaseRate, Is.EqualTo(1.5));
                 Assert.That(spawns.NormalRateGrowth, Is.EqualTo(.0125).Within(1e-12));
                 Assert.That(spawns.NormalPopulationCap, Is.EqualTo(500));
-                Assert.That(spawns.AirBaseCount, Is.EqualTo(8));
+                Assert.That(spawns.AirBaseCount, Is.EqualTo(12));
                 Assert.That(spawns.AirInterval, Is.EqualTo(20));
+                var difficulty = new DifficultyCurve(spawns);
+                Assert.That(difficulty.AirCount(120), Is.EqualTo(14));
+                Assert.That(difficulty.AirCount(600), Is.EqualTo(24));
+                Assert.That(difficulty.AirCount(3600), Is.EqualTo(24));
                 Assert.That(defaults.InitialEnemyCount, Is.EqualTo(12));
             }
         }

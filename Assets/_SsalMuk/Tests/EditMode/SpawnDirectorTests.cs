@@ -43,11 +43,11 @@ namespace SsalMuk.Tests
             using var director = new SpawnDirector(rig.Run, new SpawnSettings(creationBudget: 2));
             var bounds = new WorldRect(rig.Player.Position, 16, 9); director.Tick(20, bounds);
             Assert.That(director.SpawnedCount(UnitKind.Normal) + director.SpawnedCount(UnitKind.Air), Is.EqualTo(2));
-            Assert.That(director.Pending.Sum(x => x.Remaining), Is.EqualTo(38));
+            Assert.That(director.Pending.Sum(x => x.Remaining), Is.EqualTo(42));
             for (int i = 0; i < 30 && director.Pending.Count > 0; i++) director.Tick(20, bounds);
             Assert.That(director.Pending, Is.Empty); Assert.That(director.SpawnedCount(UnitKind.Normal), Is.EqualTo(32));
-            Assert.That(director.SpawnedCount(UnitKind.Air), Is.EqualTo(8));
-            Assert.That(rig.Run.Units.Count, Is.EqualTo(41));
+            Assert.That(director.SpawnedCount(UnitKind.Air), Is.EqualTo(12));
+            Assert.That(rig.Run.Units.Count, Is.EqualTo(45));
         }
         [Test]
         public void AirWaveStartsOutsideOneSideAndKeepsParallelFlightAfterPlayerMoves()
@@ -55,7 +55,7 @@ namespace SsalMuk.Tests
             using var rig = RunTestRig.Create(enableAi: false);
             using var director = new SpawnDirector(rig.Run, new SpawnSettings(normalBaseRate: 0.0001, normalRateGrowth: 0));
             var view = new WorldRect(rig.Player.Position, 16, 9); director.Tick(20, view);
-            var units = rig.Run.Units.OfType<AirEnemyModel>().ToArray(); Assert.That(units.Length, Is.EqualTo(8));
+            var units = rig.Run.Units.OfType<AirEnemyModel>().ToArray(); Assert.That(units.Length, Is.EqualTo(12));
             var positions = units.Select(x => x.Position).ToArray(); var direction = units[0].OriginalDirection;
             Assert.That(direction.Length, Is.EqualTo(1).Within(1e-10));
             Assert.That(units.All(x => x.OriginalDirection == direction && !view.Contains(x.Position, x.BodyRadius)), Is.True);
@@ -66,7 +66,7 @@ namespace SsalMuk.Tests
             rig.PlacePlayer(new DVec2(100, 100)); rig.Movement.Step(1);
             for (int i = 0; i < units.Length; i++)
                 Assert.That((positions[i].DisplacementTo(units[i].Position) - direction * units[i].Definition.MoveSpeed).Length, Is.LessThan(1e-8));
-            Assert.That(rig.Run.Units.OfType<AirEnemyModel>().Count(), Is.EqualTo(8));
+            Assert.That(rig.Run.Units.OfType<AirEnemyModel>().Count(), Is.EqualTo(12));
         }
 
         [TestCase(0), TestCase(.25), TestCase(.5), TestCase(.75)]

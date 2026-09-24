@@ -106,8 +106,9 @@ MonoBehaviour:
   normalRateGrowth: 0.0125
   normalPopulationCap: 500
   airInterval: 20
-  airBaseCount: 8
-  airCountGrowthSeconds: 120
+  airBaseCount: 12
+  airMaximumCount: 24
+  airCountGrowthSeconds: 50
   airSpacing: 0.65
   groundSpawnMargin: 1.2
   groundSpawnBand: 5

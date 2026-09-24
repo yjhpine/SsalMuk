@@ -32,8 +32,9 @@ namespace SsalMuk.Unity
         [SerializeField] private double normalRateGrowth = 1.0 / 80;
         [SerializeField, Min(1)] private int normalPopulationCap = 500;
         [SerializeField] private double airInterval = 20;
-        [SerializeField] private int airBaseCount = 8;
-        [SerializeField] private double airCountGrowthSeconds = 120;
+        [SerializeField, Min(1)] private int airBaseCount = 12;
+        [SerializeField, Min(1)] private int airMaximumCount = 24;
+        [SerializeField] private double airCountGrowthSeconds = 50;
         [SerializeField] private double airSpacing = 0.65;
         [SerializeField] private double groundSpawnMargin = 1.2;
         [SerializeField] private double groundSpawnBand = 5;
@@ -58,7 +59,7 @@ namespace SsalMuk.Unity
         public SpawnSettings CreateSpawnSettings() => new SpawnSettings(normalBaseRate, normalRateGrowth, airInterval, airBaseCount,
             airCountGrowthSeconds, airSpacing, groundSpawnMargin, groundSpawnBand, spawnPositionAttempts, spawnCreationBudget, airDepartureMargin, normalPopulationCap,
             new SurroundWaveSettings(surroundWaveBaseCount, surroundWaveCountStep, surroundWaveHealthStep, surroundWaveDamageStep,
-                surroundWaveFastClearSeconds, surroundWaveFastKillFraction, surroundWaveRemainingFraction, surroundWaveReservationSeconds));
+                surroundWaveFastClearSeconds, surroundWaveFastKillFraction, surroundWaveRemainingFraction, surroundWaveReservationSeconds), airMaximumCount: airMaximumCount);
         public GrowthSettings CreateGrowthSettings()
         {
             if (!BigInteger.TryParse(firstLevelCost, NumberStyles.Integer, CultureInfo.InvariantCulture, out var first) ||

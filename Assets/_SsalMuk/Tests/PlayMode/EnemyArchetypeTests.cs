@@ -33,7 +33,7 @@ namespace SsalMuk.Tests
             movement.SetMoveIntent(run.Player.Id, DVec2.Zero);
             var camera = Camera.main;
             runner.Simulation.Spawns.Tick(20, new WorldRect(run.Player.Position, camera.orthographicSize * camera.aspect, camera.orthographicSize));
-            var air = run.Units.OfType<AirEnemyModel>().ToArray(); Assert.That(air.Length, Is.EqualTo(8));
+            var air = run.Units.OfType<AirEnemyModel>().ToArray(); Assert.That(air.Length, Is.EqualTo(12));
             // Isolate the real spawned formation for visual inspection, then advance its existing movement service.
             foreach (var unit in run.Units.Where(unit => unit.Kind == UnitKind.Normal).ToArray()) run.World.Units.Remove(unit.Id);
             var direction = air[0].OriginalDirection;
@@ -42,7 +42,7 @@ namespace SsalMuk.Tests
             for (int i = 0; i < steps; i++) movement.Step(.02);
             var view = Object.FindAnyObjectByType<WorldView>(); new WorldPresenter(view).Refresh(run);
             yield return null;
-            Assert.That(view.VisibleUnitCount, Is.EqualTo(9));
+            Assert.That(view.VisibleUnitCount, Is.EqualTo(13));
             var across = new DVec2(-direction.Y, direction.X);
             Assert.That(air.Select(unit => System.Math.Round(DVec2.Dot(air[0].Position.DisplacementTo(unit.Position), across), 6)).Distinct().Count(), Is.EqualTo(3));
             string directory = Path.GetFullPath(Path.Combine(Application.dataPath, "../Logs/Validation/AirFormation", run.Id.ToString("N")));
