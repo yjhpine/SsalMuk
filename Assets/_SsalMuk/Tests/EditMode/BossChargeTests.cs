@@ -6,7 +6,7 @@ namespace SsalMuk.Tests
     public sealed class BossChargeTests
     {
         [TestCase(0, false), TestCase(2, false), TestCase(0, true), TestCase(2, true)]
-        public void ChargeUsesTwiceTheUpgradedAndBoostedPlayerSpeed(int upgrades, bool boost)
+        public void ChargeUsesFourTimesTheUpgradedAndBoostedPlayerSpeed(int upgrades, bool boost)
         {
             using var rig = RunTestRig.Create(enableAi: false);
             if (upgrades > 0) new GrowthService(rig.Run).UpgradeShared(SharedUpgradeKind.MoveSpeed, upgrades);
@@ -15,7 +15,49 @@ namespace SsalMuk.Tests
             var boss = rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero, 1000));
             double speed = 3 * (1 + .1 * upgrades) * (boost ? 1.5 : 1);
             rig.Movement.Step(.5); var start = boss.Position; rig.Movement.Step(.1);
-            Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(speed * 2 * .1).Within(1e-8));
+            Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(speed * 4 * .1).Within(1e-8));
+        }
+
+        [Test]
+        public void ChargingBossTakesRepeatedDamageWithoutKnockbackOrInterruption()
+        {
+            using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
+            rig.PlacePlayer(new DVec2(5, 0));
+            var boss = (GroundEnemyModel)rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero, 1000));
+            rig.Movement.Step(.5);
+            Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Charge));
+            for (int i = 0; i < 5; i++)
+            {
+                Assert.That(rig.Hit(boss.Id, 1), Is.True);
+                Assert.That(boss.Knockback.IsActive, Is.False);
+                var start = boss.Position; rig.Movement.Step(.02);
+                Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(.24).Within(1e-8));
+                Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Charge));
+            }
+            Assert.That(boss.Health, Is.EqualTo(995));
+            Assert.That(boss.HitSequence, Is.EqualTo(5));
+            rig.Movement.AddKnockback(boss.Id, new DVec2(-4, 0), .5);
+            Assert.That(boss.Knockback.IsActive, Is.False);
+            Assert.That(rig.Hit(boss.Id, 2000), Is.True);
+            var position = boss.Position; rig.Movement.Step(.02);
+            Assert.That(boss.IsAlive, Is.False);
+            Assert.That(boss.Position, Is.EqualTo(position));
+            Assert.That(rig.Movement.GetEnemyFsm(boss.Id).CurrentState, Is.EqualTo(EnemyState.Dead));
+        }
+
+        [Test]
+        public void CompletedChargeRestoresKnockback()
+        {
+            using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
+            rig.PlacePlayer(new DVec2(3, 0));
+            var boss = (GroundEnemyModel)rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero, 1000));
+            rig.Movement.Step(.5); rig.Movement.Step(.5);
+            Assert.That(boss.Position.Local.X, Is.EqualTo(6).Within(1e-8));
+            Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Chase));
+            Assert.That(rig.Hit(boss.Id, 1), Is.True);
+            Assert.That(boss.Knockback.IsActive, Is.True);
+            rig.Movement.Step(.02);
+            Assert.That(rig.Movement.GetEnemyFsm(boss.Id).CurrentState, Is.EqualTo(EnemyState.Knockback));
         }
 
         [TestCase(.299999, true)]
@@ -58,8 +100,8 @@ namespace SsalMuk.Tests
             var charge = new BossCharge(new FixedRandom(1));
             charge.TryMove(boss, target, .49, out var before); Assert.That(before, Is.EqualTo(DVec2.Zero));
             Assert.That(charge.Phase, Is.EqualTo(EnemyState.Telegraph));
-            charge.TryMove(boss, target, .02, out var crossing); Assert.That(crossing.X, Is.EqualTo(.06).Within(1e-9));
-            charge.TryMove(boss, target, 10, out var final); Assert.That(final.X, Is.EqualTo(5.94).Within(1e-9));
+            charge.TryMove(boss, target, .02, out var crossing); Assert.That(crossing.X, Is.EqualTo(.12).Within(1e-9));
+            charge.TryMove(boss, target, 10, out var final); Assert.That(final.X, Is.EqualTo(5.88).Within(1e-9));
         }
 
         [Test]

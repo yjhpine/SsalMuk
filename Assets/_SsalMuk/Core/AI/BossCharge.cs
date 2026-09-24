@@ -4,7 +4,7 @@ namespace SsalMuk.Core
 {
     public sealed class BossCharge
     {
-        public const double WindupSeconds = .5, CooldownSeconds = 5, RepeatChance = .3;
+        public const double WindupSeconds = .5, CooldownSeconds = 5, RepeatChance = .3, SpeedMultiplier = 4;
         private readonly IRandomSource random;
         private double remainingWindup, remainingDistance, cooldown, speed;
         private bool repeatQueued, extraCharge;
@@ -37,7 +37,7 @@ namespace SsalMuk.Core
                 extraCharge = repeatQueued; repeatQueued = false;
                 Origin = actor.Position; Direction = delta.Normalized; Length = delta.Length * 2;
                 End = Origin.Offset(delta * 2); remainingDistance = Length;
-                speed = target.MoveSpeed * 2; remainingWindup = WindupSeconds; Phase = EnemyState.Telegraph;
+                speed = target.MoveSpeed * SpeedMultiplier; remainingWindup = WindupSeconds; Phase = EnemyState.Telegraph;
             }
             double activeSeconds = dt;
             if (Phase == EnemyState.Telegraph)

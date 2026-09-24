@@ -50,7 +50,7 @@ namespace SsalMuk.Tests
             for (int i = 0; i < 25; i++) rig.Movement.Step(.02);
             Assert.That(rig.Unit(boss).Position, Is.EqualTo(WorldPosition.FromLocal(DVec2.Zero)));
             rig.PlacePlayer(new DVec2(3, 4)); rig.Movement.Step(.1);
-            Assert.That(rig.Unit(boss).Position.Local.X, Is.EqualTo(.6).Within(1e-9));
+            Assert.That(rig.Unit(boss).Position.Local.X, Is.EqualTo(1.2).Within(1e-9));
             Assert.That(rig.Unit(boss).Position.Local.Y, Is.Zero.Within(1e-9));
         }
     }
