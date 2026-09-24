@@ -61,31 +61,33 @@ namespace SsalMuk.Tests
             Assert.That(units.All(x => x.OriginalDirection == direction && !view.Contains(x.Position, x.BodyRadius)), Is.True);
             var across = new DVec2(-direction.Y, direction.X);
             var offsets = positions.Select(position => positions[0].DisplacementTo(position)).ToArray();
-            Assert.That(offsets.Select(offset => Math.Round(DVec2.Dot(offset, across), 6)).Distinct().Count(), Is.EqualTo(3));
-            Assert.That(offsets.Max(offset => DVec2.Dot(offset, direction)) - offsets.Min(offset => DVec2.Dot(offset, direction)), Is.GreaterThan(3));
+            Assert.That(offsets.Select(offset => Math.Round(DVec2.Dot(offset, direction), 6)).Distinct().Count(), Is.EqualTo(3));
+            Assert.That(offsets.Max(offset => DVec2.Dot(offset, across)) - offsets.Min(offset => DVec2.Dot(offset, across)), Is.GreaterThan(3));
             rig.PlacePlayer(new DVec2(100, 100)); rig.Movement.Step(1);
             for (int i = 0; i < units.Length; i++)
                 Assert.That((positions[i].DisplacementTo(units[i].Position) - direction * units[i].Definition.MoveSpeed).Length, Is.LessThan(1e-8));
             Assert.That(rig.Run.Units.OfType<AirEnemyModel>().Count(), Is.EqualTo(12));
         }
 
-        [TestCase(0), TestCase(.25), TestCase(.5), TestCase(.75)]
-        public void ThreeLaneAirCapsuleStartsOffscreenFromEverySide(double side)
+        [TestCase(12, 0), TestCase(12, .25), TestCase(12, .5), TestCase(12, .75)]
+        [TestCase(24, 0), TestCase(24, .25), TestCase(24, .5), TestCase(24, .75)]
+        public void ThreeRankAirWallFacesTravelAndStartsOffscreenFromEverySide(int count, double side)
         {
             var center = new WorldPosition(new ChunkCoord(9007199254740993, -50000), new DVec2(31.9, .1));
             var view = new WorldRect(center, 16, 9);
-            var layout = new AirGroupSpawner(view, center, 24, .325, new SpawnSettings(), new FixedRandom(side));
-            var positions = Enumerable.Range(0, 24).Select(index => layout.Position(index)).ToArray();
+            var layout = new AirGroupSpawner(view, center, count, .325, new SpawnSettings(), new FixedRandom(side));
+            var positions = Enumerable.Range(0, count).Select(index => layout.Position(index)).ToArray();
             Assert.That(positions.All(position => !view.Contains(position, .325)), Is.True);
-            Assert.That(positions.Distinct().Count(), Is.EqualTo(24));
+            Assert.That(positions.Distinct().Count(), Is.EqualTo(count));
             var across = new DVec2(-layout.Direction.Y, layout.Direction.X);
-            var lanes = positions.GroupBy(position => Math.Round(DVec2.Dot(positions[0].DisplacementTo(position), across), 6)).ToArray();
+            var lanes = positions.GroupBy(position => Math.Round(DVec2.Dot(positions[0].DisplacementTo(position), layout.Direction), 6)).ToArray();
             Assert.That(lanes.Length, Is.EqualTo(3));
-            var along = positions.Select(position => DVec2.Dot(positions[0].DisplacementTo(position), layout.Direction)).ToArray();
+            var along = positions.Select(position => DVec2.Dot(positions[0].DisplacementTo(position), across)).ToArray();
             Assert.That(along.Max() - along.Min(), Is.GreaterThan(2 * (lanes.Max(lane => lane.Key) - lanes.Min(lane => lane.Key))));
+            Assert.That(positions.Average(position => DVec2.Dot(center.DisplacementTo(position), across)), Is.EqualTo(0).Within(1e-8), "The center of the wall must pass through the player's spawn-time position.");
             foreach (var lane in lanes.Skip(1))
             {
-                var depth = lane.Select(position => DVec2.Dot(positions[0].DisplacementTo(position), layout.Direction)).ToArray();
+                var depth = lane.Select(position => DVec2.Dot(positions[0].DisplacementTo(position), across)).ToArray();
                 Assert.That(depth.Max(), Is.LessThan(along.Max()));
                 Assert.That(depth.Min(), Is.GreaterThan(along.Min()));
             }

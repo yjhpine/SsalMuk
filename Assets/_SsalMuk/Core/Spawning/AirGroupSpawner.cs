@@ -17,7 +17,8 @@ namespace SsalMuk.Core
             double length = (centerCount - 1) * spacing * 2;
             if (double.IsInfinity(length) || (count > 1 && (double)count == (double)(count - 1))) throw new NumericRangeException("Air group spacing is not representable.");
             int side = (int)(Draw(random) * 4); double tangent = Draw(random) * 1.6 - 0.8;
-            double margin = settings.GroundMargin + bodyRadius + (sideCount > 0 ? spacing : 0);
+            // Bound the whole transverse formation, including oblique approaches at the screen corners.
+            double margin = settings.GroundMargin + bodyRadius + length * .5 + (sideCount > 0 ? spacing : 0);
             var offset = side < 2 ? new DVec2((side == 0 ? 1 : -1) * (view.HalfWidth + margin), tangent * view.HalfHeight) :
                 new DVec2(tangent * view.HalfWidth, (side == 2 ? 1 : -1) * (view.HalfHeight + margin));
             anchor = view.Center.Offset(offset); var toward = anchor.DisplacementTo(player);
@@ -26,7 +27,7 @@ namespace SsalMuk.Core
         public WorldPosition Position(long index)
         {
             if (index < 0 || index >= count) throw new ArgumentOutOfRangeException(nameof(index));
-            // Long middle lane and shorter, centered side lanes make rounded ends without extra bats.
+            // Three ranks face the player: the long axis crosses the flight direction.
             long row = index; int lane = 0; double inset = 0;
             if (index >= centerCount)
             {
@@ -36,7 +37,8 @@ namespace SsalMuk.Core
                 inset = (centerCount - sideCount) * .5;
             }
             var across = new DVec2(-Direction.Y, Direction.X);
-            return anchor.Offset(across * (lane * spacing) - Direction * ((row + inset) * spacing * 2));
+            double transverse = (row + inset - (centerCount - 1) * .5) * spacing * 2;
+            return anchor.Offset(across * transverse - Direction * (lane * spacing));
         }
         internal static double Draw(IRandomSource random)
         {

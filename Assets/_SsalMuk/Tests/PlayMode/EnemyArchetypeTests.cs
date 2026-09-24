@@ -44,7 +44,11 @@ namespace SsalMuk.Tests
             yield return null;
             Assert.That(view.VisibleUnitCount, Is.EqualTo(13));
             var across = new DVec2(-direction.Y, direction.X);
-            Assert.That(air.Select(unit => System.Math.Round(DVec2.Dot(air[0].Position.DisplacementTo(unit.Position), across), 6)).Distinct().Count(), Is.EqualTo(3));
+            var offsets = air.Select(unit => air[0].Position.DisplacementTo(unit.Position)).ToArray();
+            Assert.That(offsets.Select(offset => System.Math.Round(DVec2.Dot(offset, direction), 6)).Distinct().Count(), Is.EqualTo(3));
+            double width = offsets.Max(offset => DVec2.Dot(offset, across)) - offsets.Min(offset => DVec2.Dot(offset, across));
+            double depth = offsets.Max(offset => DVec2.Dot(offset, direction)) - offsets.Min(offset => DVec2.Dot(offset, direction));
+            Assert.That(width, Is.GreaterThan(depth * 2));
             string directory = Path.GetFullPath(Path.Combine(Application.dataPath, "../Logs/Validation/AirFormation", run.Id.ToString("N")));
             Directory.CreateDirectory(directory); ScreenCapture.CaptureScreenshot(Path.Combine(directory, "three-lanes.png"));
             yield return new WaitForEndOfFrame();
