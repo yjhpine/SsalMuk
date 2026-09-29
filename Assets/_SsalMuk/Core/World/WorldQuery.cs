@@ -7,6 +7,7 @@ namespace SsalMuk.Core
     {
         private readonly WorldStore world;
         private readonly SpatialIndex units, experience;
+        internal long UnitRevision => units.Revision;
         // World simulation queries are synchronous. Reuse this scratch storage for exact static geometry.
         private readonly List<GridCell> blockedCandidates = new List<GridCell>(32);
         internal WorldQuery(WorldStore world, SpatialIndex units, SpatialIndex experience)

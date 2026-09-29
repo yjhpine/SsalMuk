@@ -15,6 +15,8 @@ namespace SsalMuk.Core
         public event Action<CombatEvent> Accepted;
         public int CachedHitCount { get { int count = 0; foreach (var keys in acceptedKeys.Values) count += keys.Count; return count; } }
         public int CompletedRangeCount => completed.Count;
+        internal bool HasAcceptedHit(long targetId, HitKey key) =>
+            acceptedKeys.TryGetValue(targetId, out var keys) && keys.Contains(key);
         public void CompleteAttack(long attackId)
         {
             if (disposed) return;

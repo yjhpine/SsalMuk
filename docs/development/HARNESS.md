@@ -156,6 +156,10 @@ AUTO 회귀는 정확한 클래스 필터 `SsalMuk.Tests.AutoUpgradePriorityTest
 
 ## 7. 성능과 무한 보존 검증
 
+2026-09-29 후반 공격 성능 회귀는 `CombatQueryAllocationTests`, `SwordAttackTests`, `MeleeGeometryTests`, `WorldStoreTests`, `DamageTests`, `WeaponSchedulingTests`, `BodyHitSeparationTests`로 검사한다. 재사용 원형 조회와 이미 처리한 근접 쓸기의 예열 후 임시 할당, 표시 정의 조회의 할당, 연속 이동 적중과 큰 사거리의 각도 허용오차를 포함한다. 같은 셀 안 이동·새 적 생성·제거·사거리/공격 원점 변경은 근접 후보 캐시를 갱신해야 한다. 후보는 ID 순서이며 피해 키·발사 일정·밀림·보존 규칙은 유지한다. Unity Mono의 스레드 바이트 카운터가 0만 반환하면 성공으로 해석하지 않고, 양성 탐침으로 확인한 `GC.Alloc` 기록기의 **할당 횟수**를 사용한다.
+
+후반 표시 부하는 `SsalMuk.Tests.CrowdPerformanceComparisonTests.Population300LateCombat`과 `Population500LateCombat`을 각각 정확한 메서드 필터로 실행한다. 철검 강화(공격력/개수/연타/속도/범위)는 54/7/2/43/32, 파이어볼은 6/5/2/5/4, 공용 이속 27·흡수 10, 실제 3배 범위 아이템을 적용한다. 높은 진단용 체력으로 300/500마리와 플레이어를 보존하고 초기 XP 200개·AI·전투·군중·표시를 실행한다. 40주기 예열 후 350주기 측정하며 실제 상한·밸런스를 변경하지 않는다. 모든 적을 표시하는 카메라 24/표시 반경 60 조건이므로 일반 생존 FPS와 구분한다. 30분 재검사나 새 빌드는 별도 범위다. 원인·전후 측정은 [log.md](../../log.md)에 기록한다.
+
 2026-09-25 수집 AI 회귀는 EditMode `SsalMuk.Tests.LootRecoveryTests` 전체 fixture와 PlayMode `SsalMuk.Tests.LootRecoveryLiveTests`로 실행한다. 구역 합계·거대 값/좌표·흡수 목표 무효화·도주 중 새 드롭·시야 밖 기억·우회 방향·막힌 구슬의 점수 제외·먼 복귀의 지역 검사·실제 접촉 지급을 포함한다. 2,000개 구슬을 같은 구역에 둔 테스트는 0.2초당 구역 위험 평가 한 번을 확인하며 시간 임계값을 테스트 합격 조건으로 쓰지 않는다. LowAiTests·ExperiencePickupTests·BossChargeTests·TargetResolverTests·MovementOptimizationTests 및 SwordCombatTests·ExperienceVisualTests로 관련 회귀를 검증한다.
 
 같은 조건 비교용 `Logs/Validation/loot-kiting-20260925/benchmark.ps1`은 이전 `air-wall-frame-20260925/ai-probe.csx`를 사용한다. 실제 카탈로그, 비어 있는 맵의 적 500·경험치 0/200/1000, 원점 0/16, 3회 예열·20회 AI Tick을 측정한다. 매 10틱 계획 갱신과 나머지 틱을 함께 포함하며 평균/P95/최댓값을 보존한다. 원시 결과와 검증 소스 해시를 연결하고, 움직이는 실제 전투 FPS나 모든 가구 배치의 비용으로 일반화하지 않는다.

@@ -35,6 +35,12 @@ namespace SsalMuk.Tests
         [UnityTest, Category("Performance")]
         public IEnumerator Population1000Combat() => Compare(1000, true);
 
+        [UnityTest, Category("Performance")]
+        public IEnumerator Population300LateCombat() => Compare(300, true, true);
+
+        [UnityTest, Category("Performance")]
+        public IEnumerator Population500LateCombat() => Compare(500, true, true);
+
         [UnityTearDown]
         public IEnumerator Cleanup()
         {
@@ -56,7 +62,7 @@ namespace SsalMuk.Tests
             yield return null; yield return null;
         }
 
-        private IEnumerator Compare(int count, bool combat = false)
+        private IEnumerator Compare(int count, bool combat = false, bool lateGrowth = false)
         {
             yield return SceneManager.LoadSceneAsync(AppRoot.BattleScenePath);
             if (AppRoot.Instance != null) Object.Destroy(AppRoot.Instance.gameObject);
@@ -74,13 +80,28 @@ namespace SsalMuk.Tests
                 combat ? 1000000000 : d.MaxHealth, !combat && d.Kind == UnitKind.Normal ? 1.5 : d.MoveSpeed, d.BodyRadius, d.ContactDamage, d.ExperienceReward,
                 d.HurtRadius, d.VisualFootOffset)), Enum.GetValues(typeof(WeaponKind)).Cast<WeaponKind>().Select(sourceDefinitions.GetWeapon));
             rig = RunTestRig.Create(seed: 260917, enableAi: combat, enableCombat: combat, definitions: definitions,
-                movementSettings: catalog.Defaults.CreateMovementSettings(), pickupSettings: catalog.Defaults.CreatePickupSettings());
+                movementSettings: catalog.Defaults.CreateMovementSettings(), pickupSettings: catalog.Defaults.CreatePickupSettings(),
+                growthSettings: lateGrowth ? catalog.Defaults.CreateGrowthSettings() : null);
+            if (lateGrowth) rig.PlacePlayer(new DVec2(16, 16));
             // Fixed diagnostic normal speed 1.5 preserves the earlier comparison after gameplay speed tuning.
             // Same density and row-major layout; no player input in movement-only cases.
             int columns = (int)Math.Ceiling(Math.Sqrt(count));
             for (int i = 0; i < count; i++)
-                rig.Spawn(UnitKind.Normal, new DVec2(3 + (i % columns) * 0.58, (i / columns - columns / 2.0) * 0.58), combat ? 1000000000 : 10);
-            if (combat)
+                rig.Spawn(UnitKind.Normal, new DVec2((lateGrowth ? 17 : 3) + (i % columns) * 0.58,
+                    (lateGrowth ? 16 : 0) + (i / columns - columns / 2.0) * 0.58), combat ? 1000000000 : 10);
+            if (lateGrowth)
+            {
+                rig.Equip(WeaponKind.Fireball);
+                var upgrades = new[] { UpgradeKind.Damage, UpgradeKind.Copies, UpgradeKind.Repeats, UpgradeKind.Speed, UpgradeKind.Range };
+                int[] sword = { 54, 7, 2, 43, 32 }, fireball = { 6, 5, 2, 5, 4 };
+                for (int i = 0; i < upgrades.Length; i++)
+                { rig.Upgrade(WeaponKind.Sword, upgrades[i], sword[i]); rig.Upgrade(WeaponKind.Fireball, upgrades[i], fireball[i]); }
+                var growth = new GrowthService(rig.Run);
+                growth.UpgradeShared(SharedUpgradeKind.MoveSpeed, 27); growth.UpgradeShared(SharedUpgradeKind.PickupRange, 10);
+                rig.World.AddItem(PowerupKind.AttackRange, rig.Player.Position);
+                for (int i = 0; i < 200; i++) rig.DropXp(new DVec2(10 + i % 20 * .4, 10 + i / 20 * .4), 1 + i % 3 * 5);
+            }
+            else if (combat)
             {
                 foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind))) if (kind != WeaponKind.Sword) rig.Equip(kind);
                 for (int i = 0; i < 200; i++) rig.DropXp(new DVec2((i % 20 - 10) * .4, (i / 20 - 5) * .4), 1 + i % 3 * 5);
@@ -96,7 +117,7 @@ namespace SsalMuk.Tests
             camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.08f, .14f, .16f);
             var view = root.AddComponent<WorldView>(); view.Initialize(catalog);
             var presenter = new WorldPresenter(view); presenter.Refresh(rig.Run, 1, 60);
-            var sampler = root.AddComponent<CrowdPerformanceSampler>(); sampler.Configure(rig, presenter, view, combat);
+            var sampler = root.AddComponent<CrowdPerformanceSampler>(); sampler.Configure(rig, presenter, view, combat, lateGrowth);
 
             double warmupUntil = Time.realtimeSinceStartupAsDouble + 45;
             while (!sampler.Measuring && Time.realtimeSinceStartupAsDouble < warmupUntil) yield return null;
@@ -118,7 +139,13 @@ namespace SsalMuk.Tests
             Assert.That(report.viewMeanMs, Is.GreaterThan(0));
             Assert.That(report.shadowRenderers, Is.Zero);
             Assert.That(rig.Run.Phase, Is.EqualTo(RunPhase.Running));
-            if (combat) Assert.That(report.weaponLaunchCounts.All(value => value > 0), Is.True, "Every baseline weapon must execute.");
+            if (lateGrowth)
+            {
+                Assert.That(rig.Run.CurrentWeaponStats(WeaponKind.Sword).Range, Is.EqualTo(17.088).Within(1e-8));
+                Assert.That(rig.Simulation.Sword.LaunchCount, Is.GreaterThan(800));
+                Assert.That(rig.Simulation.Weapons[WeaponKind.Fireball].LaunchCount, Is.GreaterThan(100));
+            }
+            else if (combat) Assert.That(report.weaponLaunchCounts.All(value => value > 0), Is.True, "Every baseline weapon must execute.");
         }
     }
 
@@ -129,16 +156,17 @@ namespace SsalMuk.Tests
         private WorldView view;
         private readonly List<double> models = new List<double>(4096), views = new List<double>(4096), frames = new List<double>(4096);
         private long modelBytes, viewBytes;
-        private bool running, recording, allocationCounterSupported, combatEnabled;
+        private bool running, recording, allocationCounterSupported, combatEnabled, lateGrowth;
         private double previousFrame, measurementStart, warmupStarted, warmupSeconds;
         private int fixedStepsThisFrame, maximumFixedSteps, minimumVisible = int.MaxValue;
         public int FrameCount => frames.Count;
         public int StepCount => models.Count;
         public bool Measuring => recording;
         private int warmupSteps, maximumProjectiles;
-        public void Configure(RunTestRig model, WorldPresenter presentation, WorldView worldView, bool combat)
+        public void Configure(RunTestRig model, WorldPresenter presentation, WorldView worldView, bool combat, bool lateGrowth = false)
         {
             rig = model; presenter = presentation; view = worldView; running = true; combatEnabled = combat;
+            this.lateGrowth = lateGrowth;
             warmupStarted = Time.realtimeSinceStartupAsDouble;
             long before = GC.GetAllocatedBytesForCurrentThread();
             var probe = new byte[1024];
@@ -187,13 +215,14 @@ namespace SsalMuk.Tests
             var renderers = view.GetComponentsInChildren<Renderer>(true);
             return new CrowdPerformanceReport {
                 utc = DateTime.UtcNow.ToString("O"), runId = rig.Run.Id.ToString("N"), unityVersion = Application.unityVersion,
-                environment = combatEnabled ? "Unity Editor PlayMode; player AI, four baseline weapons, contact and 200 initial XP orbs; high HP retains the population; no scheduled spawning" :
+                environment = lateGrowth ? "Unity Editor PlayMode; late sword/fireball levels from 30m capture, 3x range item, AI, crowd, contact and 200 XP; high HP retains population; no scheduled spawning; camera 24 and view radius 60 keep all normals visible" :
+                    combatEnabled ? "Unity Editor PlayMode; player AI, four baseline weapons, contact and 200 initial XP orbs; high HP retains the population; no scheduled spawning" :
                     "Unity Editor PlayMode; actual FixedUpdate + WorldPresenter + runtime UnitViews; no combat, player AI, spawning or XP",
                 processor = SystemInfo.processorType, graphics = SystemInfo.graphicsDeviceName,
                 enemies = count, configuredNormalCap = cap, seed = 260917, width = Screen.width, height = Screen.height,
                 warmupWallSeconds = warmupSeconds, warmupSteps = warmupSteps, measurementWallSeconds = Time.realtimeSinceStartupAsDouble - measurementStart,
                 requestedFrames = 20, measurementWallLimitSeconds = 90,
-                cameraHalfHeight = 24, viewRadius = 60, combat = combatEnabled, maximumProjectiles = maximumProjectiles,
+                cameraHalfHeight = 24, viewRadius = 60, combat = combatEnabled, lateGrowth = lateGrowth, maximumProjectiles = maximumProjectiles,
                 normalBodyRadius = rig.Run.Definitions.GetUnit(UnitKind.Normal).BodyRadius,
                 normalHurtRadius = rig.Run.Definitions.GetUnit(UnitKind.Normal).HurtRadius,
                 weaponLaunchCounts = combatEnabled ? rig.Simulation.Weapons.Values.Select(w => w.LaunchCount).ToArray() : Array.Empty<long>(),
@@ -221,7 +250,7 @@ namespace SsalMuk.Tests
     public sealed class CrowdPerformanceReport
     {
         public string utc, runId, unityVersion, environment, processor, graphics;
-        public bool allocationCounterSupported, combat;
+        public bool allocationCounterSupported, combat, lateGrowth;
         public long[] weaponLaunchCounts;
         public int warmupSteps, maximumProjectiles;
         public double cameraHalfHeight, viewRadius, normalBodyRadius, normalHurtRadius;

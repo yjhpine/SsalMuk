@@ -38,7 +38,9 @@ namespace SsalMuk.Tests
             var axe = Create(rig, WeaponKind.Axe, 0); var axeExecutor = new AxeAttack(rig.Run, rig.Movement, rig.Damage);
             axeExecutor.Step(axe, 0, 0.6, 0, 0.6); axeExecutor.Step(axe, 0, 0.6, 0, 0.6);
             Assert.That(rig.Unit(back).Health, Is.EqualTo(94)); Assert.That(rig.Unit(middle).Health, Is.EqualTo(90));
-            long shifted = rig.Spawn(UnitKind.Normal, new DVec2(1.8 * Math.Cos(Math.PI / 6), 1.8 * Math.Sin(Math.PI / 6)), 100);
+            // Copy three is the second left copy: the approved melee spacing is 40 degrees.
+            double copyAngle = 80 * Math.PI / 180;
+            long shifted = rig.Spawn(UnitKind.Normal, new DVec2(1.8 * Math.Cos(copyAngle), 1.8 * Math.Sin(copyAngle)), 100);
             var copy = Create(rig, WeaponKind.Spear, 3); executor.Step(copy, 0, 0.18, 0, 0.18);
             Assert.That(rig.Unit(shifted).Health, Is.EqualTo(90));
         }

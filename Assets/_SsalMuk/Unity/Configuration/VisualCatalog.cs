@@ -33,8 +33,16 @@ namespace SsalMuk.Unity
             if (sprites == null || sprites.Length != 6 || sprites.Any(x => x == null)) throw new ArgumentException("Six furniture sprites are required.");
             furniture = (Sprite[])sprites.Clone();
         }
-        public UnitArt Unit(UnitKind kind) => units.First(x => x.Kind == kind);
-        public WeaponArt Weapon(WeaponKind kind) => weapons.First(x => x.Kind == kind);
+        public UnitArt Unit(UnitKind kind)
+        {
+            foreach (var art in units) if (art.Kind == kind) return art;
+            throw new InvalidOperationException("Sequence contains no matching element");
+        }
+        public WeaponArt Weapon(WeaponKind kind)
+        {
+            foreach (var art in weapons) if (art.Kind == kind) return art;
+            throw new InvalidOperationException("Sequence contains no matching element");
+        }
         public Color ExperienceColor(ExperienceTier tier) => experienceColors[(int)tier];
         public float ExperienceHaloRadius(ExperienceTier tier) => 0.27f + 0.03f * (int)tier;
         public void Configure(UnitArt[] unitArt, WeaponArt[] weaponArt, Sprite[] projectiles, Sprite[] explosions)

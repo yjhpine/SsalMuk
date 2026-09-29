@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace SsalMuk.Core
 {
@@ -7,6 +8,10 @@ namespace SsalMuk.Core
         private readonly RunModel run;
         private readonly MovementSystem movement;
         private readonly DamageService damage;
+        private readonly List<long> candidates = new List<long>(64);
+        private WorldPosition queryOrigin;
+        private double cachedRadius;
+        private long queryRevision = -1;
         public MeleeAttack(RunModel run, MovementSystem movement, DamageService damage)
         { this.run = run; this.movement = movement; this.damage = damage; }
         public void Step(AttackInstance attack, double frameFrom, double frameTo, double from, double to)
@@ -25,9 +30,19 @@ namespace SsalMuk.Core
             double progress = hi >= attack.StartedAt + attack.ActiveSeconds ? 1 :
                 Math.Max(previousProgress, Math.Min(1, (hi - attack.StartedAt) / attack.ActiveSeconds));
             double queryRadius = attack.Stats.Range + definition.Width + movement.LargestHurtRadius + movement.MaximumDisplacement + playerTravel.Length;
-            foreach (long id in run.World.Query.QueryCircle(originEnd, queryRadius))
+            var query = run.World.Query;
+            // Copies in one fixed slice share this broad phase, but exact sweeps stay per attack.
+            // Spawn, removal and even movement within one cell invalidate it immediately.
+            if (queryRevision != query.UnitRevision || queryOrigin != originEnd || cachedRadius != queryRadius)
+            {
+                query.QueryCircle(originEnd, queryRadius, candidates);
+                queryRevision = query.UnitRevision; queryOrigin = originEnd; cachedRadius = queryRadius;
+            }
+            foreach (long id in candidates)
             {
                 if (!run.World.Units.TryGet(id, out var enemy) || enemy.Kind == UnitKind.Player || !enemy.IsAlive) continue;
+                // An accepted hit cannot damage this target again during this copy/repeat.
+                if (damage.HasAcceptedHit(id, attack.Key)) continue;
                 var previousEnemy = movement.PreviousPositions.TryGetValue(id, out var old) ? old : enemy.Position;
                 var enemyTravel = previousEnemy.DisplacementTo(enemy.Position);
                 var relativeStart = originStart.DisplacementTo(previousEnemy.Offset(enemyTravel * startFraction));

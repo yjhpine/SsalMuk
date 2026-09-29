@@ -6,13 +6,18 @@ namespace SsalMuk.Core
     public sealed class SpatialIndex
     {
         private readonly Dictionary<long, WorldPosition> positions = new Dictionary<long, WorldPosition>();
-        private readonly Dictionary<GridCell, SortedSet<long>> cells = new Dictionary<GridCell, SortedSet<long>>();
+        // SortedSet traversal creates a stack per occupied cell on Unity's Mono runtime.
+        // Query results are sorted once below; nearest-neighbour ties compare IDs explicitly.
+        private readonly Dictionary<GridCell, HashSet<long>> cells = new Dictionary<GridCell, HashSet<long>>();
         private readonly Dictionary<ChunkCoord, HashSet<GridCell>> chunks = new Dictionary<ChunkCoord, HashSet<GridCell>>();
+        private static readonly Comparison<long> CompareIds = (a, b) => a.CompareTo(b);
         public int OccupiedChunkCount => chunks.Count;
+        internal long Revision { get; private set; }
 
         public void Upsert(long id, WorldPosition position)
         {
             if (id <= 0) throw new ArgumentOutOfRangeException(nameof(id));
+            Revision = checked(Revision + 1);
             var cell = GridCell.At(position);
             if (positions.TryGetValue(id, out var previous))
             {
@@ -22,7 +27,7 @@ namespace SsalMuk.Core
             positions[id] = position;
             if (!cells.TryGetValue(cell, out var ids))
             {
-                cells.Add(cell, ids = new SortedSet<long>());
+                cells.Add(cell, ids = new HashSet<long>());
                 if (!chunks.TryGetValue(cell.Chunk, out var region)) chunks.Add(cell.Chunk, region = new HashSet<GridCell>());
                 region.Add(cell);
             }
@@ -32,6 +37,7 @@ namespace SsalMuk.Core
         public bool Remove(long id)
         {
             if (!positions.TryGetValue(id, out var position)) return false;
+            Revision = checked(Revision + 1);
             var cell = GridCell.At(position); positions.Remove(id);
             var ids = cells[cell]; ids.Remove(id);
             if (ids.Count == 0)
@@ -93,7 +99,7 @@ namespace SsalMuk.Core
                 }
             }
             else foreach (var chunk in chunks) Collect(chunk.Key, chunk.Value);
-            result.Sort();
+            result.Sort(CompareIds);
 
             void Collect(ChunkCoord coord, HashSet<GridCell> region)
             {
@@ -121,7 +127,7 @@ namespace SsalMuk.Core
                     CollectIds(cells[cell]);
                 }
             }
-            void CollectIds(SortedSet<long> ids)
+            void CollectIds(HashSet<long> ids)
             {
                 foreach (long id in ids)
                     if ((accepts == null || accepts(id)) && origin.DistanceTo(positions[id]) <= radius) result.Add(id);
@@ -137,6 +143,6 @@ namespace SsalMuk.Core
         {
             if (radius < 0 || double.IsNaN(radius) || double.IsInfinity(radius)) throw new ArgumentOutOfRangeException(nameof(radius));
         }
-        internal void Clear() { positions.Clear(); cells.Clear(); chunks.Clear(); }
+        internal void Clear() { Revision = checked(Revision + 1); positions.Clear(); cells.Clear(); chunks.Clear(); }
     }
 }

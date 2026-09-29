@@ -62,6 +62,14 @@ namespace SsalMuk.Core
             double middle = (-0.5 + (previousProgress + progress) / 2) * Math.PI / 3;
             double half = (progress - previousProgress) * Math.PI / 6;
             from = Rotate(from, -middle); to = Rotate(to, -middle);
+            if (targetRadius < 0 || double.IsNaN(targetRadius) || double.IsInfinity(targetRadius) || reach <= 0 || double.IsNaN(reach) || double.IsInfinity(reach))
+                throw new ArgumentOutOfRangeException(nameof(reach));
+            // A thin sword slice fits inside this padded box. Test the whole moving path's
+            // bounds, not just its endpoints, so fast crossing targets still reach the exact test.
+            // Preserve the exact test's angular tolerance as well as its radial tolerance.
+            double padding = targetRadius + 1e-10, halfHeight = Math.Sin(half + 1e-10) * (reach + padding) + padding;
+            if (Math.Max(from.X, to.X) < -padding || Math.Min(from.X, to.X) > reach + padding ||
+                Math.Max(from.Y, to.Y) < -halfHeight || Math.Min(from.Y, to.Y) > halfHeight) return false;
             if (SectorContains(from, targetRadius, reach, half) || SectorContains(to, targetRadius, reach, half)) return true;
             var lower = new DVec2(Math.Cos(half), -Math.Sin(half)) * reach;
             var upper = new DVec2(lower.X, -lower.Y);
