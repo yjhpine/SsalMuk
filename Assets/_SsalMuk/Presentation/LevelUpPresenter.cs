@@ -11,10 +11,19 @@ namespace SsalMuk.Presentation
         private OfferSnapshot shownOffer;
         private BigInteger shownPending = -1;
         private string pendingText = "";
+        private RunModel automaticRun;
+        private long waitingOfferId;
+        private double waitStarted;
+        private int shownCountdown = -1;
+        private bool shownAutomatic, disposed;
+        public bool IsAutomatic { get; private set; }
+        public const double AutomaticDelaySeconds = 5;
         public LevelUpPresenter(ILevelUpView view)
         { this.view = view ?? throw new ArgumentNullException(nameof(view)); view.ChoiceRequested += Choose; }
         public void Refresh(RunModel run)
         {
+            if (disposed) return;
+            UpdateAutomaticSelection(run);
             var offer = run?.CurrentOffer;
             if (run == null || run.Phase != RunPhase.Running || run.IsPaused || offer == null)
             { shownRun = null; shownOffer = null; view.Show(false, false, "", titles, descriptions); return; }
@@ -40,17 +49,43 @@ namespace SsalMuk.Presentation
                 }
             }
             shownRun = run; shownOffer = offer;
-            if (shownPending != run.Player.Growth.PendingChoices)
+            int countdown = (int)Math.Ceiling(Math.Max(0, AutomaticDelaySeconds - (run.Clock.ElapsedSeconds - waitStarted)));
+            if (shownPending != run.Player.Growth.PendingChoices || shownCountdown != countdown || shownAutomatic != IsAutomatic)
             {
                 shownPending = run.Player.Growth.PendingChoices;
-                pendingText = "남은 선택 " + NumberFormatter.Format(shownPending) + "회  ·  전투 진행 중";
+                shownCountdown = countdown; shownAutomatic = IsAutomatic;
+                pendingText = "남은 선택 " + NumberFormatter.Format(shownPending) + "회  ·  " +
+                    (IsAutomatic ? "AUTO · 클릭하면 해제" : "자동 선택까지 " + countdown + "초");
             }
             view.Show(true, !run.Rewards.HasQueuedChoice, pendingText, titles, descriptions);
         }
         private void Choose(int slot)
         {
+            CancelAutomaticSelection();
             if (shownRun == null || shownOffer == null) return;
             shownRun.Commands.TryQueueChoice(shownRun.Id, shownOffer.Id, slot); Refresh(shownRun);
+        }
+        public void CancelAutomaticSelection()
+        {
+            IsAutomatic = false;
+            waitingOfferId = automaticRun?.CurrentOffer?.Id ?? 0;
+            waitStarted = automaticRun?.Clock.ElapsedSeconds ?? 0;
+        }
+        private void UpdateAutomaticSelection(RunModel run)
+        {
+            if (!ReferenceEquals(run, automaticRun))
+            { automaticRun = run; IsAutomatic = false; waitingOfferId = 0; }
+            if (run == null || run.Phase != RunPhase.Running || run.Player == null || !run.Player.IsAlive)
+            { IsAutomatic = false; waitingOfferId = 0; return; }
+            if (run.IsPaused) return;
+            var offer = run.CurrentOffer;
+            if (offer == null) { waitingOfferId = 0; return; }
+            if (waitingOfferId != offer.Id)
+            { waitingOfferId = offer.Id; waitStarted = run.Clock.ElapsedSeconds; }
+            if (run.Rewards.HasQueuedChoice) return;
+            if (!IsAutomatic && run.Clock.ElapsedSeconds - waitStarted + 1e-9 < AutomaticDelaySeconds) return;
+            IsAutomatic = true;
+            run.Commands.TryQueueChoice(run.Id, offer.Id, AutoUpgradePriority.SelectSlot(offer.Choices, run.StartingWeapon));
         }
         private static string WeaponName(WeaponKind kind) => kind == WeaponKind.Sword ? "철검" : kind == WeaponKind.Spear ? "철창" : kind == WeaponKind.Axe ? "철도끼" : "파이어볼";
         private static string SharedName(SharedUpgradeKind kind) => kind == SharedUpgradeKind.MoveSpeed ? "이동속도" :
@@ -62,6 +97,7 @@ namespace SsalMuk.Presentation
         private static string UpgradeDescription(WeaponKind weapon, UpgradeKind kind) => kind == UpgradeKind.Damage ? "한 번의 공격이 더 강해집니다" : kind == UpgradeKind.Copies ?
             "좌우 교대 +1 · " + CopyLayout.Degrees(weapon) + "도 · 총 " + WeaponState.MaximumCopies(weapon) + "개까지" :
             kind == UpgradeKind.Repeats ? "연속 공격 1회 추가 · 최대 2단계" : kind == UpgradeKind.Speed ? "공격 사이의 대기 시간 감소" : "무기의 공격 범위 증가";
-        public void Dispose() { view.ChoiceRequested -= Choose; shownRun = null; shownOffer = null; }
+        public void Dispose()
+        { disposed = true; view.ChoiceRequested -= Choose; shownRun = null; shownOffer = null; automaticRun = null; IsAutomatic = false; }
     }
 }

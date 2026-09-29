@@ -2,6 +2,7 @@ using SsalMuk.Core;
 using SsalMuk.Presentation;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 
@@ -81,7 +82,15 @@ namespace SsalMuk.Unity
         }
         private void ApplyBackground(bool darkMode)
         { if (runtimeCamera != null) runtimeCamera.backgroundColor = darkMode ? new Color32(6, 10, 14, 255) : UiFactory.Ink; }
-        private void LateUpdate() { if (Coordinator != null) { hudPresenter.Refresh(Coordinator.Run); levelUpPresenter.Refresh(Coordinator.Run); } }
+        private void LateUpdate()
+        {
+            if (Coordinator == null) return;
+            var mouse = Mouse.current;
+            if (mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame ||
+                mouse.middleButton.wasPressedThisFrame || mouse.forwardButton.wasPressedThisFrame || mouse.backButton.wasPressedThisFrame))
+                levelUpPresenter.CancelAutomaticSelection();
+            hudPresenter.Refresh(Coordinator.Run); levelUpPresenter.Refresh(Coordinator.Run);
+        }
         private void OnDestroy()
         {
             if (Display != null) Display.Changed -= ApplyBackground;
