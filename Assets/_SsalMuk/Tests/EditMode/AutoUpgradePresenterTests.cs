@@ -39,10 +39,13 @@ namespace SsalMuk.Tests
             rig.Advance(.02); presenter.Refresh(rig.Run);
             Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.True, "AUTO must continue without another five-second wait.");
             rig.Advance(.02);
-            // Refreshing normally queues AUTO; a manual event first must stop it.
+            // A click stops AUTO, then the player chooses from the refreshed offer.
+            presenter.CancelAutomaticSelection(); presenter.Refresh(rig.Run);
+            var pending = rig.Player.Growth.PendingChoices;
             view.Submit(0);
             Assert.That(view.Remaining, Does.Not.Contain("AUTO"));
             rig.Advance(.02); presenter.Refresh(rig.Run);
+            Assert.That(rig.Player.Growth.PendingChoices, Is.EqualTo(pending - 1));
             Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.False);
             rig.Advance(4.98); presenter.Refresh(rig.Run);
             Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.False);
@@ -109,12 +112,45 @@ namespace SsalMuk.Tests
         }
 
         [Test]
+        public void ClickCancelsOnlyTheUnappliedAutomaticCommandAndManualCardCanReplaceIt()
+        {
+            using var rig = RunTestRig.Create(enableAi: false);
+            rig.GrantExperience(1000); rig.Advance(.02);
+            var view = new View(); using var presenter = new LevelUpPresenter(view);
+            presenter.Refresh(rig.Run); rig.Advance(5); presenter.Refresh(rig.Run);
+            Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.True);
+            var pending = rig.Player.Growth.PendingChoices;
+            presenter.CancelAutomaticSelection(); presenter.Refresh(rig.Run);
+            Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.False, "A click must withdraw AUTO before the command is applied.");
+            rig.Advance(.02);
+            Assert.That(rig.Player.Growth.PendingChoices, Is.EqualTo(pending));
+            view.Submit(1);
+            Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.True);
+            presenter.CancelAutomaticSelection();
+            Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.True, "A second click must not cancel the user's own choice.");
+            rig.Advance(.02);
+            Assert.That(rig.Player.Growth.PendingChoices, Is.EqualTo(pending - 1));
+        }
+
+        [Test]
         public void DisposedPresenterCannotQueueAutomaticRewards()
         {
             using var rig = RunTestRig.Create(enableAi: false);
             rig.GrantExperience(5); rig.Advance(.02);
             var presenter = new LevelUpPresenter(new View()); presenter.Refresh(rig.Run); presenter.Dispose();
             rig.Advance(5); presenter.Refresh(rig.Run);
+            Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.False);
+        }
+
+        [Test]
+        public void DisposingAutoWithdrawsItsPendingCommand()
+        {
+            using var rig = RunTestRig.Create(enableAi: false);
+            rig.GrantExperience(5); rig.Advance(.02);
+            var presenter = new LevelUpPresenter(new View()); presenter.Refresh(rig.Run);
+            rig.Advance(5); presenter.Refresh(rig.Run);
+            Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.True);
+            presenter.Dispose();
             Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.False);
         }
 

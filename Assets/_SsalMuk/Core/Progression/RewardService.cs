@@ -39,6 +39,14 @@ namespace SsalMuk.Core
             var command = new RewardCommand(runId, offerId, slot, CurrentOffer.OwnershipVersion);
             if (!IsValid(command)) return false; queued = command; return true;
         }
+        public bool TryCancelChoice(RewardCommand expected)
+        {
+            if (!queued.HasValue) return false;
+            var command = queued.Value;
+            if (command.RunId != expected.RunId || command.OfferId != expected.OfferId || command.Slot != expected.Slot ||
+                command.OwnershipVersion != expected.OwnershipVersion) return false;
+            queued = null; return true;
+        }
         public void Step()
         {
             if (run.IsPaused) return;

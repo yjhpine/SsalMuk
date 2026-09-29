@@ -12,6 +12,7 @@ namespace SsalMuk.Presentation
         private BigInteger shownPending = -1;
         private string pendingText = "";
         private RunModel automaticRun;
+        private RewardCommand? automaticCommand;
         private long waitingOfferId;
         private double waitStarted;
         private int shownCountdown = -1;
@@ -67,6 +68,8 @@ namespace SsalMuk.Presentation
         }
         public void CancelAutomaticSelection()
         {
+            if (automaticCommand.HasValue) automaticRun?.Rewards.TryCancelChoice(automaticCommand.Value);
+            automaticCommand = null;
             IsAutomatic = false;
             waitingOfferId = automaticRun?.CurrentOffer?.Id ?? 0;
             waitStarted = automaticRun?.Clock.ElapsedSeconds ?? 0;
@@ -74,9 +77,9 @@ namespace SsalMuk.Presentation
         private void UpdateAutomaticSelection(RunModel run)
         {
             if (!ReferenceEquals(run, automaticRun))
-            { automaticRun = run; IsAutomatic = false; waitingOfferId = 0; }
+            { CancelAutomaticSelection(); automaticRun = run; waitingOfferId = 0; }
             if (run == null || run.Phase != RunPhase.Running || run.Player == null || !run.Player.IsAlive)
-            { IsAutomatic = false; waitingOfferId = 0; return; }
+            { CancelAutomaticSelection(); waitingOfferId = 0; return; }
             if (run.IsPaused) return;
             var offer = run.CurrentOffer;
             if (offer == null) { waitingOfferId = 0; return; }
@@ -85,7 +88,9 @@ namespace SsalMuk.Presentation
             if (run.Rewards.HasQueuedChoice) return;
             if (!IsAutomatic && run.Clock.ElapsedSeconds - waitStarted + 1e-9 < AutomaticDelaySeconds) return;
             IsAutomatic = true;
-            run.Commands.TryQueueChoice(run.Id, offer.Id, AutoUpgradePriority.SelectSlot(offer.Choices, run.StartingWeapon));
+            int slot = AutoUpgradePriority.SelectSlot(offer.Choices, run.StartingWeapon);
+            if (run.Commands.TryQueueChoice(run.Id, offer.Id, slot))
+                automaticCommand = new RewardCommand(run.Id, offer.Id, slot, offer.OwnershipVersion);
         }
         private static string WeaponName(WeaponKind kind) => kind == WeaponKind.Sword ? "철검" : kind == WeaponKind.Spear ? "철창" : kind == WeaponKind.Axe ? "철도끼" : "파이어볼";
         private static string SharedName(SharedUpgradeKind kind) => kind == SharedUpgradeKind.MoveSpeed ? "이동속도" :
@@ -98,6 +103,6 @@ namespace SsalMuk.Presentation
             "좌우 교대 +1 · " + CopyLayout.Degrees(weapon) + "도 · 총 " + WeaponState.MaximumCopies(weapon) + "개까지" :
             kind == UpgradeKind.Repeats ? "연속 공격 1회 추가 · 최대 2단계" : kind == UpgradeKind.Speed ? "공격 사이의 대기 시간 감소" : "무기의 공격 범위 증가";
         public void Dispose()
-        { disposed = true; view.ChoiceRequested -= Choose; shownRun = null; shownOffer = null; automaticRun = null; IsAutomatic = false; }
+        { disposed = true; CancelAutomaticSelection(); view.ChoiceRequested -= Choose; shownRun = null; shownOffer = null; automaticRun = null; }
     }
 }
