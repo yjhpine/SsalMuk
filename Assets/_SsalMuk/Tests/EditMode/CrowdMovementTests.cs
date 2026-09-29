@@ -102,7 +102,7 @@ namespace SsalMuk.Tests
             long normal = rig.Spawn(UnitKind.Normal, new DVec2(1.4, .1));
             rig.Movement.SetMoveIntent(normal, DVec2.Zero);
             rig.Movement.Step(.2);
-            Assert.That(rig.Unit(boss).Position.Local.X, Is.EqualTo(3.12).Within(1e-9));
+            Assert.That(rig.Unit(boss).Position.Local.X, Is.EqualTo(6).Within(1e-9));
             Assert.That(rig.Unit(normal).Position.Local.Y, Is.GreaterThan(.5));
             Assert.That(rig.Movement.PreviousPositions[normal], Is.EqualTo(WorldPosition.FromLocal(new DVec2(1.4, .1))));
         }

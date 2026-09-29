@@ -50,7 +50,7 @@ namespace SsalMuk.Core
         {
             var unit = world.Units.Get(id);
             if (seconds <= 0 || double.IsNaN(seconds) || double.IsInfinity(seconds)) throw new ArgumentOutOfRangeException(nameof(seconds));
-            // Armor covers the locked warning and charge; damage and hit feedback remain in DamageService.
+            // Armor covers warnings, charges, and the pending next leg; damage and hit feedback still apply.
             if (unit is GroundEnemyModel ground && ground.Charge?.HasSuperArmor == true) return;
             unit.Knockback = new KnockbackState(displacement / seconds, seconds);
             navigation.InvalidateDirection(id);

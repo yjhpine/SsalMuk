@@ -5,8 +5,8 @@ namespace SsalMuk.Tests
 {
     public sealed class BossChargeTests
     {
-        [TestCase(0, false, 15.6), TestCase(2, false, 18.7), TestCase(0, true, 23.4), TestCase(2, true, 28.1)]
-        public void ChargeUsesFivePointTwoTimesCurrentPlayerSpeedRoundedToOneDecimal(int upgrades, bool boost, double expectedSpeed)
+        [TestCase(0, false), TestCase(2, false), TestCase(0, true), TestCase(20, true)]
+        public void ChargeSpeedIsThirtyRegardlessOfPlayerUpgradesAndItems(int upgrades, bool boost)
         {
             using var rig = RunTestRig.Create(enableAi: false);
             if (upgrades > 0) new GrowthService(rig.Run).UpgradeShared(SharedUpgradeKind.MoveSpeed, upgrades);
@@ -14,18 +14,18 @@ namespace SsalMuk.Tests
             rig.PlacePlayer(new DVec2(3, 0));
             var boss = rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero, 1000));
             rig.Movement.Step(.5); var start = boss.Position; rig.Movement.Step(.1);
-            Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(expectedSpeed * .1).Within(1e-8));
+            Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(3).Within(1e-8));
         }
 
-        [TestCase(3.625, 18.9), TestCase(3.614, 18.8)]
-        public void ChargeSpeedRoundsHalfUpAtTheSecondDecimal(double playerSpeed, double expectedSpeed)
+        [TestCase(.1), TestCase(3.625), TestCase(100)]
+        public void ChargeSpeedDoesNotScaleOrRoundWithTheTargetSpeed(double playerSpeed)
         {
             using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
             var boss = rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero));
             var target = new SpeedTarget(playerSpeed);
             var charge = new BossCharge(new FixedRandom(1));
             charge.TryMove(boss, target, .5, out _); charge.TryMove(boss, target, .1, out var move);
-            Assert.That(move.X, Is.EqualTo(expectedSpeed * .1).Within(1e-9));
+            Assert.That(move.X, Is.EqualTo(3).Within(1e-9));
         }
 
         [Test]
@@ -41,7 +41,7 @@ namespace SsalMuk.Tests
                 Assert.That(rig.Hit(boss.Id, 1), Is.True);
                 Assert.That(boss.Knockback.IsActive, Is.False);
                 var start = boss.Position; rig.Movement.Step(.02);
-                Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(.312).Within(1e-8));
+                Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(.6).Within(1e-8));
                 Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Charge));
             }
             Assert.That(boss.Health, Is.EqualTo(995));
@@ -56,13 +56,15 @@ namespace SsalMuk.Tests
         }
 
         [Test]
-        public void CompletedChargeRestoresKnockback()
+        public void CompletedChargeSequenceRestoresKnockback()
         {
             using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
             rig.PlacePlayer(new DVec2(3, 0));
             var boss = (GroundEnemyModel)rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero, 1000));
             rig.Movement.Step(.5); rig.Movement.Step(.5);
-            Assert.That(boss.Position.Local.X, Is.EqualTo(6).Within(1e-8));
+            for (int i = 0; i < 100 && boss.Charge.HasSuperArmor; i++) rig.Movement.Step(.02);
+            Assert.That(boss.Position.DistanceTo(rig.Player.Position), Is.LessThan(1e-8));
+            Assert.That(boss.Charge.HasSuperArmor, Is.False);
             Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Chase));
             Assert.That(rig.Hit(boss.Id, 1), Is.True);
             Assert.That(boss.Knockback.IsActive, Is.True);
@@ -72,13 +74,13 @@ namespace SsalMuk.Tests
 
         [TestCase(.299999, true)]
         [TestCase(.3, false)]
-        public void RepeatThresholdAllowsOnlyOneExtraChargeThenFiveSecondsOfCooldown(double roll, bool repeats)
+        public void RandomPassesAlwaysEndWithOneLockedChargeToTheLatestPlayerPosition(double roll, bool repeats)
         {
             using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
             rig.PlacePlayer(new DVec2(3, 0));
             var boss = rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero));
             var target = new SharedPlayerPosition(); target.Refresh(rig.Player);
-            var charge = new BossCharge(new FixedRandom(roll));
+            var random = new FixedRandom(roll); var charge = new BossCharge(random);
             Assert.That(charge.TryMove(boss, target, .5, out var wait), Is.True);
             Assert.That(wait, Is.EqualTo(DVec2.Zero));
             Assert.That(charge.Length, Is.EqualTo(6));
@@ -86,18 +88,90 @@ namespace SsalMuk.Tests
             charge.TryMove(boss, target, 1, out var first);
             Assert.That(first.X, Is.EqualTo(6).Within(1e-9));
             rig.World.MoveUnit(boss.Id, boss.Position.Offset(first));
-            Assert.That(charge.TryMove(boss, target, .5, out var extraWait), Is.EqualTo(repeats));
-            Assert.That(extraWait, Is.EqualTo(DVec2.Zero));
+            Assert.That(charge.HasSuperArmor, Is.True, "The next leg cannot be cancelled by an intervening hit.");
             if (repeats)
             {
+                rig.PlacePlayer(new DVec2(4, 1)); target.Refresh(rig.Player);
+                Assert.That(charge.TryMove(boss, target, .5, out var extraWait), Is.True);
+                Assert.That(extraWait, Is.EqualTo(DVec2.Zero));
+                Assert.That(charge.End, Is.EqualTo(WorldPosition.FromLocal(new DVec2(2, 2))));
+                charge.TryMove(boss, target, .01, out var extraStart);
+                Assert.That(extraStart.Length, Is.EqualTo(.3).Within(1e-9));
+                rig.World.MoveUnit(boss.Id, boss.Position.Offset(extraStart));
                 charge.TryMove(boss, target, 1, out var second);
-                Assert.That(second.X, Is.EqualTo(-6).Within(1e-9));
                 rig.World.MoveUnit(boss.Id, boss.Position.Offset(second));
+                Assert.That(boss.Position.DistanceTo(WorldPosition.FromLocal(new DVec2(2, 2))), Is.LessThan(1e-9));
             }
-            // The no-repeat branch already spent .5 seconds of its cooldown above.
-            Assert.That(charge.TryMove(boss, target, repeats ? 5 : 4.5, out _), Is.False);
+            rig.PlacePlayer(new DVec2(1, 2)); target.Refresh(rig.Player);
+            var destination = rig.Player.Position; double finalDistance = boss.Position.DistanceTo(destination);
+            Assert.That(charge.TryMove(boss, target, .25, out var approachWait), Is.True);
+            Assert.That(approachWait, Is.EqualTo(DVec2.Zero));
+            Assert.That(charge.Phase, Is.EqualTo(EnemyState.Telegraph));
+            Assert.That(charge.End, Is.EqualTo(destination));
+            Assert.That(charge.Length, Is.EqualTo(finalDistance).Within(1e-9));
+            rig.PlacePlayer(new DVec2(20, -8)); target.Refresh(rig.Player);
+            charge.TryMove(boss, target, .25, out var remainingWait);
+            Assert.That(remainingWait, Is.EqualTo(DVec2.Zero));
+            Assert.That(charge.End, Is.EqualTo(destination), "The final warning locks the endpoint until this charge ends.");
+            charge.TryMove(boss, target, .01, out var approachStart);
+            Assert.That(approachStart.Length, Is.EqualTo(.3).Within(1e-9));
+            rig.World.MoveUnit(boss.Id, boss.Position.Offset(approachStart));
+            charge.TryMove(boss, target, 1, out var approachEnd);
+            rig.World.MoveUnit(boss.Id, boss.Position.Offset(approachEnd));
+            Assert.That(boss.Position.DistanceTo(destination), Is.LessThan(1e-9));
+            Assert.That(random.Calls, Is.EqualTo(1), "Only the optional second pass rolls a probability.");
+            Assert.That(charge.HasSuperArmor, Is.False);
+            Assert.That(charge.TryMove(boss, target, 4.99, out _), Is.False);
+            Assert.That(charge.TryMove(boss, target, .01, out _), Is.False);
             Assert.That(charge.TryMove(boss, target, .02, out _), Is.True);
             Assert.That(charge.Phase, Is.EqualTo(EnemyState.Telegraph));
+            Assert.That(charge.Length, Is.EqualTo(boss.Position.DistanceTo(target.Position) * 2).Within(1e-9));
+        }
+
+        [Test]
+        public void HitsBetweenPassesDoNotCancelTheFinalApproach()
+        {
+            using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
+            rig.PlacePlayer(new DVec2(3, 0));
+            var boss = (GroundEnemyModel)rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero, 1000));
+            rig.Movement.Step(.5); rig.Movement.Step(1);
+            Assert.That(boss.Position.Local.X, Is.EqualTo(6).Within(1e-9));
+            Assert.That(boss.Charge.HasSuperArmor, Is.True);
+            Assert.That(rig.Hit(boss.Id, 7), Is.True);
+            Assert.That(boss.Health, Is.EqualTo(993));
+            Assert.That(boss.Knockback.IsActive, Is.False);
+            for (int i = 0; i < 100 && boss.Charge.HasSuperArmor; i++) rig.Movement.Step(.02);
+            Assert.That(boss.Position.DistanceTo(rig.Player.Position), Is.LessThan(1e-8));
+            Assert.That(boss.Charge.HasSuperArmor, Is.False);
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void CancellingOrAlreadyReachingTheFinalDestinationEndsTheSequence(bool alreadyThere)
+        {
+            using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
+            rig.PlacePlayer(new DVec2(3, 0));
+            var boss = rig.Unit(rig.Spawn(UnitKind.Boss, DVec2.Zero));
+            var target = new SharedPlayerPosition(); target.Refresh(rig.Player);
+            var charge = new BossCharge(new FixedRandom(1));
+            charge.TryMove(boss, target, .5, out _); charge.TryMove(boss, target, 1, out var first);
+            rig.World.MoveUnit(boss.Id, boss.Position.Offset(first));
+            if (alreadyThere)
+            {
+                rig.World.MoveUnit(rig.Player.Id, boss.Position); target.Refresh(rig.Player);
+                Assert.That(charge.TryMove(boss, target, .02, out var zero), Is.False);
+                Assert.That(zero, Is.EqualTo(DVec2.Zero));
+            }
+            else
+            {
+                Assert.That(charge.TryMove(boss, target, .1, out _), Is.True);
+                Assert.That(charge.End, Is.EqualTo(target.Position));
+                charge.Cancel();
+            }
+            Assert.That(charge.HasSuperArmor, Is.False);
+            rig.PlacePlayer(new DVec2(8, 0)); target.Refresh(rig.Player);
+            Assert.That(charge.TryMove(boss, target, 5, out _), Is.False);
+            Assert.That(charge.TryMove(boss, target, .02, out _), Is.True);
+            Assert.That(charge.Length, Is.EqualTo(4).Within(1e-9), "After cancellation the next sequence starts with a full pass.");
         }
 
         [Test]
@@ -110,8 +184,8 @@ namespace SsalMuk.Tests
             var charge = new BossCharge(new FixedRandom(1));
             charge.TryMove(boss, target, .49, out var before); Assert.That(before, Is.EqualTo(DVec2.Zero));
             Assert.That(charge.Phase, Is.EqualTo(EnemyState.Telegraph));
-            charge.TryMove(boss, target, .02, out var crossing); Assert.That(crossing.X, Is.EqualTo(.156).Within(1e-9));
-            charge.TryMove(boss, target, 10, out var final); Assert.That(final.X, Is.EqualTo(5.844).Within(1e-9));
+            charge.TryMove(boss, target, .02, out var crossing); Assert.That(crossing.X, Is.EqualTo(.3).Within(1e-9));
+            charge.TryMove(boss, target, 10, out var final); Assert.That(final.X, Is.EqualTo(5.7).Within(1e-9));
         }
 
         [Test]
@@ -137,7 +211,7 @@ namespace SsalMuk.Tests
             Assert.That(boss.Health, Is.EqualTo(health - 24));
             Assert.That(boss.HitSequence, Is.EqualTo(24));
             rig.Movement.Step(.02);
-            Assert.That(origin.DisplacementTo(boss.Position).X, Is.EqualTo(.312).Within(1e-9));
+            Assert.That(origin.DisplacementTo(boss.Position).X, Is.EqualTo(.6).Within(1e-9));
             rig.Hit(id, 10000); var position = boss.Position; rig.Movement.Step(.02);
             Assert.That(boss.Position, Is.EqualTo(position));
             Assert.That(rig.Movement.GetEnemyFsm(id).CurrentState, Is.EqualTo(EnemyState.Dead));
@@ -171,7 +245,7 @@ namespace SsalMuk.Tests
 
         [TestCase(false)]
         [TestCase(true)]
-        public void RepeatedHitsLetCooldownElapseAndChargeResumesAfterKnockback(bool finishFirstCharge)
+        public void RepeatedHitsLetCooldownElapseAndChargeResumesAfterKnockback(bool finishSequence)
         {
             using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
             rig.PlacePlayer(new DVec2(3, 0));
@@ -179,10 +253,12 @@ namespace SsalMuk.Tests
             var boss = (GroundEnemyModel)rig.Unit(id);
             rig.Movement.Step(.02);
             Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Telegraph));
-            if (finishFirstCharge)
+            if (finishSequence)
             {
                 rig.Movement.Step(.48); rig.Movement.Step(1);
                 Assert.That(boss.Position.Local.X, Is.EqualTo(6).Within(1e-9));
+                for (int i = 0; i < 100 && boss.Charge.HasSuperArmor; i++) rig.Movement.Step(.02);
+                Assert.That(boss.Position.DistanceTo(rig.Player.Position), Is.LessThan(1e-9));
                 Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Chase));
             }
             else boss.Charge.Cancel(); // A terrain cancellation still starts the ordinary cooldown.
@@ -229,8 +305,9 @@ namespace SsalMuk.Tests
         private sealed class FixedRandom : IRandomSource
         {
             private readonly double value;
+            public int Calls { get; private set; }
             public FixedRandom(double value) => this.value = value;
-            public double NextUnit() => value;
+            public double NextUnit() { Calls++; return value; }
         }
     }
 }

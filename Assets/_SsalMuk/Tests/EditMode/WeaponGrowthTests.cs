@@ -91,7 +91,6 @@ namespace SsalMuk.Tests
             Assert.That(settings.CostForLevels(1, 1), Is.EqualTo(new BigInteger(5)));
             Assert.That(settings.CostForLevels(10, 1), Is.EqualTo(new BigInteger(32)));
             Assert.That(settings.CostForLevels(100, 1), Is.EqualTo(new BigInteger(302)));
-            Assert.That(SsalMuk.Core.BossCharge.SpeedMultiplier, Is.EqualTo(5.2));
         }
         [Test]
         public void ExcessiveCopyCountsAndUnrepresentableDamageAreRejectedAtomically()

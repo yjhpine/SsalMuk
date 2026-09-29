@@ -20,15 +20,17 @@ namespace SsalMuk.Tests
         }
 
         [Test]
-        public void GroundEnemiesDoNotSteerAwayFromOverlappingNeighbors()
+        public void GroundEnemiesAimAtTheSharedPlayerBeforeCentralCrowdSeparation()
         {
             using var rig = RunTestRig.Create(enableAi: false, enableCombat: false);
             rig.PlacePlayer(new DVec2(1, 0));
             long a = rig.Spawn(UnitKind.Normal, DVec2.Zero);
             long b = rig.Spawn(UnitKind.Normal, new DVec2(.1, 0));
             rig.Movement.SetMoveIntent(b, DVec2.Zero); rig.Movement.Step(.02);
-            Assert.That(rig.Unit(a).Position.Local.X, Is.EqualTo(.03).Within(1e-9));
-            Assert.That(rig.Unit(a).Position.Local.Y, Is.Zero.Within(1e-9));
+            // Final positions include central crowd separation; individual chase input stays direct.
+            Assert.That(rig.Movement.GetEnemyFsm(a).MoveIntent, Is.EqualTo(new DVec2(1, 0)));
+            Assert.That(rig.Unit(a).MoveIntent, Is.EqualTo(new DVec2(1, 0)));
+            Assert.That(rig.Navigation.PendingRequestCount, Is.Zero);
         }
 
         [Test]
@@ -50,7 +52,7 @@ namespace SsalMuk.Tests
             for (int i = 0; i < 25; i++) rig.Movement.Step(.02);
             Assert.That(rig.Unit(boss).Position, Is.EqualTo(WorldPosition.FromLocal(DVec2.Zero)));
             rig.PlacePlayer(new DVec2(3, 4)); rig.Movement.Step(.1);
-            Assert.That(rig.Unit(boss).Position.Local.X, Is.EqualTo(1.56).Within(1e-9));
+            Assert.That(rig.Unit(boss).Position.Local.X, Is.EqualTo(3).Within(1e-9));
             Assert.That(rig.Unit(boss).Position.Local.Y, Is.Zero.Within(1e-9));
         }
     }

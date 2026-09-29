@@ -51,9 +51,8 @@ namespace SsalMuk.Tests
             ScreenCapture.CaptureScreenshot(Path.Combine(directory, "before-charge.png"));
             yield return new WaitForEndOfFrame();
             var before = boss.Position;
-            for (int i = 0; i < 15; i++) { movement.Step(.02); presenter.Refresh(run); yield return null; }
-            double chargeSpeed = System.Math.Round(run.Player.MoveSpeed * BossCharge.SpeedMultiplier, 1, System.MidpointRounding.AwayFromZero);
-            Assert.That(before.DisplacementTo(boss.Position).X, Is.EqualTo(-chargeSpeed * .3).Within(1e-8));
+            for (int i = 0; i < 10; i++) { movement.Step(.02); presenter.Refresh(run); yield return null; }
+            Assert.That(before.DisplacementTo(boss.Position).X, Is.EqualTo(-6).Within(1e-8));
             Assert.That(movement.GetEnemyFsm(boss.Id).CurrentState, Is.EqualTo(EnemyState.Charge));
             Assert.That(normals.All(unit => unit.Health == unit.Definition.MaxHealth && !unit.Knockback.IsActive), Is.True);
             foreach (var unit in run.Units) Assert.That(run.World.Query.IsCircleFree(unit.Position, unit.BodyRadius), Is.True);
@@ -111,7 +110,39 @@ namespace SsalMuk.Tests
             Assert.That(boss.HitSequence, Is.EqualTo(3));
             Assert.That(boss.Knockback.IsActive, Is.False);
             var start = boss.Position; movement.Step(.1);
-            Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(-1.56).Within(1e-8));
+            Assert.That(start.DisplacementTo(boss.Position).X, Is.EqualTo(-3).Within(1e-8));
+            // Complete the first pass, then inspect the optional pass and guaranteed approach warning.
+            var charge = ((GroundEnemyModel)boss).Charge;
+            movement.Step(.2);
+            bool sawApproach = false;
+            for (int leg = 0; leg < 2; leg++)
+            {
+                run.World.MoveUnit(run.Player.Id, run.Player.Position.Offset(new DVec2(0, 2)));
+                var target = run.Player.Position;
+                double distance = boss.Position.DistanceTo(target);
+                movement.Step(.02); presenter.Refresh(run); yield return null;
+                Assert.That(charge.Phase, Is.EqualTo(EnemyState.Telegraph));
+                Assert.That(warning.enabled, Is.True);
+                Assert.That(warning.color.r, Is.GreaterThan(.9));
+                Assert.That(warning.transform.localScale.x * warning.sprite.bounds.size.x, Is.EqualTo(charge.Length).Within(1e-5));
+                if (System.Math.Abs(charge.Length - distance) < 1e-8)
+                {
+                    sawApproach = true;
+                    Assert.That(charge.End.DistanceTo(target), Is.LessThan(1e-8));
+                    ScreenCapture.CaptureScreenshot(Path.Combine(directory, "approach-telegraph.png"));
+                    yield return new WaitForEndOfFrame();
+                    run.World.MoveUnit(run.Player.Id, target.Offset(new DVec2(0, 3)));
+                    movement.Step(.48); presenter.Refresh(run);
+                    Assert.That(warning.enabled, Is.False);
+                    movement.Step(1);
+                    Assert.That(boss.Position.DistanceTo(target), Is.LessThan(1e-8));
+                    Assert.That(charge.HasSuperArmor, Is.False);
+                    break;
+                }
+                Assert.That(charge.Length, Is.EqualTo(distance * 2).Within(1e-8));
+                movement.Step(.48); movement.Step(1);
+            }
+            Assert.That(sawApproach, Is.True, "Every one/two-pass pattern must end with an approach charge.");
             Object.Destroy(app.gameObject); yield return null; yield return null;
             Assert.That(warning == null || !warning.enabled, Is.True);
         }
