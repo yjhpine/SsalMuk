@@ -17,7 +17,7 @@ namespace SsalMuk.Core
                 if (set.Contains(kind))
                 {
                     foreach (UpgradeKind upgrade in Enum.GetValues(typeof(UpgradeKind)))
-                        if (canUpgrade == null || canUpgrade(kind, upgrade)) upgrades.Add(RewardId.Upgrade(kind, upgrade));
+                        if (upgrade != UpgradeKind.Repeats && (canUpgrade == null || canUpgrade(kind, upgrade))) upgrades.Add(RewardId.Upgrade(kind, upgrade));
                 }
                 else if (weights.Acquisition > 0) acquisitions.Add(RewardId.Acquire(kind));
             }

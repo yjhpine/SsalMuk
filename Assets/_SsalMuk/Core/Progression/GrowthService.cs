@@ -17,7 +17,7 @@ namespace SsalMuk.Core
             if (!run.Player.Weapons.Owns(kind)) throw new InvalidOperationException("Only an owned weapon can be upgraded.");
             var state = run.Player.Weapons.Get(kind); BigInteger next = state.GetLevel(upgrade) + amount;
             if (upgrade == UpgradeKind.Repeats && next > WeaponState.MaximumRepeatLevel)
-                throw new InvalidOperationException("Repeat upgrades stop at level two (three strikes per burst).");
+                throw new InvalidOperationException("Repeat upgrades have been removed; each attack cycle strikes once.");
             if (upgrade == UpgradeKind.Copies && next >= WeaponState.MaximumCopies(kind))
                 throw new InvalidOperationException("Copy upgrades cannot exceed this weapon's total copy limit.");
             StatCalculator.Calculate(run.Definitions.GetWeapon(kind), state, run.GrowthSettings, upgrade, next);

@@ -34,7 +34,7 @@ namespace SsalMuk.Core
             int group = reward.Weapon == startingWeapon ? 1 : 9;
             switch (reward.UpgradeKind)
             {
-                case UpgradeKind.Repeats: return group;
+                case UpgradeKind.Repeats: throw new ArgumentException("Repeat upgrades are not available.", nameof(reward));
                 case UpgradeKind.Copies: return group + 1;
                 case UpgradeKind.Damage: return group + 2;
                 case UpgradeKind.Speed: return group + 3;

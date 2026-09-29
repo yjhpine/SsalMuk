@@ -92,8 +92,9 @@ namespace SsalMuk.Tests
             if (lateGrowth)
             {
                 rig.Equip(WeaponKind.Fireball);
-                var upgrades = new[] { UpgradeKind.Damage, UpgradeKind.Copies, UpgradeKind.Repeats, UpgradeKind.Speed, UpgradeKind.Range };
-                int[] sword = { 54, 7, 2, 43, 32 }, fireball = { 6, 5, 2, 5, 4 };
+                // Keep the historical levels of retained upgrades; current tuning is not the old 30m workload.
+                var upgrades = new[] { UpgradeKind.Damage, UpgradeKind.Copies, UpgradeKind.Speed, UpgradeKind.Range };
+                int[] sword = { 54, 7, 43, 32 }, fireball = { 6, 5, 5, 4 };
                 for (int i = 0; i < upgrades.Length; i++)
                 { rig.Upgrade(WeaponKind.Sword, upgrades[i], sword[i]); rig.Upgrade(WeaponKind.Fireball, upgrades[i], fireball[i]); }
                 var growth = new GrowthService(rig.Run);

@@ -54,10 +54,10 @@ namespace SsalMuk.Tests
             new GrowthService(run).UpgradeShared(SharedUpgradeKind.Experience);
             run.World.AddExperience(run.Player.Position, 1, run.Clock.ElapsedSeconds); runner.Simulation.Step(.02);
             new HudPresenter(hud).Refresh(run);
-            Assert.That(run.Player.Growth.ExperienceRemainderHundredths, Is.EqualTo(15));
-            Assert.That(hud.StatusText.text, Does.Contain("경험치 +15%"));
+            Assert.That(run.Player.Growth.ExperienceRemainderHundredths, Is.EqualTo(10));
+            Assert.That(hud.StatusText.text, Does.Contain("경험치 +10%"));
             var experienceLabel = hud.GetComponentsInChildren<UnityEngine.UI.Text>().Single(label => label.name == "Experience");
-            Assert.That(experienceLabel.text, Does.Contain("1.15"));
+            Assert.That(experienceLabel.text, Does.Contain("1.1"));
             new ProgressionService(run).AddExperience(10000);
             for (int attempt = 0; attempt < 64; attempt++)
             {

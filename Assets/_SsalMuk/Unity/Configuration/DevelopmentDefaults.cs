@@ -19,8 +19,10 @@ namespace SsalMuk.Unity
         [SerializeField] private string firstLevelCost = "5";
         [SerializeField] private string levelCostStep = "3";
         [SerializeField] private double damageGrowth = 0.1;
-        [SerializeField] private double speedGrowth = 0.1;
-        [SerializeField] private double rangeGrowth = 0.08;
+        [SerializeField] private double speedGrowth = 0.15;
+        [SerializeField, Min(0)] private int earlySpeedLevels = 10;
+        [SerializeField] private double lateSpeedGrowth = 0.05;
+        [SerializeField] private double rangeGrowth = 0.04;
         [SerializeField] private double attractionRadius = 1.95;
         [SerializeField] private double experienceFlightSpeed = 6;
         [SerializeField] private double experienceOrbRadius = 0.08;
@@ -65,7 +67,7 @@ namespace SsalMuk.Unity
             if (!BigInteger.TryParse(firstLevelCost, NumberStyles.Integer, CultureInfo.InvariantCulture, out var first) ||
                 !BigInteger.TryParse(levelCostStep, NumberStyles.Integer, CultureInfo.InvariantCulture, out var step))
                 throw new ArgumentException("Level costs must be integers.");
-            return new GrowthSettings(first, step, damageGrowth, speedGrowth, rangeGrowth);
+            return new GrowthSettings(first, step, damageGrowth, speedGrowth, rangeGrowth, earlySpeedLevels, lateSpeedGrowth);
         }
         public PickupSettings CreatePickupSettings()
         {

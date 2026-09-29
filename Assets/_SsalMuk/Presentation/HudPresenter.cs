@@ -27,7 +27,7 @@ namespace SsalMuk.Presentation
                 string upgrades = "이속 +" + NumberFormatter.Format(player.Upgrades.GetLevel(SharedUpgradeKind.MoveSpeed) * 10) +
                     "% · 회복 " + player.Upgrades.HealingPerSecond.ToString("0.0", CultureInfo.InvariantCulture) + "/초 · 흡수 +" +
                     NumberFormatter.Format(player.Upgrades.GetLevel(SharedUpgradeKind.PickupRange) * 20) + "% · 경험치 +" +
-                    NumberFormatter.Format(player.Upgrades.GetLevel(SharedUpgradeKind.Experience) * 15) + "%";
+                    NumberFormatter.Format(player.Upgrades.GetLevel(SharedUpgradeKind.Experience) * SharedUpgradeState.ExperiencePercentPerLevel) + "%";
                 statusView.ShowStatus(upgrades + (active.Length > 0 ? "\n" + active : ""));
             }
             if (shownRun != run.Id || shownOwnership != player.Weapons.OwnershipVersion)

@@ -98,25 +98,25 @@ namespace SsalMuk.Tests
 
         [TestCase(WeaponKind.Sword)] [TestCase(WeaponKind.Spear)]
         [TestCase(WeaponKind.Axe)] [TestCase(WeaponKind.Fireball)]
-        public void RepeatLevelTwoIsThreeStrikesAndFurtherGrowthIsRejectedAtomically(WeaponKind kind)
+        public void RemovedRepeatUpgradeIsRejectedAtomicallyForEveryWeapon(WeaponKind kind)
         {
             using var rig = RunTestRig.Create(enableAi: false);
             if (kind != WeaponKind.Sword) rig.Equip(kind);
-            rig.Upgrade(kind, UpgradeKind.Repeats, 2);
             var state = rig.Player.Weapons.Get(kind);
-            Assert.That(StatCalculator.Calculate(rig.Run.Definitions.GetWeapon(kind), state).Repeats, Is.EqualTo(new BigInteger(3)));
+            Assert.That(StatCalculator.Calculate(rig.Run.Definitions.GetWeapon(kind), state).Repeats, Is.EqualTo(BigInteger.One));
             Assert.Throws<InvalidOperationException>(() => rig.Upgrade(kind, UpgradeKind.Repeats));
-            Assert.That(state.GetLevel(UpgradeKind.Repeats), Is.EqualTo(new BigInteger(2)));
+            Assert.Throws<InvalidOperationException>(() => rig.Upgrade(kind, UpgradeKind.Repeats, 2));
+            Assert.That(state.GetLevel(UpgradeKind.Repeats), Is.EqualTo(BigInteger.Zero));
+            Assert.That(state.CanUpgrade(UpgradeKind.Repeats), Is.False);
         }
 
         [Test]
-        public void MaxedRepeatsDisappearFromEveryFutureOfferWithoutRemovingOtherUpgrades()
+        public void RepeatsNeverAppearInFutureOffersAndUnlimitedUpgradesRemain()
         {
             using var rig = RunTestRig.Create(enableAi: false);
             foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind)))
             {
                 if (kind != WeaponKind.Sword) rig.Equip(kind);
-                rig.Upgrade(kind, UpgradeKind.Repeats, 2);
             }
             rig.GrantExperience(1000000);
             for (int i = 0; i < 100; i++)
@@ -129,25 +129,20 @@ namespace SsalMuk.Tests
         }
 
         [Test]
-        public void AQueuedRepeatChoiceBecomingCappedDoesNotConsumeTheChoiceOrThrow()
+        public void GeneratorCannotOfferRepeatsEvenWithoutAnEligibilityCallback()
         {
-            using var rig = RunTestRig.Create(enableAi: false); rig.GrantExperience(1000000);
-            for (int i = 0; i < 100; i++)
+            var owned = Enum.GetValues(typeof(WeaponKind)).Cast<WeaponKind>().ToArray();
+            var seen = new System.Collections.Generic.HashSet<UpgradeKind>();
+            for (int seed = 1; seed <= 100; seed++)
             {
-                rig.Run.Rewards.RefreshOffer(); var offer = rig.CurrentOffer;
-                int slot = offer.Choices.ToList().FindIndex(choice => choice.IsUpgrade && choice.UpgradeKind == UpgradeKind.Repeats);
-                if (slot >= 0)
+                var choices = new OfferGenerator().Generate(owned, new SeededRandom(seed), RewardWeights.TestDefaults());
+                foreach (var reward in choices.Where(choice => !choice.IsSharedUpgrade))
                 {
-                    var reward = offer.Choices[slot]; var pending = rig.Player.Growth.PendingChoices;
-                    Assert.That(rig.Choose(offer.Id, slot), Is.True);
-                    rig.Upgrade(reward.Weapon, UpgradeKind.Repeats, 2);
-                    Assert.DoesNotThrow(() => rig.Run.Rewards.Step());
-                    Assert.That(rig.Player.Growth.PendingChoices, Is.EqualTo(pending));
-                    Assert.That(rig.CurrentOffer.Id, Is.Not.EqualTo(offer.Id)); return;
+                    Assert.That(reward.UpgradeKind, Is.Not.EqualTo(UpgradeKind.Repeats));
+                    seen.Add(reward.UpgradeKind);
                 }
-                rig.Choose(offer.Id, 0); rig.Run.Rewards.Step();
             }
-            Assert.Fail("Seed did not offer repeats.");
+            Assert.That(seen, Is.EquivalentTo(new[] { UpgradeKind.Damage, UpgradeKind.Copies, UpgradeKind.Speed, UpgradeKind.Range }));
         }
     }
 }

@@ -7,6 +7,7 @@ namespace SsalMuk.Core
 
     public sealed class SharedUpgradeState
     {
+        public const int ExperiencePercentPerLevel = 10;
         private readonly BigInteger[] levels = new BigInteger[4];
         public BigInteger GetLevel(SharedUpgradeKind kind) => levels[Index(kind)];
         public bool CanUpgrade(SharedUpgradeKind kind)
@@ -24,8 +25,8 @@ namespace SsalMuk.Core
         public BigInteger ExperienceHundredthsFor(BigInteger raw)
         {
             if (raw <= 0) throw new ArgumentOutOfRangeException(nameof(raw));
-            // Exact hundredths preserve every 15% bonus, including values beyond floating-point precision.
-            return raw * (100 + 15 * GetLevel(SharedUpgradeKind.Experience));
+            // Exact hundredths preserve bonuses, including values beyond floating-point precision.
+            return raw * (100 + ExperiencePercentPerLevel * GetLevel(SharedUpgradeKind.Experience));
         }
         internal void Upgrade(SharedUpgradeKind kind, BigInteger count)
         {

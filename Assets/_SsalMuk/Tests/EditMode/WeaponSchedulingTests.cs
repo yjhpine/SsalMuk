@@ -50,24 +50,24 @@ namespace SsalMuk.Tests
             CollectionAssert.AreEqual(Enumerable.Range(0, maximum).Select(i => new BigInteger(i)), runtime.ActiveAttacks.Select(a => a.Key.Copy));
         }
         [Test]
-        public void SchedulerCannotReserveMoreThanThreeRepeatsFromInjectedStats()
+        public void SchedulerIgnoresRemovedRepeatsEvenFromInjectedStats()
         {
             var scheduler = new AttackScheduler();
             var due = scheduler.CollectDueStrikes(0, .99, () => new WeaponStats(8, 1.6, 1, repeats: 20), true).ToArray();
-            CollectionAssert.AreEqual(new[] { 0.0, .3, .6 }, due.Select(strike => strike.Time));
-            CollectionAssert.AreEqual(new BigInteger[] { 0, 1, 2 }, due.Select(strike => strike.Repeat));
+            CollectionAssert.AreEqual(new[] { 0.0 }, due.Select(strike => strike.Time));
+            CollectionAssert.AreEqual(new BigInteger[] { 0 }, due.Select(strike => strike.Repeat));
         }
         [Test]
-        public void BurstReservationsKeepTheirTimesAndReadNewSpeedOnlyForTheNextGroup()
+        public void ScheduledAttacksKeepTheirTimesAndReadNewSpeedAtTheNextAttack()
         {
             var scheduler = new AttackScheduler(); var current = new WeaponStats(8, 1.6, 1, repeats: 3);
             var first = scheduler.CollectDueStrikes(0, 0.1, () => current, true).ToArray();
             Assert.That(first.Length, Is.EqualTo(1)); Assert.That(first[0].Time, Is.Zero);
             current = new WeaponStats(8, 1.6, 0.5, repeats: 2);
-            var later = scheduler.CollectDueStrikes(0.1, 1.4, () => current, true).ToArray();
-            CollectionAssert.AreEqual(new BigInteger[] { 1, 2, 0, 1 }, later.Select(x => x.Repeat));
-            CollectionAssert.AreEqual(new[] { 0.3, 0.6, 1.0, 1.3 }, later.Select(x => Math.Round(x.Time, 8)));
-            Assert.That(scheduler.CollectDueStrikes(1.4, 100, () => current, false), Is.Empty);
+            var later = scheduler.CollectDueStrikes(0.1, 1.6, () => current, true).ToArray();
+            CollectionAssert.AreEqual(new BigInteger[] { 0, 0 }, later.Select(x => x.Repeat));
+            CollectionAssert.AreEqual(new[] { 1.0, 1.5 }, later.Select(x => Math.Round(x.Time, 8)));
+            Assert.That(scheduler.CollectDueStrikes(1.6, 100, () => current, false), Is.Empty);
             Assert.That(scheduler.CollectDueStrikes(100, 100.01, () => current, true).Single().Time, Is.EqualTo(100));
         }
         [Test]
@@ -75,15 +75,15 @@ namespace SsalMuk.Tests
         {
             var scheduler = new AttackScheduler(); var stats = new WeaponStats(8, 1.6, 0.1, repeats: 3);
             var due = scheduler.CollectDueStrikes(0, 0.25, () => stats, true).ToArray();
-            Assert.That(due.Length, Is.EqualTo(8));
+            Assert.That(due.Length, Is.EqualTo(3));
             Assert.That(due.Select(x => x.Time), Is.Ordered);
             Assert.Throws<NumericRangeException>(() => new AttackScheduler().CollectDueStrikes(1e20, 1e20 + 1e6, () => stats, true).ToArray());
             var bounded = new AttackScheduler().CollectDueStrikes(0, .99,
                 () => new WeaponStats(8, 1, 1, repeats: BigInteger.Pow(10, 400)), true).ToArray();
-            Assert.That(bounded.Length, Is.EqualTo(3));
+            Assert.That(bounded.Length, Is.EqualTo(1));
         }
         [Test]
-        public void RuntimeLaunchesEveryCopyAndReservedRepeatWithFreshStrikeStatsAndDirection()
+        public void RuntimeLaunchesEveryCopyWithFreshStatsAndDirectionWithoutRepeats()
         {
             using var rig = RunTestRig.Create(enableAi: false);
             long target = rig.Spawn(UnitKind.Normal, new DVec2(4, 0), 1000);
@@ -91,15 +91,15 @@ namespace SsalMuk.Tests
             using var runtime = new WeaponRuntime(rig.Run, WeaponKind.Sword, rig.Movement, rig.Damage, () => current);
             runtime.Launched += launches.Add; runtime.Tick(0, 0.1);
             current = new WeaponStats(16, 3.2, 0.5, copies: 3, repeats: 2); rig.World.MoveUnit(target, WorldPosition.FromLocal(new DVec2(-4, 0)));
-            runtime.Tick(0.1, 1.4);
-            Assert.That(launches.Count, Is.EqualTo(13)); Assert.That(launches.Select(x => x.Key.AttackId).Distinct().Count(), Is.EqualTo(13));
+            runtime.Tick(0.1, 1.6);
+            Assert.That(launches.Count, Is.EqualTo(7)); Assert.That(launches.Select(x => x.Key.AttackId).Distinct().Count(), Is.EqualTo(7));
             Assert.That(launches[0].Stats.Damage, Is.EqualTo(8)); Assert.That(launches[0].Direction.X, Is.EqualTo(1));
             Assert.That(launches.Skip(1).All(x => x.Stats.Damage == 16 && x.Stats.Range == 3.2 &&
                 Math.Abs(x.Direction.X + Math.Cos(CopyLayout.Phase(x.Key.Copy))) < 1e-10 &&
                 Math.Abs(x.Direction.Y + Math.Sin(CopyLayout.Phase(x.Key.Copy))) < 1e-10), Is.True);
-            CollectionAssert.AreEqual(new double[] { 0, 0.3, 0.3, 0.3, 0.6, 0.6, 0.6, 1, 1, 1, 1.3, 1.3, 1.3 }, launches.Select(x => Math.Round(x.StartedAt, 8)));
+            CollectionAssert.AreEqual(new double[] { 0, 1, 1, 1, 1.5, 1.5, 1.5 }, launches.Select(x => Math.Round(x.StartedAt, 8)));
             CollectionAssert.AreEqual(new BigInteger[] { 0, 1, 2 }, launches.Skip(1).Take(3).Select(x => x.Key.Copy));
-            Assert.That(launches[4].Key.Repeat, Is.EqualTo(new BigInteger(2)));
+            Assert.That(launches.All(attack => attack.Key.Repeat.IsZero), Is.True);
         }
         [Test]
         public void EachCopyDealsRealDamageAndCompletingOneDoesNotRetireTheOthers()
@@ -110,21 +110,21 @@ namespace SsalMuk.Tests
             Assert.That(runtime.LaunchCount, Is.EqualTo(3)); Assert.That(rig.Damage.CachedHitCount, Is.Zero);
         }
         [Test]
-        public void OwnedWeaponsRunTogetherAndSpeedCopiesAndRepeatsEachIncreaseRealLaunches()
+        public void OwnedWeaponsRunTogetherAndSpeedAndCopiesIncreaseRealLaunches()
         {
             using var rig = RunTestRig.Create(enableAi: false);
             foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind)))
             {
                 if (kind != WeaponKind.Sword) rig.Equip(kind);
-                rig.Upgrade(kind, UpgradeKind.Copies); rig.Upgrade(kind, UpgradeKind.Repeats); rig.Upgrade(kind, UpgradeKind.Speed, 10);
+                rig.Upgrade(kind, UpgradeKind.Copies); rig.Upgrade(kind, UpgradeKind.Speed, 10);
             }
             Assert.That(rig.Simulation.Weapons.Count, Is.EqualTo(4));
             long target = rig.Spawn(UnitKind.Normal, new DVec2(4, 0), 10000); rig.Movement.SetMoveIntent(target, DVec2.Zero);
             rig.Advance(0.5);
-            Assert.That(rig.Simulation.Weapons[WeaponKind.Sword].LaunchCount, Is.EqualTo(6));
+            Assert.That(rig.Simulation.Weapons[WeaponKind.Sword].LaunchCount, Is.EqualTo(4));
             Assert.That(rig.Simulation.Weapons[WeaponKind.Spear].LaunchCount, Is.EqualTo(4));
-            Assert.That(rig.Simulation.Weapons[WeaponKind.Axe].LaunchCount, Is.EqualTo(4));
-            Assert.That(rig.Simulation.Weapons[WeaponKind.Fireball].LaunchCount, Is.EqualTo(4));
+            Assert.That(rig.Simulation.Weapons[WeaponKind.Axe].LaunchCount, Is.EqualTo(2));
+            Assert.That(rig.Simulation.Weapons[WeaponKind.Fireball].LaunchCount, Is.EqualTo(2));
             Assert.That(rig.Unit(target).Health, Is.LessThan(10000));
         }
         [TestCase(WeaponKind.Sword), TestCase(WeaponKind.Spear), TestCase(WeaponKind.Axe)]
@@ -135,7 +135,7 @@ namespace SsalMuk.Tests
             long target = rig.Spawn(UnitKind.Normal, new DVec2(definition.Range * 1.6, 0), 100);
             using var runtime = new WeaponRuntime(rig.Run, kind, rig.Movement, rig.Damage);
             runtime.Tick(0, definition.ActiveSeconds + 0.01); Assert.That(rig.Unit(target).Health, Is.EqualTo(100));
-            rig.Upgrade(kind, UpgradeKind.Range, 10); rig.Upgrade(kind, UpgradeKind.Damage, 10);
+            rig.Upgrade(kind, UpgradeKind.Range, 20); rig.Upgrade(kind, UpgradeKind.Damage, 10);
             runtime.Tick(definition.ActiveSeconds + 0.01, definition.PeriodSeconds + definition.ActiveSeconds + 0.01);
             Assert.That(rig.Unit(target).Health, Is.EqualTo(100 - definition.Damage * 2));
         }

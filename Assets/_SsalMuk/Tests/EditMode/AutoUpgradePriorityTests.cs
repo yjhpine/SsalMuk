@@ -11,7 +11,7 @@ namespace SsalMuk.Tests
         {
             var other = start == WeaponKind.Sword ? WeaponKind.Spear : WeaponKind.Sword;
             var order = new List<RewardId> { RewardId.Shared(SharedUpgradeKind.Experience) };
-            var upgrades = new[] { UpgradeKind.Repeats, UpgradeKind.Copies, UpgradeKind.Damage, UpgradeKind.Speed, UpgradeKind.Range };
+            var upgrades = new[] { UpgradeKind.Copies, UpgradeKind.Damage, UpgradeKind.Speed, UpgradeKind.Range };
             foreach (var upgrade in upgrades) order.Add(RewardId.Upgrade(start, upgrade));
             order.Add(RewardId.Shared(SharedUpgradeKind.MoveSpeed));
             order.Add(RewardId.Shared(SharedUpgradeKind.Regeneration));

@@ -31,7 +31,7 @@ namespace SsalMuk.Tests
             foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind)))
             {
                 if (kind != WeaponKind.Sword) growth.Equip(kind);
-                growth.Upgrade(kind, UpgradeKind.Copies); growth.Upgrade(kind, UpgradeKind.Repeats); growth.Upgrade(kind, UpgradeKind.Speed, 10);
+                growth.Upgrade(kind, UpgradeKind.Copies); growth.Upgrade(kind, UpgradeKind.Speed, 10);
             }
             var simulation = UnityEngine.Object.FindAnyObjectByType<BattleRunner>().Simulation;
             Assert.That(simulation.Weapons.Count, Is.EqualTo(4));

@@ -378,7 +378,7 @@ namespace SsalMuk.Unity.Diagnostics
         private IEnumerator HighGrowth()
         {
             var catalog = Resources.Load<GameCatalog>("Bootstrap/GameCatalog");
-            Report.preset = "Calculator: BigInteger 10^400 XP, rejected excessive copies/repeats and numeric precision failure. Runtime tiers: requested copy upgrades 0/2/8 limited to 8 melee or 6 fireballs total, repeat upgrades 0/2/2, speed +2, 4 weapons, 5s each.";
+            Report.preset = "Calculator: BigInteger 10^400 XP, rejected excessive copies/removed repeats and numeric precision failure. Runtime tiers: requested copy upgrades 0/2/8 limited to 8 melee or 6 fireballs total, no repeats, speed +2, 4 weapons, 5s each.";
             session = new DiagnosticSession(catalog, Report.seed, false);
             var run = session.Run; var growth = new GrowthService(run); var huge = BigInteger.Pow(10, 400);
             Require(new ProgressionService(run).AddExperience(huge), "Huge progression was rejected.");
@@ -390,9 +390,8 @@ namespace SsalMuk.Unity.Diagnostics
             bool repeatRejected = false;
             try { growth.Upgrade(WeaponKind.Sword, UpgradeKind.Repeats, huge); } catch (InvalidOperationException) { repeatRejected = true; }
             Require(repeatRejected && run.Player.Weapons.Get(WeaponKind.Sword).GetLevel(UpgradeKind.Repeats).IsZero, "Repeat cap was bypassed or partly applied.");
-            growth.Upgrade(WeaponKind.Sword, UpgradeKind.Repeats, 2);
             var calculated = StatCalculator.Calculate(run.Definitions.GetWeapon(WeaponKind.Sword), run.Player.Weapons.Get(WeaponKind.Sword), run.GrowthSettings);
-            Require(calculated.Copies == 8 && calculated.Repeats == 3, "The explicit copy or repeat cap changed.");
+            Require(calculated.Copies == 8 && calculated.Repeats == 1, "The copy cap or single-strike rule changed.");
             bool rejected = false;
             try { growth.Upgrade(WeaponKind.Sword, UpgradeKind.Damage, huge); } catch (NumericRangeException) { rejected = true; }
             Require(rejected && run.Player.Weapons.Get(WeaponKind.Sword).GetLevel(UpgradeKind.Damage).IsZero, "Unrepresentable damage was silently accepted or partially applied.");
@@ -409,7 +408,6 @@ namespace SsalMuk.Unity.Diagnostics
                     if (tier > 0)
                     {
                         growth.Upgrade(kind, UpgradeKind.Copies, Math.Min(tier, WeaponState.MaximumCopies(kind) - 1));
-                        growth.Upgrade(kind, UpgradeKind.Repeats, Math.Min(tier, 2));
                     }
                 }
                 for (int i = 0; i < 250; i++)
@@ -419,10 +417,9 @@ namespace SsalMuk.Unity.Diagnostics
                     var stats = StatCalculator.Calculate(run.Definitions.GetWeapon(weapon.Kind), run.Player.Weapons.Get(weapon.Kind), run.GrowthSettings);
                     long strikes = 0; double until = run.Clock.ElapsedSeconds;
                     for (long group = 0; group * stats.PeriodSeconds <= until + 1e-8; group++)
-                        for (int repeat = 0; repeat <= Math.Min(tier, 2); repeat++)
-                            if (group * stats.PeriodSeconds + (tier == 0 ? 0 : stats.PeriodSeconds * .6 * repeat / Math.Min(tier, 2)) <= until + 1e-8) strikes++;
+                        strikes++;
                     int copies = Math.Min(1 + tier, weapon.Kind == WeaponKind.Fireball ? 6 : 8);
-                    Require(weapon.LaunchCount == strikes * copies, "A copy/repeat was omitted at tier " + tier + ": " + weapon.Kind);
+                    Require(weapon.LaunchCount == strikes * copies, "An attack/copy was omitted at tier " + tier + ": " + weapon.Kind);
                     Require(weapon.MaximumDispatchDelay <= .020001, "Attack reservation exceeded one fixed tick.");
                 }
                 Sample(run, session.Simulation, session.View); Observe("RuntimeTier=" + tier);

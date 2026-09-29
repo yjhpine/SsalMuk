@@ -17,8 +17,17 @@ namespace SsalMuk.Core
                 throw new ArgumentOutOfRangeException(nameof(state), "Weapon copies and repeats must respect their explicit limits.");
             return new WeaponStats(Scaled(definition.Damage, Level(UpgradeKind.Damage), settings.DamageCoefficient, false, "Damage"),
                 Scaled(definition.Range, Level(UpgradeKind.Range), settings.RangeCoefficient, false, "Range"),
-                Scaled(definition.PeriodSeconds, Level(UpgradeKind.Speed), settings.SpeedCoefficient, true, "Period"),
+                Period(definition.PeriodSeconds, Level(UpgradeKind.Speed), settings),
                 copies, repeats);
+        }
+        private static double Period(double baseline, BigInteger level, GrowthSettings settings)
+        {
+            if (level.IsZero) return baseline;
+            double value = baseline / settings.SpeedFactor(level);
+            double previous = baseline / settings.SpeedFactor(level - 1);
+            if (!(value > 0) || double.IsInfinity(value) || double.IsNaN(value) || value >= previous)
+                throw new NumericRangeException("Period cannot represent the requested upgrade and its next-unit precision.");
+            return value;
         }
         private static double Scaled(double baseline, BigInteger level, double coefficient, bool inverse, string name)
         {

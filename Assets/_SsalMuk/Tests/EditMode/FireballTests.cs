@@ -98,16 +98,16 @@ namespace SsalMuk.Tests
         }
 
         [Test]
-        public void DenseRepeatsRespectEveryBirthTimeWithinOneFixedStep()
+        public void FastAttackCyclesRespectEveryBirthTimeWithinOneFixedStep()
         {
             using var rig = RunTestRig.Create(enableAi: false); rig.Equip(WeaponKind.Fireball);
             rig.Spawn(UnitKind.Normal, new DVec2(20, 0), 1000);
             using var runtime = new WeaponRuntime(rig.Run, WeaponKind.Fireball, rig.Movement, rig.Damage,
-                () => new WeaponStats(6, .8, .1, copies: 3, repeats: 31));
-            runtime.Tick(0, .02);
-            Assert.That(runtime.Projectiles.Active.Count, Is.EqualTo(33));
+                () => new WeaponStats(6, .8, .005, copies: 3));
+            runtime.Tick(0, .021);
+            Assert.That(runtime.Projectiles.Active.Count, Is.EqualTo(15));
             foreach (var shot in runtime.Projectiles.Active)
-                Assert.That(shot.Position.DistanceTo(rig.Player.Position), Is.EqualTo((.02 - shot.SpawnedAt) * 8).Within(1e-9));
+                Assert.That(shot.Position.DistanceTo(rig.Player.Position), Is.EqualTo((.021 - shot.SpawnedAt) * 8).Within(1e-9));
         }
 
         private static AttackInstance Create(RunTestRig rig, double time = 0)
@@ -124,7 +124,7 @@ namespace SsalMuk.Tests
             long outer = rig.Spawn(UnitKind.Normal, new DVec2(2.5, 1.3), 20);
             using var runtime = new WeaponRuntime(rig.Run, WeaponKind.Fireball, rig.Movement, rig.Damage);
             runtime.Tick(0, 0.6); Assert.That(rig.Unit(target).Health, Is.EqualTo(14)); Assert.That(rig.Unit(outer).Health, Is.EqualTo(20));
-            rig.Upgrade(WeaponKind.Fireball, UpgradeKind.Damage, 10); rig.Upgrade(WeaponKind.Fireball, UpgradeKind.Range, 10);
+            rig.Upgrade(WeaponKind.Fireball, UpgradeKind.Damage, 10); rig.Upgrade(WeaponKind.Fireball, UpgradeKind.Range, 20);
             runtime.Tick(0.6, 2);
             Assert.That(rig.Unit(target).Health, Is.EqualTo(2)); Assert.That(rig.Unit(outer).Health, Is.EqualTo(8));
         }

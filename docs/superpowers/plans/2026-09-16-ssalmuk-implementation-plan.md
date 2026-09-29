@@ -1,5 +1,7 @@
 # SsalMuk Implementation Plan
 
+> 2026-09-30 승인 변경: 무기 강화 4종(연속 공격 제거), 무기별 공속 1~10강 +15%·11강부터 +5%, 범위 +4%, 공용 경험치 +10%. 아래 최초 구현 단계의 과거 반복/성장 수치보다 이 변경과 최신 기획·구조·하네스가 우선한다.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 승인된 기획과 구조에 따라 무한 생존 자동 전투 게임과 개발·검증 하네스를 단계별로 구현한다.

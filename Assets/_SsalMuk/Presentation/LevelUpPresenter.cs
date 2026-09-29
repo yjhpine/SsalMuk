@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Numerics;
 using SsalMuk.Core;
 namespace SsalMuk.Presentation
@@ -44,7 +45,7 @@ namespace SsalMuk.Presentation
                     if (reward.IsUpgrade)
                     {
                         var level = run.Player.Weapons.Get(reward.Weapon).GetLevel(reward.UpgradeKind);
-                        descriptions[i] = "단계 " + NumberFormatter.Format(level) + " → " + NumberFormatter.Format(level + 1) + "\n" + UpgradeDescription(reward.Weapon, reward.UpgradeKind);
+                        descriptions[i] = "단계 " + NumberFormatter.Format(level) + " → " + NumberFormatter.Format(level + 1) + "\n" + UpgradeDescription(reward.Weapon, reward.UpgradeKind, level, run.GrowthSettings);
                     }
                     else descriptions[i] = "새 무기를 장착합니다\n자동 공격에 추가됩니다";
                 }
@@ -96,12 +97,15 @@ namespace SsalMuk.Presentation
         private static string SharedName(SharedUpgradeKind kind) => kind == SharedUpgradeKind.MoveSpeed ? "이동속도" :
             kind == SharedUpgradeKind.Regeneration ? "체력 회복" : kind == SharedUpgradeKind.PickupRange ? "흡수 반경" : "경험치 획득";
         private static string SharedDescription(SharedUpgradeKind kind) => kind == SharedUpgradeKind.MoveSpeed ? "기본 이동속도 +10%" :
-            kind == SharedUpgradeKind.Regeneration ? "초당 체력 회복 +0.1" : kind == SharedUpgradeKind.PickupRange ? "기본 흡수 반경 +20%" : "경험치 +15% · 소수점 누적";
+            kind == SharedUpgradeKind.Regeneration ? "초당 체력 회복 +0.1" : kind == SharedUpgradeKind.PickupRange ? "기본 흡수 반경 +20%" : "경험치 +" + SharedUpgradeState.ExperiencePercentPerLevel + "% · 소수점 누적";
         private static string UpgradeName(UpgradeKind kind) => kind == UpgradeKind.Damage ? "공격력" : kind == UpgradeKind.Copies ? "개수" :
-            kind == UpgradeKind.Repeats ? "연속 공격" : kind == UpgradeKind.Speed ? "공격 속도" : "범위";
-        private static string UpgradeDescription(WeaponKind weapon, UpgradeKind kind) => kind == UpgradeKind.Damage ? "한 번의 공격이 더 강해집니다" : kind == UpgradeKind.Copies ?
+            kind == UpgradeKind.Speed ? "공격 속도" : "범위";
+        private static string UpgradeDescription(WeaponKind weapon, UpgradeKind kind, BigInteger level, GrowthSettings settings) => kind == UpgradeKind.Damage ? "한 번의 공격이 더 강해집니다" : kind == UpgradeKind.Copies ?
             "좌우 교대 +1 · " + CopyLayout.Degrees(weapon) + "도 · 총 " + WeaponState.MaximumCopies(weapon) + "개까지" :
-            kind == UpgradeKind.Repeats ? "연속 공격 1회 추가 · 최대 2단계" : kind == UpgradeKind.Speed ? "공격 사이의 대기 시간 감소" : "무기의 공격 범위 증가";
+            kind == UpgradeKind.Speed ? "기본 공속 +" + Percent(level < settings.EarlySpeedLevels ? settings.SpeedCoefficient : settings.LateSpeedCoefficient) +
+                (level < settings.EarlySpeedLevels ? " · " + settings.EarlySpeedLevels + "단계까지" : " · " + (settings.EarlySpeedLevels + 1) + "단계부터") :
+            "기본 공격 범위 +" + Percent(settings.RangeCoefficient);
+        private static string Percent(double coefficient) => (coefficient * 100).ToString("0.##", CultureInfo.InvariantCulture) + "%";
         public void Dispose()
         { disposed = true; CancelAutomaticSelection(); view.ChoiceRequested -= Choose; shownRun = null; shownOffer = null; automaticRun = null; }
     }

@@ -4,7 +4,7 @@ namespace SsalMuk.Core
 {
     public sealed class WeaponState
     {
-        public const int MaximumRepeatLevel = 2;
+        public const int MaximumRepeatLevel = 0;
         public static int MaximumCopies(WeaponKind kind)
         {
             switch (kind)

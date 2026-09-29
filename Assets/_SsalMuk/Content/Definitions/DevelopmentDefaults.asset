@@ -93,8 +93,10 @@ MonoBehaviour:
   firstLevelCost: 5
   levelCostStep: 3
   damageGrowth: 0.1
-  speedGrowth: 0.1
-  rangeGrowth: 0.08
+  speedGrowth: 0.15
+  earlySpeedLevels: 10
+  lateSpeedGrowth: 0.05
+  rangeGrowth: 0.04
   attractionRadius: 1.95
   experienceFlightSpeed: 6
   experienceOrbRadius: 0.08
