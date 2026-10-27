@@ -15,6 +15,7 @@ namespace SsalMuk.Core
         public RunModel Run => builder?.Run;
         public RunResult Result { get; private set; }
         public WeaponKind StartingWeapon { get; private set; } = WeaponKind.Sword;
+        public MapKind SelectedMap { get; private set; } = MapKind.Forest;
         public bool Pause()
         {
             if (Phase != RunPhase.Running || Run == null || Run.IsPaused) return false;
@@ -48,15 +49,17 @@ namespace SsalMuk.Core
         public event Action<RunPhase> PhaseChanged;
         public RunCoordinator(ISceneLoader sceneLoader, Func<IRunBuilder> createBuilder)
         { this.sceneLoader = sceneLoader ?? throw new ArgumentNullException(nameof(sceneLoader)); this.createBuilder = createBuilder ?? throw new ArgumentNullException(nameof(createBuilder)); }
-        public Task StartRunAsync(WeaponKind? startingWeapon = null)
+        public Task StartRunAsync(WeaponKind? startingWeapon = null, MapKind? map = null)
         {
             if (Phase == RunPhase.Disposed) throw new ObjectDisposedException(nameof(RunCoordinator));
             if (Phase != RunPhase.MainMenu) return pending ?? Task.CompletedTask;
+            if (map.HasValue && !Enum.IsDefined(typeof(MapKind), map.Value)) throw new ArgumentOutOfRangeException(nameof(map));
             if (startingWeapon.HasValue)
             {
                 if (!Enum.IsDefined(typeof(WeaponKind), startingWeapon.Value)) throw new ArgumentOutOfRangeException(nameof(startingWeapon));
                 StartingWeapon = startingWeapon.Value;
             }
+            if (map.HasValue) SelectedMap = map.Value;
             return BeginStart();
         }
         private Task BeginStart()

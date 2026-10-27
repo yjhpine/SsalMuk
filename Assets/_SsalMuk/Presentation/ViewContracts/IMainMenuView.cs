@@ -7,6 +7,7 @@ namespace SsalMuk.Presentation
     {
         event Action StartRequested;
         WeaponKind SelectedWeapon { get; }
+        MapKind SelectedMap { get; }
         void Show(bool visible, bool canStart, string message);
     }
 }

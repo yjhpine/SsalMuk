@@ -41,8 +41,22 @@ namespace SsalMuk.Unity
                 bool spawned = false;
                 for (int attempt = 0; attempt < 256; attempt++)
                 {
-                    double angle = spawnRandom.NextUnit() * Math.PI * 2, distance = 7 + spawnRandom.NextUnit() * 5;
-                    var position = Run.Player.Position.Offset(new DVec2(Math.Cos(angle), Math.Sin(angle)) * distance);
+                    WorldPosition position;
+                    if (Run.World.Map == MapKind.Library)
+                    {
+                        var camera = UnityEngine.Camera.main;
+                        double halfWidth = camera != null ? camera.orthographicSize * camera.aspect : defaults.CameraOrthographicSize * (16.0 / 9);
+                        double distance = halfWidth + definition.BodyRadius + 1.5 + spawnRandom.NextUnit() * 3;
+                        double bottom = LibraryChunkGenerator.InteriorBottom + definition.BodyRadius + .2;
+                        double top = LibraryChunkGenerator.InteriorTop - definition.BodyRadius - .2;
+                        position = Run.Player.Position.Offset(new DVec2(i % 2 == 0 ? distance : -distance,
+                            bottom + spawnRandom.NextUnit() * (top - bottom) - Run.Player.Position.Local.Y));
+                    }
+                    else
+                    {
+                        double angle = spawnRandom.NextUnit() * Math.PI * 2, distance = 7 + spawnRandom.NextUnit() * 5;
+                        position = Run.Player.Position.Offset(new DVec2(Math.Cos(angle), Math.Sin(angle)) * distance);
+                    }
                     if (!Run.World.Query.IsCircleFree(position, definition.BodyRadius)) continue;
                     bool occupied = false;
                     foreach (var unit in Run.Units)

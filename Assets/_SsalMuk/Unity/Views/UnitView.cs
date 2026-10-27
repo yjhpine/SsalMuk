@@ -8,7 +8,7 @@ namespace SsalMuk.Unity
         [SerializeField] private SpriteRenderer body;
         [SerializeField] private Transform walkPivot, hitScaleRoot;
         private SpriteRenderer healthBackground, healthFill, chargeWarning;
-        private readonly WalkAnimator walk = new WalkAnimator();
+        private PlayerLocomotionAnimation locomotion;
         private readonly HitFeedback hit = new HitFeedback();
         public long UnitId { get; private set; }
         public double DisplayedHealthFraction { get; private set; }
@@ -34,10 +34,15 @@ namespace SsalMuk.Unity
             transform.localPosition = WorldRenderOrigin.ToVector(relative);
             var art = catalog.Visuals.Unit(kind); body.sprite = art.Sprite; body.sharedMaterial = catalog.WorldMaterial;
             hit.Observe(unit.HitSequence, unit.LastHitAt); hit.Sample(now, catalog.Visuals);
-            if (kind == UnitKind.Player) walk.Step(unit.MoveIntent, dt, catalog.Visuals);
-            else walk.Reset();
-            walkPivot.localPosition = new Vector3(0, (float)(-radius + walk.Pose.Height), 0);
-            walkPivot.localRotation = Quaternion.Euler(0, 0, (float)walk.Pose.RotationDegrees);
+            SsalMuk.Presentation.WalkPose pose = default;
+            if (kind == UnitKind.Player)
+            {
+                if (locomotion == null) locomotion = walkPivot.gameObject.AddComponent<PlayerLocomotionAnimation>();
+                pose = locomotion.Step(unit.IsAlive ? unit.MoveIntent : DVec2.Zero, dt, catalog.Visuals);
+            }
+            else if (locomotion != null) locomotion.Release();
+            walkPivot.localPosition = new Vector3(0, (float)(-radius + pose.Height), 0);
+            walkPivot.localRotation = Quaternion.Euler(0, 0, (float)pose.RotationDegrees);
             hitScaleRoot.localScale = Vector3.one * hit.Scale; body.color = hit.Color;
             body.transform.localPosition = Vector3.zero; body.transform.localRotation = Quaternion.identity;
             body.transform.localScale = Vector3.one * (art.Height / body.sprite.bounds.size.y);
@@ -84,7 +89,7 @@ namespace SsalMuk.Unity
         }
         public override void ResetVisuals()
         {
-            base.ResetVisuals(); UnitId = 0; DisplayedHealthFraction = 0; walk.Reset(); hit.Reset();
+            base.ResetVisuals(); UnitId = 0; DisplayedHealthFraction = 0; locomotion?.ResetPose(); hit.Reset();
             if (walkPivot != null) { walkPivot.localPosition = Vector3.zero; walkPivot.localRotation = Quaternion.identity; }
             if (hitScaleRoot != null) hitScaleRoot.localScale = Vector3.one;
             if (body != null) { body.color = Color.white; body.flipX = false; body.transform.localRotation = Quaternion.identity; body.transform.localScale = Vector3.one; }

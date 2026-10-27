@@ -56,7 +56,12 @@ namespace SsalMuk.Tests
                 var rendered = view.UnitViews.Single(x => x.UnitId == id);
                 Assert.That(rendered.Body.color, Is.EqualTo(Color.red));
                 Assert.That(rendered.HitScaleRoot.localScale.x, Is.GreaterThan(1));
-                Assert.That(rig.Unit(id).Knockback.IsActive, Is.True);
+                if (rig.Unit(id) is GroundEnemyModel boss && boss.Kind == UnitKind.Boss)
+                {
+                    Assert.That(boss.Charge.Phase, Is.EqualTo(EnemyState.Telegraph));
+                    Assert.That(boss.Knockback.IsActive, Is.False, "Boss telegraph super armor rejects knockback while preserving hit visuals.");
+                }
+                else Assert.That(rig.Unit(id).Knockback.IsActive, Is.True);
             }
             yield return null;
         }

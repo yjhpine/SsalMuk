@@ -12,6 +12,17 @@ namespace SsalMuk.Unity
         [SerializeField] private Sprite[] projectileFrames = Array.Empty<Sprite>();
         [SerializeField] private Sprite[] explosionFrames = Array.Empty<Sprite>();
         [SerializeField] private Sprite[] furniture = Array.Empty<Sprite>();
+        [SerializeField] private Sprite[] forest = Array.Empty<Sprite>();
+        [SerializeField] private RuntimeAnimatorController playerLocomotion;
+        public RuntimeAnimatorController PlayerLocomotion => playerLocomotion;
+        public void ConfigurePlayerLocomotion(RuntimeAnimatorController controller)
+        { playerLocomotion = controller != null ? controller : throw new ArgumentNullException(nameof(controller)); }
+        public Sprite Forest(ForestPropKind kind, int variation) => forest[variation * 3 + (int)kind];
+        public void ConfigureForest(Sprite[] sprites)
+        {
+            if (sprites == null || sprites.Length != 6 || sprites.Any(x => x == null)) throw new ArgumentException("Six forest sprites are required.");
+            forest = (Sprite[])sprites.Clone();
+        }
         [SerializeField] private float projectileFrameSeconds = 0.08f;
         [SerializeField] private float projectileSourceAxisDegrees = 180;
         [SerializeField] private float walkAngle = 8, walkHeight = 0.08f, walkCycles = 1.8f;

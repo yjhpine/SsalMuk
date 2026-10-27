@@ -25,6 +25,7 @@ namespace SsalMuk.Core
         public IReadOnlyCollection<ChunkData> CachedTerrain => terrain.Values;
         public long TerrainRevision { get; private set; }
         public WorldQuery Query { get; }
+        public MapKind? Map => (generator as ThemedChunkGenerator)?.Map;
 
         public WorldStore(UnitRegistry units, IChunkGenerator generator)
         {

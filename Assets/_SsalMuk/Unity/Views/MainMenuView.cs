@@ -14,6 +14,9 @@ namespace SsalMuk.Unity
         private readonly List<UnityEngine.UI.Button> weaponButtons = new List<UnityEngine.UI.Button>();
         private readonly List<UnityEngine.UI.Text> selectionLabels = new List<UnityEngine.UI.Text>();
         private readonly List<WeaponKind> weaponKinds = new List<WeaponKind>();
+        private readonly List<UnityEngine.UI.Button> mapButtons = new List<UnityEngine.UI.Button>();
+        private readonly List<UnityEngine.UI.Text> mapLabels = new List<UnityEngine.UI.Text>();
+        public MapKind SelectedMap { get; private set; } = MapKind.Forest;
         public UnityEngine.UI.Button StartButton { get; private set; }
         public UnityEngine.UI.Button SettingsButton { get; private set; }
         public UnityEngine.UI.Button QuitButton { get; private set; }
@@ -28,11 +31,11 @@ namespace SsalMuk.Unity
             var background = UiFactory.Rect(canvas.transform, "Backdrop", Vector2.zero, Vector2.zero, Vector2.zero);
             background.anchorMax = Vector2.one; background.offsetMin = background.offsetMax = Vector2.zero;
             background.gameObject.AddComponent<UnityEngine.UI.Image>().color = UiFactory.Ink;
-            UiFactory.Label(canvas.transform, "Eyebrow", font, "SSALMUK  /  SURVIVAL", 17, UiFactory.Mint, new Vector2(700, 40), new Vector2(0.5f, 0.5f), new Vector2(0, 268));
-            UiFactory.Label(canvas.transform, "Title", font, "쌀먹", 88, Color.white, new Vector2(720, 135), new Vector2(0.5f, 0.5f), new Vector2(0, 183));
-            UiFactory.Label(canvas.transform, "Subtitle", font, "끝없이 이어지는 생존", 23, UiFactory.Muted, new Vector2(720, 48), new Vector2(0.5f, 0.5f), new Vector2(0, 100));
-            UiFactory.Label(canvas.transform, "WeaponHeading", font, "시작 무기 선택", 21, Color.white, new Vector2(720, 34), new Vector2(0.5f, 0.5f), new Vector2(0, 42));
-            var choices = UiFactory.Rect(canvas.transform, "StartingWeapons", new Vector2(900, 132), new Vector2(.5f, .5f), new Vector2(0, -48));
+            UiFactory.Label(canvas.transform, "Eyebrow", font, "SSALMUK  /  SURVIVAL", 17, UiFactory.Mint, new Vector2(700, 34), new Vector2(0.5f, 0.5f), new Vector2(0, 300));
+            UiFactory.Label(canvas.transform, "Title", font, "쌀먹", 88, Color.white, new Vector2(720, 135), new Vector2(0.5f, 0.5f), new Vector2(0, 214));
+            UiFactory.Label(canvas.transform, "Subtitle", font, "끝없이 이어지는 생존", 23, UiFactory.Muted, new Vector2(720, 40), new Vector2(0.5f, 0.5f), new Vector2(0, 125));
+            UiFactory.Label(canvas.transform, "WeaponHeading", font, "시작 무기 선택", 21, Color.white, new Vector2(720, 34), new Vector2(0.5f, 0.5f), new Vector2(0, 83));
+            var choices = UiFactory.Rect(canvas.transform, "StartingWeapons", new Vector2(900, 112), new Vector2(.5f, .5f), new Vector2(0, -5));
             var row = choices.gameObject.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
             row.spacing = 12; row.childAlignment = TextAnchor.MiddleCenter;
             row.childControlWidth = row.childControlHeight = row.childForceExpandWidth = row.childForceExpandHeight = false;
@@ -41,7 +44,15 @@ namespace SsalMuk.Unity
             AddWeapon(WeaponKind.Axe, "철도끼", "주변을 한 바퀴 휘두르기");
             AddWeapon(WeaponKind.Fireball, "파이어볼", "멀리 날아가 폭발하는 마법");
             SelectWeapon(WeaponKind.Sword);
-            var actions = UiFactory.Rect(canvas.transform, "MenuActions", new Vector2(900, 62), new Vector2(.5f, .5f), new Vector2(0, -178));
+            UiFactory.Label(canvas.transform, "MapHeading", font, "맵 선택", 21, Color.white, new Vector2(720, 34), new Vector2(.5f, .5f), new Vector2(0, -94));
+            var maps = UiFactory.Rect(canvas.transform, "Maps", new Vector2(900, 90), new Vector2(.5f, .5f), new Vector2(0, -160));
+            var mapRow = maps.gameObject.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+            mapRow.spacing = 16; mapRow.childAlignment = TextAnchor.MiddleCenter;
+            mapRow.childControlWidth = mapRow.childControlHeight = mapRow.childForceExpandWidth = mapRow.childForceExpandHeight = false;
+            AddMap(MapKind.Forest, "숲", "빈터와 나무 사이를 탐험하는 숲");
+            AddMap(MapKind.Library, "도서관", "위아래 벽을 따라 좌우로 이어지는 도서관");
+            SelectMap(MapKind.Forest);
+            var actions = UiFactory.Rect(canvas.transform, "MenuActions", new Vector2(900, 62), new Vector2(.5f, .5f), new Vector2(0, -256));
             var actionRow = actions.gameObject.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
             actionRow.spacing = 15; actionRow.childAlignment = TextAnchor.MiddleCenter;
             actionRow.childControlWidth = actionRow.childControlHeight = actionRow.childForceExpandWidth = actionRow.childForceExpandHeight = false;
@@ -52,12 +63,21 @@ namespace SsalMuk.Unity
             StartButton.onClick.AddListener(Submit);
             SettingsButton.onClick.AddListener(() => { if (CanInteract(SettingsButton)) SettingsRequested?.Invoke(); });
             QuitButton.onClick.AddListener(() => { if (CanInteract(QuitButton)) QuitRequested?.Invoke(); });
-            status = UiFactory.Label(canvas.transform, "Status", font, "", 17, UiFactory.Muted, new Vector2(920, 40), new Vector2(0.5f, 0.5f), new Vector2(0, -241));
-            UiFactory.Label(canvas.transform, "PlayGuide", font, "이동과 공격은 자동으로 진행됩니다.  ·  ESC 메뉴", 16, UiFactory.Muted, new Vector2(900, 40), new Vector2(0.5f, 0), new Vector2(0, 32));
+            status = UiFactory.Label(canvas.transform, "Status", font, "", 17, UiFactory.Muted, new Vector2(920, 40), new Vector2(0.5f, 0.5f), new Vector2(0, -307));
+            UiFactory.Label(canvas.transform, "PlayGuide", font, "이동과 공격은 자동으로 진행됩니다.  ·  ESC 메뉴", 16, UiFactory.Muted, new Vector2(900, 40), new Vector2(0.5f, 0), new Vector2(0, 17));
 
+            void AddMap(MapKind kind, string title, string description)
+            {
+                var card = UiFactory.Rect(maps, "Map_" + kind, new Vector2(442, 90), new Vector2(.5f, .5f), Vector2.zero);
+                var surface = card.gameObject.AddComponent<UnityEngine.UI.Image>();
+                var button = card.gameObject.AddComponent<UnityEngine.UI.Button>(); button.targetGraphic = surface;
+                button.onClick.AddListener(() => { if (CanInteract(button)) SelectMap(kind); }); mapButtons.Add(button);
+                mapLabels.Add(UiFactory.Label(card, "Name", font, title, 23, Color.white, new Vector2(415, 34), new Vector2(.5f, .5f), new Vector2(0, 17)));
+                UiFactory.Label(card, "Description", font, description, 15, UiFactory.Muted, new Vector2(415, 30), new Vector2(.5f, .5f), new Vector2(0, -20));
+            }
             void AddWeapon(WeaponKind kind, string title, string description)
             {
-                var card = UiFactory.Rect(choices, "StartWeapon_" + kind, new Vector2(216, 132), new Vector2(.5f, .5f), Vector2.zero);
+                var card = UiFactory.Rect(choices, "StartWeapon_" + kind, new Vector2(216, 112), new Vector2(.5f, .5f), Vector2.zero);
                 var surface = card.gameObject.AddComponent<UnityEngine.UI.Image>();
                 var button = card.gameObject.AddComponent<UnityEngine.UI.Button>(); button.targetGraphic = surface;
                 button.onClick.AddListener(() => { if (CanInteract(button)) SelectWeapon(kind); });
@@ -78,6 +98,16 @@ namespace SsalMuk.Unity
             }
         }
         private bool CanInteract(UnityEngine.UI.Button button) => canvas.gameObject.activeInHierarchy && interaction.interactable && button.interactable;
+        private void SelectMap(MapKind kind)
+        {
+            SelectedMap = kind;
+            for (int i = 0; i < mapButtons.Count; i++)
+            {
+                bool selected = i == (int)kind;
+                mapButtons[i].targetGraphic.color = selected ? new Color32(32, 76, 66, 255) : new Color32(26, 42, 49, 255);
+                mapLabels[i].text = (i == 0 ? "숲" : "도서관") + (selected ? "  ·  선택됨" : "");
+            }
+        }
         private void Submit() { if (StartButton != null && CanInteract(StartButton)) StartRequested?.Invoke(); }
         public void SetBlocked(bool blocked) { interaction.interactable = interaction.blocksRaycasts = !blocked; }
         public void Show(bool visible, bool canStart, string message)
@@ -85,6 +115,7 @@ namespace SsalMuk.Unity
             if (canvas == null) return;
             canvas.gameObject.SetActive(visible); StartButton.interactable = SettingsButton.interactable = QuitButton.interactable = canStart;
             foreach (var button in weaponButtons) button.interactable = canStart;
+            foreach (var button in mapButtons) button.interactable = canStart;
             status.text = message;
         }
         private void OnDestroy()
@@ -93,6 +124,7 @@ namespace SsalMuk.Unity
             if (SettingsButton != null) SettingsButton.onClick.RemoveAllListeners();
             if (QuitButton != null) QuitButton.onClick.RemoveAllListeners();
             foreach (var button in weaponButtons) if (button != null) button.onClick.RemoveAllListeners();
+            foreach (var button in mapButtons) if (button != null) button.onClick.RemoveAllListeners();
             StartRequested = SettingsRequested = QuitRequested = null;
         }
     }

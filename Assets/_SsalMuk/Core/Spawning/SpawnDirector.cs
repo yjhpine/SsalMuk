@@ -132,7 +132,18 @@ namespace SsalMuk.Core
             for (int attempt = 0; attempt < settings.PositionAttempts; attempt++)
             {
                 DVec2 offset;
-                if (ticket.IsSurroundWave)
+                if (run.World.Map == MapKind.Library)
+                {
+                    double margin = radius + settings.GroundMargin + AirGroupSpawner.Draw(random) * settings.GroundBand;
+                    long index = ticket.Count - ticket.Remaining;
+                    bool right = ticket.IsSurroundWave ? index % 2 == 0 : AirGroupSpawner.Draw(random) < .5;
+                    double bottom = LibraryChunkGenerator.InteriorBottom + radius + .2;
+                    double top = LibraryChunkGenerator.InteriorTop - radius - .2;
+                    double y = bottom + AirGroupSpawner.Draw(random) * (top - bottom);
+                    // The strip lives at world Y=3..29; lateral positions always remain outside the camera.
+                    offset = new DVec2((right ? 1 : -1) * (view.HalfWidth + margin), y - view.Center.Local.Y);
+                }
+                else if (ticket.IsSurroundWave)
                 {
                     double margin = radius + settings.GroundMargin + AirGroupSpawner.Draw(random) * settings.GroundBand;
                     long index = ticket.Count - ticket.Remaining, sectors = Math.Min(8, ticket.Count);

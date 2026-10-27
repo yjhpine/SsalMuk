@@ -13,12 +13,16 @@ namespace SsalMuk.Core
         private readonly uint[] blockedRows = new uint[Size];
         public bool HasObstacles { get; }
         public IReadOnlyList<FurniturePlacement> Furniture { get; }
+        public MapKind? Map { get; }
+        public IReadOnlyList<ForestScenery> Scenery { get; }
+        public IReadOnlyList<ForestClearing> Clearings { get; }
         public ChunkCoord Coord { get; }
         public int Version { get; }
         public string Fingerprint { get; }
         public bool UsedSafeLayout { get; }
         public ChunkData(ChunkCoord coord, bool[] blocked, int version, int[] openings = null, bool usedSafeLayout = false,
-            IReadOnlyList<FurniturePlacement> furniture = null)
+            IReadOnlyList<FurniturePlacement> furniture = null, MapKind? map = null,
+            IReadOnlyList<ForestScenery> scenery = null, IReadOnlyList<ForestClearing> clearings = null)
         {
             if (blocked == null || blocked.Length != Size * Size) throw new ArgumentException("A chunk needs 32 by 32 cells.", nameof(blocked));
             if (version <= 0) throw new ArgumentOutOfRangeException(nameof(version));
@@ -36,7 +40,15 @@ namespace SsalMuk.Core
                 placements[i] = item;
             }
             Furniture = Array.AsReadOnly(placements);
+            Map = map;
+            var props = new ForestScenery[scenery?.Count ?? 0];
+            for (int i = 0; i < props.Length; i++) props[i] = scenery[i];
+            Scenery = Array.AsReadOnly(props);
+            var rooms = new ForestClearing[clearings?.Count ?? 0];
+            for (int i = 0; i < rooms.Length; i++) rooms[i] = clearings[i];
+            Clearings = Array.AsReadOnly(rooms);
             ulong hash = StableHash.Append(StableHash.Offset, (uint)version);
+            if (map.HasValue) hash = StableHash.Append(hash, (ulong)map.Value + 123);
             foreach (bool cell in blocked) hash = StableHash.Append(hash, cell ? 1UL : 0UL);
             for (int y = 0; y < Size; y++) for (int x = 0; x < Size; x++)
                 if (blocked[y * Size + x]) { blockedRows[y] |= 1U << x; HasObstacles = true; }
@@ -45,6 +57,10 @@ namespace SsalMuk.Core
                 hash = StableHash.Append(hash, (ulong)item.Kind);
                 hash = StableHash.Append(hash, (ulong)(item.X | item.Y << 5 | item.Width << 10 | item.Height << 16 | item.Variation << 22));
             }
+            foreach (var prop in props)
+                hash = StableHash.Append(hash, (ulong)((int)prop.Kind | prop.X << 3 | prop.Y << 8 | prop.Variation << 13));
+            foreach (var room in rooms)
+                hash = StableHash.Append(hash, (ulong)(room.X | room.Y << 5 | room.Width << 10 | room.Height << 16));
             Fingerprint = hash.ToString("x16");
         }
         public bool IsBlocked(int x, int y)

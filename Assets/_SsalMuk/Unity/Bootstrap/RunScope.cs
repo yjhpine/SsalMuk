@@ -20,12 +20,12 @@ namespace SsalMuk.Unity
         private bool disposed;
         public static int ActiveCount { get; private set; }
         public RunModel Run { get; }
-        public RunScope(GameCatalog catalog, DisplaySettings display = null)
+        public RunScope(GameCatalog catalog, DisplaySettings display = null, MapKind map = MapKind.Forest)
         {
             this.catalog = catalog; this.display = display; catalog.ValidatePresentation();
             Guid id = Guid.NewGuid(); int seed = BitConverter.ToInt32(id.ToByteArray(), 0);
             var definitions = catalog.CreateDefinitions(); var streams = new SeedStreams(seed);
-            Run = new RunModel(id, seed, definitions, new ChunkGenerator(streams.MapSeed, catalog.Defaults.CreateMapSettings()),
+            Run = new RunModel(id, seed, definitions, new ThemedChunkGenerator(streams.MapSeed, catalog.Defaults.CreateMapSettings(), map),
                 growthSettings: catalog.Defaults.CreateGrowthSettings(), pickupSettings: catalog.Defaults.CreatePickupSettings(), rewardWeights: catalog.Defaults.CreateRewardWeights());
             builder = new InitialRunBuilder(Run, catalog.Defaults, RefreshViews);
             ActiveCount = checked(ActiveCount + 1);

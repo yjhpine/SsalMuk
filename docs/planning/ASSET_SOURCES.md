@@ -1,5 +1,13 @@
 # SsalMuk 자산 출처와 적용 기록
 
+## 2026-10-27 숲 정적 스프라이트
+
+- 내장 imagegen으로 나무·바위·풀 각 2종을 하나의 1536×1024 PNG로 생성했다. 프로젝트 파일은 `Assets/_SsalMuk/Content/Art/Environment/ForestAtlas.png`다.
+- 최종 생성 원본: `C:/Users/ace21/.codex/generated_images/01a0af96-0fe3-7880-b3cf-d60b85bb9394/exec-980b95aa-fb7c-4421-9ba7-392e6388afc2.png`. PNG 바이트는 그대로 복사했고 Unity Sprite Editor 데이터 제공자로 alpha 영역을 잘라 하단 피벗을 지정했다. 나무가 셀 가장자리를 조금 넘는 부분은 빈 공간에 맞춰 분할 경계를 조정했다.
+- 생성 요청: top-down oblique fantasy survival pixel-art atlas, three columns and two rows, tree/boulder/grass with two variants, transparent background, dark outline, muted green/brown/gray, no text, ground or shadow.
+- 정리 요청: preserve six designs and canvas, remove background tint/glow/shadow, keep object silhouettes opaque and surrounding pixels transparent, preserve crisp pixel-art and isolate each sprite.
+- 플레이어 그림은 추가 생성하지 않았다. 기존 한 장을 사용하며 `Content/Animations/PlayerIdle.anim`, `PlayerWalk.anim`, `PlayerLocomotion.controller`에서 자세만 제어한다.
+
 ## 도트 무기 원본
 
 - 제작일: 2026-09-16. 제작 도구: 내장 imagegen. 사용자가 요청한 철검·철도끼·철창·루비 금색 지팡이 4종이다.

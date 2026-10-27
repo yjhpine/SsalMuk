@@ -73,7 +73,7 @@ namespace SsalMuk.Unity
             Coordinator = new RunCoordinator(new UnitySceneLoader(), () =>
             {
                 if (catalog == null) throw new System.InvalidOperationException("Game catalog is missing.");
-                return new RunScope(catalog, Display);
+                return new RunScope(catalog, Display, Coordinator.SelectedMap);
             });
             presenter = new MainMenuPresenter(Coordinator, Menu);
             hudPresenter = new HudPresenter(Hud); resultsPresenter = new ResultsPresenter(Coordinator, Results);
