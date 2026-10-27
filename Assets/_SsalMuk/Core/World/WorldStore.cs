@@ -26,6 +26,7 @@ namespace SsalMuk.Core
         public long TerrainRevision { get; private set; }
         public WorldQuery Query { get; }
         public MapKind? Map => (generator as ThemedChunkGenerator)?.Map;
+        public bool ContainsTerrain(ChunkCoord coord) => Map != MapKind.Library || coord.Y == 0;
 
         public WorldStore(UnitRegistry units, IChunkGenerator generator)
         {
@@ -40,6 +41,7 @@ namespace SsalMuk.Core
         public ChunkData GetChunk(ChunkCoord coord)
         {
             RequireActive();
+            if (!ContainsTerrain(coord)) throw new ArgumentOutOfRangeException(nameof(coord), "Outside the playable map strip.");
             if (!terrain.TryGetValue(coord, out var chunk))
             {
                 chunk = generator.Generate(coord);
@@ -48,7 +50,7 @@ namespace SsalMuk.Core
             }
             return chunk;
         }
-        public bool IsBlocked(GridCell cell) => GetChunk(cell.Chunk).IsBlocked(cell.X, cell.Y);
+        public bool IsBlocked(GridCell cell) => !ContainsTerrain(cell.Chunk) || GetChunk(cell.Chunk).IsBlocked(cell.X, cell.Y);
         public void ClearTerrainCache() { RequireActive(); terrain.Clear(); TerrainRevision = checked(TerrainRevision + 1); }
         public bool EvictTerrain(ChunkCoord coord)
         {

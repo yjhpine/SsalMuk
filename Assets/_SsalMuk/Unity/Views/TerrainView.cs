@@ -21,22 +21,17 @@ namespace SsalMuk.Unity
             for (int y = 0; y < 32; y++) for (int x = 0; x < 32; x++)
             {
                 bool library = chunk.Map == MapKind.Library;
+                if (library && (y < LibraryChunkGenerator.InteriorBottom || y >= LibraryChunkGenerator.InteriorTop)) continue;
                 var floor = library ? ((x / 4 + y) % 2 == 0 ? new Color32(60, 47, 34, 255) : new Color32(54, 42, 30, 255)) :
                     ((x + y) % 2 == 0 ? new Color32(28, 48, 42, 255) : new Color32(30, 51, 45, 255));
                 Quad(x, y, 1, 1, floor);
-                if (library && (chunk.Coord.Y != 0 || y < LibraryChunkGenerator.InteriorBottom || y >= LibraryChunkGenerator.InteriorTop))
-                {
-                    Quad(x, y, 1, 1, new Color32(28, 25, 28, 255), .5f);
-                    Quad(x + .04f, y + .04f, .92f, .90f, new Color32(94, 77, 62, 255), .5f);
-                    if (chunk.Coord.Y == 0 && (y == 2 || y == 29)) Quad(x, y == 2 ? y + .9f : y, 1, .1f, new Color32(153, 120, 73, 255), .7f);
-                    continue;
-                }
                 if (chunk.Map == MapKind.Forest) continue;
                 if (!chunk.IsBlocked(x, y) || chunk.Furniture.Count > 0) continue;
                 Quad(x + 0.05f, y - 0.07f, 0.92f, 0.94f, new Color32(12, 28, 24, 255));
                 Quad(x + 0.035f, y + 0.025f, 0.93f, 0.94f, new Color32(69, 94, 81, 255));
                 Quad(x + 0.07f, y + 0.83f, 0.86f, 0.09f, new Color32(100, 128, 107, 255));
             }
+            if (chunk.Map == MapKind.Library) LibraryWallArt.Draw(chunk.Coord.X, Quad);
             mesh = new Mesh { name = "RuntimeChunk" }; mesh.SetVertices(vertices); mesh.SetColors(colors); mesh.SetUVs(0, uv); mesh.SetTriangles(triangles, 0); mesh.RecalculateBounds();
             normalColors = colors.ToArray(); darkColors = night.ToArray();
             gameObject.AddComponent<MeshFilter>().sharedMesh = mesh;

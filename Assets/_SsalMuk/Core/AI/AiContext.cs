@@ -28,6 +28,7 @@ namespace SsalMuk.Core
         public DVec2 MoveIntent { get; internal set; }
         public DVec2 BreakoutDirection { get; internal set; }
         public long? CollectionTargetId { get; internal set; }
+        internal bool ApproachingItem { get; set; }
         public double EngagementRange { get; internal set; } = 1.6;
 
         public AiContext(UnitModel actor, WorldStore world, NavigationService navigation, AiSettings settings, PickupSettings pickupSettings = null, IPlayerPosition followTarget = null)
@@ -144,6 +145,32 @@ namespace SsalMuk.Core
             var offset = direction * (Actor.MoveSpeed * Settings.EmergencyContactSeconds);
             foreach (var lane in chargeLanes) score += 1000 / (.1 + LaneDistance(lane, offset));
             return score;
+        }
+
+        public double LibraryWallCost(DVec2 offset)
+        {
+            if (World.Map != MapKind.Library || Actor.Kind != UnitKind.Player) return 0;
+            var at = Actor.Position.Offset(offset);
+            if (at.Chunk.Y != 0) return 100;
+            double clearance = Math.Min(at.Local.Y - LibraryChunkGenerator.InteriorBottom,
+                LibraryChunkGenerator.InteriorTop - at.Local.Y) - Actor.BodyRadius;
+            double shortfall = Math.Max(0, 2.5 - clearance);
+            return Math.Min(100, shortfall * shortfall * 4);
+        }
+
+        internal DVec2 KeepLibraryWallClearance(DVec2 intent)
+        {
+            if (World.Map != MapKind.Library || Actor.Position.Chunk.Y != 0) return intent;
+            double bottom = Actor.Position.Local.Y - LibraryChunkGenerator.InteriorBottom - Actor.BodyRadius;
+            double top = LibraryChunkGenerator.InteriorTop - Actor.Position.Local.Y - Actor.BodyRadius;
+            // Loot near the wall may still be approached within its magnet radius.
+            double comfort = CollectionTargetId.HasValue || ApproachingItem ? Math.Min(2, PickupRadius * .65) : 2;
+            double clearance = Math.Min(bottom, top);
+            if (clearance >= comfort) return intent;
+            double inward = Math.Min(1, (comfort - clearance) / .75);
+            var preferred = new DVec2(intent.X, bottom < top ? Math.Max(intent.Y, inward) : Math.Min(intent.Y, -inward));
+            if (preferred.Length > 1) preferred = preferred.Normalized;
+            return CanMove(preferred, Actor.MoveSpeed * Settings.EmergencyContactSeconds) ? preferred : intent;
         }
 
         public bool ImminentCharge()

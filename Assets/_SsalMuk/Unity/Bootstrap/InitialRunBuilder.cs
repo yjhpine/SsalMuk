@@ -21,7 +21,10 @@ namespace SsalMuk.Unity
         {
             var center = Run.ViewOrigin.Chunk;
             for (long y = -1; y <= 1; y++) for (long x = -1; x <= 1; x++)
-                Run.World.GetChunk(new ChunkCoord(checked(center.X + x), checked(center.Y + y)));
+            {
+                var coord = new ChunkCoord(checked(center.X + x), checked(center.Y + y));
+                if (Run.World.ContainsTerrain(coord)) Run.World.GetChunk(coord);
+            }
         }
         public void CreatePlayer()
         {

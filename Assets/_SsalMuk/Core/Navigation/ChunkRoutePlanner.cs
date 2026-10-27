@@ -43,7 +43,7 @@ namespace SsalMuk.Core
                         long dx = side == 0 ? -1 : side == 1 ? 1 : 0;
                         long dy = side == 2 ? -1 : side == 3 ? 1 : 0;
                         var next = new ChunkCoord(checked(cell.X + dx), checked(cell.Y + dy));
-                        if (closed.Contains(next) || !PortalIsOpen(cell, (ChunkSide)side)) continue;
+                        if (!world.ContainsTerrain(next) || closed.Contains(next) || !PortalIsOpen(cell, (ChunkSide)side)) continue;
                         double cost = costs[cell] + 1;
                         if (costs.TryGetValue(next, out double existing) && existing <= cost) continue;
                         costs[next] = cost; parents[next] = cell; double h = Heuristic(next); open.Push(next, cost + h, h);

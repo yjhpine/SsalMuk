@@ -37,7 +37,11 @@ namespace SsalMuk.Core
             if (engagementRange != null) context.EngagementRange = engagementRange();
             bool collected = player.BrainState == BrainState.Collect;
             // Predict contact using this tick's approach/braking, not last tick's full-speed chase.
-            if (collected) states[(int)BrainState.Collect].Tick(context, dt);
+            if (collected)
+            {
+                states[(int)BrainState.Collect].Tick(context, dt);
+                context.MoveIntent = context.KeepLibraryWallClearance(context.MoveIntent);
+            }
             double blocked = context.BlockedFraction(); bool imminent = context.ImminentContact();
             if (context.ImminentCharge()) { stableFor = 0; Transition(BrainState.Evade, "Boss charge lane is dangerous."); }
             else if (player.BrainState == BrainState.Breakout)

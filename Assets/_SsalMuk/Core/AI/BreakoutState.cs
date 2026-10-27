@@ -18,7 +18,7 @@ namespace SsalMuk.Core
         }
         private void Choose(AiContext context, bool reconsider = false)
         {
-            double best = double.PositiveInfinity; var chosen = DVec2.Zero;
+            double best = double.PositiveInfinity, bestWall = double.PositiveInfinity; var chosen = DVec2.Zero;
             for (int i = 0; i < context.Settings.DirectionCount; i++)
             {
                 var direction = context.Direction(i);
@@ -33,7 +33,9 @@ namespace SsalMuk.Core
                 }
                 // Keep a tied direction on retries, rather than alternate between equivalent exits.
                 score += (1 - DVec2.Dot(direction, context.BreakoutDirection)) * 0.01;
-                if (score < best - 1e-9) { best = score; chosen = direction; }
+                double wall = context.LibraryWallCost(direction * context.Settings.ProbeDistance);
+                if (score < best - 1e-9 || Math.Abs(score - best) <= 1e-9 && wall < bestWall - 1e-9)
+                { best = score; bestWall = wall; chosen = direction; }
             }
             if (chosen == DVec2.Zero && reconsider) { Choose(context); return; }
             context.BreakoutDirection = chosen; progressAnchor = context.Actor.Position; lastProgress = context.Time;

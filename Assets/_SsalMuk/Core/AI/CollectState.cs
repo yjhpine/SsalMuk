@@ -25,7 +25,7 @@ namespace SsalMuk.Core
         public CollectState() : this(new LootRecovery()) { }
         internal CollectState(LootRecovery recovery) => this.recovery = recovery;
         public void Enter(AiContext context) { context.BreakoutDirection = DVec2.Zero; selectedPlan = -1; }
-        public void Exit(AiContext context) => context.CollectionTargetId = null;
+        public void Exit(AiContext context) { context.CollectionTargetId = null; context.ApproachingItem = false; }
 
         internal void Observe(AiContext context)
         {
@@ -107,6 +107,7 @@ namespace SsalMuk.Core
 
         public void Tick(AiContext context, double dt)
         {
+            context.ApproachingItem = false;
             context.MoveIntent = DVec2.Zero;
             if (recovery.Active && recovery.TryGetTarget(context, out var remembered))
             {
@@ -124,7 +125,7 @@ namespace SsalMuk.Core
             context.CollectionTargetId = null;
             recovery.Clear();
             if (selectedItem != null && TryApproach(context, -selectedItem.Id, selectedItem.Position, out var itemIntent))
-            { context.MoveIntent = itemIntent; return; }
+            { context.ApproachingItem = true; context.MoveIntent = itemIntent; return; }
             context.MoveIntent = context.EngageNearestEnemy();
         }
 

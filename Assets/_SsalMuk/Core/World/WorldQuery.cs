@@ -69,14 +69,14 @@ namespace SsalMuk.Core
                 for (int cy = chunkMinY; cy <= chunkMaxY; cy++) for (int cx = chunkMinX; cx <= chunkMaxX; cx++)
                 {
                     var coord = new ChunkCoord(checked(start.Chunk.X + cx), checked(start.Chunk.Y + cy));
-                    var chunk = world.GetChunk(coord);
-                    if (!chunk.HasObstacles) continue;
+                    var chunk = world.ContainsTerrain(coord) ? world.GetChunk(coord) : null;
+                    if (chunk != null && !chunk.HasObstacles) continue;
                     int x0 = Math.Max(0, minX - cx * ChunkData.Size), x1 = Math.Min(31, maxX - cx * ChunkData.Size);
                     int y0 = Math.Max(0, minY - cy * ChunkData.Size), y1 = Math.Min(31, maxY - cy * ChunkData.Size);
                     uint mask = (uint.MaxValue << x0) & (uint.MaxValue >> (31 - x1));
                     for (int y = y0; y <= y1; y++)
                     {
-                        uint row = chunk.BlockedRow(y) & mask;
+                        uint row = (chunk == null ? uint.MaxValue : chunk.BlockedRow(y)) & mask;
                         if (row == 0) continue;
                         for (int x = x0; x <= x1; x++)
                             if ((row & (1U << x)) != 0) blockedCandidates.Add(new GridCell(coord, x, y));
