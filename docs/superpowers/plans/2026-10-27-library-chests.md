@@ -27,6 +27,7 @@
 - [x] Run targeted AI/map tests and inspect a short runtime library preview.
 
 ## Task 3: Chest exploration
+- [x] User chose the temporary existing-upgrade offer: three candidates, one selection. Work was then paused by the user before code changes; await explicit resume.
 - [ ] Record the user's reward decision, then implement deterministic persisted chest state, reach/open once, target guidance, and chest-first AI.
 - [ ] Add reachability, emergency interruption, revisit/reset, and reward/pause tests appropriate to that decision.
 - [ ] Show visible chests and one current-target edge arrow without per-chest simulation objects.
@@ -36,6 +37,7 @@
 - [x] Save the completed library portion in a local commit; chest completion remains separate and pending the reward answer.
 
 ## Ledger
+- 2026-10-27 resume point: baseline ff75572. Reward clarification answered: existing upgrades, choose one of three. Read-only code inspection started, then the user explicitly paused to continue from home. No chest code/tests or Unity operations began. No active goal. Continue Task 3 only after a new resume instruction; do not treat the old unanswered-reward entries below as current.
 - Baseline 1fb667c, clean tracked files; user recovery scenes 0 (3)/0 (4), ProfilerCaptures untouched.
 - The request authorizes map/presentation/AI changes; reward-dependent work waits for the pending user clarification. No repeated design approval required for already specified work.
 - Initial failures: 9 rather than 3 initial chunks, 21 furnishings across 20 chunks, no inward wall steering (`8104f0b890934013b01cef98a32200b7`). The outside-sweep fixture was corrected to expect the established invalid-start exception.
