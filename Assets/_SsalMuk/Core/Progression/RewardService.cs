@@ -13,6 +13,12 @@ namespace SsalMuk.Core
         private bool disposed;
         public OfferSnapshot CurrentOffer { get; private set; }
         public bool HasQueuedChoice => queued.HasValue;
+        public System.Numerics.BigInteger PendingChestChoices { get; private set; }
+        public bool AddChestChoice()
+        {
+            if (!IsActive || run.IsPaused) return false;
+            PendingChestChoices++; return true;
+        }
         public RewardService(RunModel run, IRandomSource random, RewardWeights weights)
         {
             this.run = run ?? throw new ArgumentNullException(nameof(run));
@@ -20,7 +26,8 @@ namespace SsalMuk.Core
             this.weights = weights ?? throw new ArgumentNullException(nameof(weights)); growth = new GrowthService(run);
         }
         private bool IsActive => !disposed && run.Phase == RunPhase.Running && run.Player != null && run.Player.IsAlive;
-        private bool IsValid(RewardCommand command) => IsActive && CurrentOffer != null && run.Player.Growth.PendingChoices > 0 &&
+        private bool IsValid(RewardCommand command) => IsActive && CurrentOffer != null &&
+            (CurrentOffer.IsChest ? PendingChestChoices > 0 : run.Player.Growth.PendingChoices > 0) &&
             command.RunId == run.Id && command.OfferId == CurrentOffer.Id && command.Slot >= 0 && command.Slot < CurrentOffer.Choices.Count &&
             command.OwnershipVersion == CurrentOffer.OwnershipVersion && command.OwnershipVersion == run.Player.Weapons.OwnershipVersion &&
             IsAvailable(CurrentOffer.Choices[command.Slot]);
@@ -56,21 +63,22 @@ namespace SsalMuk.Core
                 var reward = CurrentOffer.Choices[command.Value.Slot];
                 if (reward.IsSharedUpgrade) growth.UpgradeShared(reward.SharedKind);
                 else if (reward.IsUpgrade) growth.Upgrade(reward.Weapon, reward.UpgradeKind); else growth.Equip(reward.Weapon);
-                run.Player.Growth.PendingChoices--; CurrentOffer = null;
+                if (CurrentOffer.IsChest) PendingChestChoices--; else run.Player.Growth.PendingChoices--;
+                CurrentOffer = null;
             }
             RefreshOffer();
         }
         public void RefreshOffer()
         {
             if (run.IsPaused) return;
-            if (!IsActive || run.Player.Growth.PendingChoices <= 0) { CurrentOffer = null; return; }
+            if (!IsActive || run.Player.Growth.PendingChoices <= 0 && PendingChestChoices <= 0) { CurrentOffer = null; return; }
             if (OfferStillAvailable()) return;
             long next = checked(lastOfferId + 1);
             CurrentOffer = new OfferSnapshot(next, run.Player.Weapons.OwnershipVersion,
                 generator.Generate(run.Player.Weapons.Kinds, random, weights, (weapon, upgrade) => run.Player.Weapons.Get(weapon).CanUpgrade(upgrade),
-                    shared => run.Player.Upgrades.CanUpgrade(shared)));
+                    shared => run.Player.Upgrades.CanUpgrade(shared)), PendingChestChoices > 0);
             lastOfferId = next;
         }
-        public void Dispose() { disposed = true; CurrentOffer = null; queued = null; }
+        public void Dispose() { disposed = true; CurrentOffer = null; queued = null; PendingChestChoices = 0; }
     }
 }

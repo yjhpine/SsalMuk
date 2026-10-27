@@ -17,7 +17,7 @@ namespace SsalMuk.Presentation
         private long waitingOfferId;
         private double waitStarted;
         private int shownCountdown = -1;
-        private bool shownAutomatic, disposed;
+        private bool shownAutomatic, shownChest, disposed;
         public bool IsAutomatic { get; private set; }
         public const double AutomaticDelaySeconds = 5;
         public LevelUpPresenter(ILevelUpView view)
@@ -52,13 +52,15 @@ namespace SsalMuk.Presentation
             }
             shownRun = run; shownOffer = offer;
             int countdown = (int)Math.Ceiling(Math.Max(0, AutomaticDelaySeconds - (run.Clock.ElapsedSeconds - waitStarted)));
-            if (shownPending != run.Player.Growth.PendingChoices || shownCountdown != countdown || shownAutomatic != IsAutomatic)
+            var pending = offer.IsChest ? run.Rewards.PendingChestChoices : run.Player.Growth.PendingChoices;
+            if (shownPending != pending || shownCountdown != countdown || shownAutomatic != IsAutomatic || shownChest != offer.IsChest)
             {
-                shownPending = run.Player.Growth.PendingChoices;
+                shownPending = pending; shownChest = offer.IsChest;
                 shownCountdown = countdown; shownAutomatic = IsAutomatic;
                 pendingText = "남은 선택 " + NumberFormatter.Format(shownPending) + "회  ·  " +
-                    (IsAutomatic ? "AUTO · 클릭하면 해제" : "자동 선택까지 " + countdown + "초");
+                    (offer.IsChest ? "상자 보상 · 직접 선택" : IsAutomatic ? "AUTO · 클릭하면 해제" : "자동 선택까지 " + countdown + "초");
             }
+            (view as IRewardHeadingView)?.SetChestHeading(offer.IsChest);
             view.Show(true, !run.Rewards.HasQueuedChoice, pendingText, titles, descriptions);
         }
         private void Choose(int slot)
@@ -86,6 +88,7 @@ namespace SsalMuk.Presentation
             if (offer == null) { waitingOfferId = 0; return; }
             if (waitingOfferId != offer.Id)
             { waitingOfferId = offer.Id; waitStarted = run.Clock.ElapsedSeconds; }
+            if (offer.IsChest) return;
             if (run.Rewards.HasQueuedChoice) return;
             if (!IsAutomatic && run.Clock.ElapsedSeconds - waitStarted + 1e-9 < AutomaticDelaySeconds) return;
             IsAutomatic = true;

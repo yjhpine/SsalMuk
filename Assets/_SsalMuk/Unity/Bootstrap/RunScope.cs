@@ -34,6 +34,7 @@ namespace SsalMuk.Unity
         public void CreatePlayer()
         {
             builder.CreatePlayer();
+            Run.Chests.Enable();
             var navigation = new NavigationService(Run.World);
             movement = new MovementSystem(Run.World, navigation, Run.Player, catalog.Defaults.CreateMovementSettings(), Run.Seed);
             damage = new DamageService(Run, movement); death = new DeathService(Run, damage);

@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 namespace SsalMuk.Unity
 {
-    public sealed class LevelUpView : MonoBehaviour, ILevelUpView
+    public sealed class LevelUpView : MonoBehaviour, ILevelUpView, IRewardHeadingView
     {
         private Canvas canvas;
         private readonly List<Button> buttons = new List<Button>();
@@ -14,6 +14,8 @@ namespace SsalMuk.Unity
         public IReadOnlyList<Button> Buttons { get; private set; } = Array.Empty<Button>();
         public bool IsVisible { get; private set; }
         public Text RemainingText { get; private set; }
+        public Text Heading { get; private set; }
+        public void SetChestHeading(bool chest) { if (Heading != null) Heading.text = chest ? "상자 보상" : "레벨업"; }
         public IReadOnlyList<Text> Titles { get; private set; } = Array.Empty<Text>();
         public void Initialize(Font font)
         {
@@ -21,7 +23,7 @@ namespace SsalMuk.Unity
             var panel = UiFactory.Rect(canvas.transform, "Backdrop", new Vector2(0, 220), new Vector2(0, 0), new Vector2(0, 110));
             panel.anchorMax = new Vector2(1, 0); var background = panel.gameObject.AddComponent<Image>();
             background.color = new Color(0.03f, 0.07f, 0.08f, 0.96f); background.raycastTarget = false;
-            UiFactory.Label(canvas.transform, "Heading", font, "레벨업", 27, UiFactory.Mint, new Vector2(240, 60),
+            Heading = UiFactory.Label(canvas.transform, "Heading", font, "레벨업", 27, UiFactory.Mint, new Vector2(240, 60),
                 new Vector2(0, 0), new Vector2(195, 177), TextAnchor.MiddleLeft);
             RemainingText = UiFactory.Label(canvas.transform, "Remaining", font, "", 19, UiFactory.Muted, new Vector2(690, 48),
                 new Vector2(1, 0), new Vector2(-420, 176), TextAnchor.MiddleRight);

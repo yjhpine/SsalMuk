@@ -22,6 +22,16 @@ namespace SsalMuk.Presentation
             var combatView = view as ICombatWorldView;
             double renderTime = Math.Max(0, model.Clock.ElapsedSeconds - model.Clock.FixedStep * (1 - interpolation));
             combatView?.SetFrameTime(renderTime);
+            if (view is IChestWorldView chestView && model is IChestReadModel chestModel)
+            {
+                foreach (var chest in chestModel.Chests.Nearby(origin))
+                {
+                    var relative = origin.DisplacementTo(chest.Position);
+                    if (!chest.Opened && relative.Length <= viewRadius + 2) chestView.ShowChest(chest, relative);
+                }
+                var target = chestModel.Chests.Target;
+                chestView.ShowChestDirection(model.Phase == RunPhase.Running && target != null && !target.Opened ? (DVec2?)origin.DisplacementTo(target.Position) : null);
+            }
             foreach (var chunk in model.Terrain)
             {
                 var relative = origin.DisplacementTo(new WorldPosition(chunk.Coord, DVec2.Zero));

@@ -40,6 +40,7 @@ namespace SsalMuk.Core
             foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind))) weapons.Add(kind, new WeaponRuntime(run, kind, movement, damage, aiSettings: ai?.Settings));
             Weapons = new ReadOnlyDictionary<WeaponKind, WeaponRuntime>(weapons); Sword = weapons[WeaponKind.Sword];
             ai?.ConfigureEngagementRange(MeleeEngagementRange);
+            ai?.ConfigureChests(run.Chests);
             damage.Accepted += ForwardHit;
             var spawnConfiguration = spawnSettings ?? new SpawnSettings();
             airDepartures = new AirDepartureSystem(run, spawnConfiguration.AirDepartureMargin);
@@ -62,6 +63,7 @@ namespace SsalMuk.Core
                 Spawns?.Tick(to, viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
                 if (ai != null) { ai.Tick(run.Clock.FixedStep); movement.SetMoveIntent(run.Player.Id, run.Player.MoveIntent); }
                 movement.Step(run.Clock.FixedStep);
+                run.Chests.Step();
                 powerups.CollectAfterMovement();
                 Weapons[WeaponKind.Fireball].Projectiles.SetViewBounds(viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
                 foreach (var kind in run.Player.Weapons.Kinds) Weapons[kind].Tick(from, to);

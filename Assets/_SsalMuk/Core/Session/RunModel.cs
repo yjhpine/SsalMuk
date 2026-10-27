@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SsalMuk.Core
 {
-    public sealed class RunModel : IRunReadModel, IItemReadModel, IDisposable
+    public sealed class RunModel : IRunReadModel, IItemReadModel, IChestReadModel, IDisposable
     {
         public Guid Id { get; }
         public Guid RunId => Id;
@@ -13,6 +13,7 @@ namespace SsalMuk.Core
         public GrowthSettings GrowthSettings { get; }
         public PickupSettings PickupSettings { get; }
         public RewardService Rewards { get; }
+        public ChestSystem Chests { get; }
         public IRunCommands Commands => Rewards;
         public OfferSnapshot CurrentOffer => Rewards.CurrentOffer;
         public WorldStore World { get; }
@@ -56,6 +57,7 @@ namespace SsalMuk.Core
             PickupSettings.ValidateForPlayer(Definitions.GetUnit(UnitKind.Player).BodyRadius);
             World = new WorldStore(new UnitRegistry(id), generator); Clock = new RunClock(fixedStep);
             Rewards = new RewardService(this, Streams.Reward, rewardWeights ?? RewardWeights.TestDefaults());
+            Chests = new ChestSystem(this);
         }
         public void SetPlayer(PlayerModel player)
         {

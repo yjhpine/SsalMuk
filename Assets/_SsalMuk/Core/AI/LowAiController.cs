@@ -13,6 +13,7 @@ namespace SsalMuk.Core
         private readonly List<AiTransition> transitions = new List<AiTransition>();
         private double enteredAt, stableFor;
         private Func<double> engagementRange;
+        private ChestSeeker chestSeeker;
         public IReadOnlyList<AiTransition> Transitions { get; }
         public AiSettings Settings => context.Settings;
         public CollectionTactic CollectionTactic => recovery.Tactic;
@@ -28,6 +29,14 @@ namespace SsalMuk.Core
             Transitions = transitions.AsReadOnly(); states[0].Enter(context);
         }
         public void ConfigureEngagementRange(Func<double> range) => engagementRange = range ?? throw new ArgumentNullException(nameof(range));
+        public void ConfigureChests(ChestSystem chests) => chestSeeker = new ChestSeeker(chests);
+        private void Collect(double dt)
+        {
+            if (chestSeeker != null && chestSeeker.TrySteer(context, dt, out var intent))
+            { context.MoveIntent = chestSeeker.GatherAlongRoute(context, intent, dt); context.ApproachingItem = true; }
+            else states[(int)BrainState.Collect].Tick(context, dt);
+            context.MoveIntent = context.KeepLibraryWallClearance(context.MoveIntent);
+        }
         public void Tick(double dt)
         {
             if (dt <= 0 || double.IsNaN(dt) || double.IsInfinity(dt)) throw new ArgumentOutOfRangeException(nameof(dt));
@@ -39,8 +48,7 @@ namespace SsalMuk.Core
             // Predict contact using this tick's approach/braking, not last tick's full-speed chase.
             if (collected)
             {
-                states[(int)BrainState.Collect].Tick(context, dt);
-                context.MoveIntent = context.KeepLibraryWallClearance(context.MoveIntent);
+                Collect(dt);
             }
             double blocked = context.BlockedFraction(); bool imminent = context.ImminentContact();
             if (context.ImminentCharge()) { stableFor = 0; Transition(BrainState.Evade, "Boss charge lane is dangerous."); }
@@ -58,8 +66,12 @@ namespace SsalMuk.Core
                 if (stableFor >= context.Settings.ReleaseStableSeconds && context.Time - enteredAt >= context.Settings.MinimumHoldSeconds)
                     Transition(BrainState.Collect, "Contact risk stayed low.");
             }
-            if (!collected || player.BrainState != BrainState.Collect) states[(int)player.BrainState].Tick(context, dt);
-            if (player.BrainState != BrainState.Collect) recovery.TrackEscape(context);
+            if (!collected || player.BrainState != BrainState.Collect)
+            {
+                if (player.BrainState == BrainState.Collect) Collect(dt);
+                else states[(int)player.BrainState].Tick(context, dt);
+            }
+            if (player.BrainState != BrainState.Collect) { recovery.TrackEscape(context); chestSeeker?.Interrupt(context); }
             player.MoveIntent = context.MoveIntent; player.BreakoutDirection = context.BreakoutDirection;
             player.CollectionTargetId = context.CollectionTargetId;
             player.TargetId = TargetResolver.Resolve(player, context.World.Query, context.Settings);
