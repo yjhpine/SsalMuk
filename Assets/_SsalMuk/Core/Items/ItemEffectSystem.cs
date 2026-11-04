@@ -21,7 +21,7 @@ namespace SsalMuk.Core
     {
         private readonly RunModel run;
         private readonly DamageService damage;
-        private readonly List<(CombatEvent hit, WorldPosition position)> hits = new List<(CombatEvent, WorldPosition)>();
+        private readonly List<(CombatEvent hit, WorldPosition position, int order)> hits = new List<(CombatEvent, WorldPosition, int)>();
         private readonly List<long> candidates = new List<long>();
         private readonly HashSet<long> linked = new HashSet<long>();
         private readonly List<ItemEffectVisual> visuals = new List<ItemEffectVisual>();
@@ -58,12 +58,15 @@ namespace SsalMuk.Core
             if (!Active || hit.Request.SourceId != run.Player.Id || hit.Request.TargetId == run.Player.Id ||
                 hit.Request.Origin != DamageOrigin.Weapon || hit.ActualHealthDamage <= 0 || !run.World.Units.TryGet(hit.Request.TargetId, out var enemy)) return;
             var b = run.Inventory.Bonuses;
-            if (b.LifeRatio > 0 || b.ChainDamage > 0 || b.ExplosionDamage > 0) hits.Add((hit, enemy.Position));
+            if (b.LifeRatio > 0 || b.ChainDamage > 0 || b.ExplosionDamage > 0) hits.Add((hit, enemy.Position, hits.Count));
         }
         public void ProcessHits()
         {
             if (!Active) return;
             var b = run.Inventory.Bonuses;
+            // Weapon iteration can deliver a later melee hit before an earlier projectile hit.
+            // Preserve arrival order only for equal timestamps, without allocating a second queue.
+            hits.Sort((a, other) => { int time = a.hit.Time.CompareTo(other.hit.Time); return time != 0 ? time : a.order.CompareTo(other.order); });
             foreach (var entry in hits)
             {
                 var hit = entry.hit; double time = hit.Time;

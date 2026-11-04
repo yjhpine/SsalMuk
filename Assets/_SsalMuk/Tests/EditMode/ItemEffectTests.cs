@@ -6,6 +6,35 @@ namespace SsalMuk.Tests
 {
     public sealed class ItemEffectTests
     {
+        private static void HitAt(RunTestRig rig, long target, double amount, double at)
+        {
+            long attack = rig.Run.AllocateAttackId();
+            Assert.That(rig.Damage.TryApply(new DamageRequest(new HitKey(rig.Run.Id, attack, 0, 0), rig.Player.Id, target, amount, DVec2.Zero), at), Is.True);
+            rig.Damage.CompleteAttack(attack);
+        }
+        [TestCase(false, 51.0), TestCase(true, 50.1)]
+        public void EarliestHitWinsLifestealAndEqualTimesKeepArrivalOrder(bool equalTimes, double expectedHealth)
+        {
+            using var rig = RunTestRig.Create(enableAi: false); rig.Hit(rig.Player.Id, 50); rig.Advance(1.02);
+            rig.Run.Inventory.TryAdd("r_fang");
+            long late = rig.Spawn(UnitKind.Normal, new DVec2(10,0), 1), early = rig.Spawn(UnitKind.Normal, new DVec2(20,0), 10);
+            HitAt(rig, late, 10, 1.02); HitAt(rig, early, 10, equalTimes ? 1.02 : 1.005);
+            rig.Simulation.ItemEffects.ProcessHits();
+            Assert.That(rig.Player.Health, Is.EqualTo(expectedHealth).Within(1e-9));
+        }
+        [Test]
+        public void EarliestHitDeterminesChainAndExplosionOriginAndDamage()
+        {
+            using var rig = RunTestRig.Create(enableAi: false); rig.Advance(1.02);
+            rig.Run.Inventory.TryAdd("r_lightning"); rig.Run.Inventory.TryAdd("r_fire");
+            long late = rig.Spawn(UnitKind.Normal, new DVec2(10,0), 1), early = rig.Spawn(UnitKind.Normal, new DVec2(20,0), 1);
+            long nearLate = rig.Spawn(UnitKind.Normal, new DVec2(11,0), 100), nearEarly = rig.Spawn(UnitKind.Normal, new DVec2(21,0), 100);
+            HitAt(rig, late, 10, 1.02); HitAt(rig, early, 20, 1.005); rig.Simulation.ItemEffects.ProcessHits();
+            Assert.That(rig.Unit(nearLate).Health, Is.EqualTo(100));
+            Assert.That(rig.Unit(nearEarly).Health, Is.EqualTo(84));
+            Assert.That(rig.Simulation.ItemVisuals.Where(v => v.Kind == ItemEffectKind.Lightning || v.Kind == ItemEffectKind.Explosion)
+                .All(v => v.Position == WorldPosition.FromLocal(new DVec2(20,0))), Is.True);
+        }
         [Test]
         public void LifestealUsesActualHealthDamageAndSharedCooldownSurvivesExtraCopy()
         {
