@@ -67,6 +67,12 @@ namespace SsalMuk.Presentation
                 }
                 if (model.Combat != null)
                 {
+                    if (view is IItemEffectWorldView effectView && model.Combat is IItemCombatReadModel itemCombat)
+                        foreach (var effect in itemCombat.ItemVisuals)
+                        {
+                            var relative = origin.DisplacementTo(effect.Position);
+                            if (relative.Length <= viewRadius + effect.Radius + 5) effectView.ShowItemEffect(effect, relative);
+                        }
                     foreach (var shape in model.Combat.AttackShapes)
                     {
                         var relative = origin.DisplacementTo(shape.Origin);

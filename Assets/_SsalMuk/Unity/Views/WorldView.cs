@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace SsalMuk.Unity
 {
-    public sealed class WorldView : MonoBehaviour, ICombatWorldView, IItemWorldView, IChestWorldView
+    public sealed class WorldView : MonoBehaviour, ICombatWorldView, IItemWorldView, IChestWorldView, IItemEffectWorldView
     {
         private GameCatalog catalog;
         private DisplaySettings display;
@@ -14,6 +14,7 @@ namespace SsalMuk.Unity
         private ViewLayer<ExperienceView> experience;
         private ViewLayer<PowerupView> items;
         private ViewLayer<ChestView> chests;
+        private ViewLayer<ItemEffectView> itemEffects;
         public ChestGuidanceView ChestGuidance { get; private set; }
         public IEnumerable<ChestView> ChestViews => chests == null ? Array.Empty<ChestView>() : chests.ActiveViews;
         private ViewLayer<AttackView> attacks, explosions;
@@ -27,7 +28,7 @@ namespace SsalMuk.Unity
         public int VisibleUnitCount => units?.ActiveCount ?? 0;
         public int VisibleExperienceCount => experience?.ActiveCount ?? 0;
         public int VisibleAttackCount => (attacks?.ActiveCount ?? 0) + (explosions?.ActiveCount ?? 0) + (projectiles?.ActiveCount ?? 0);
-        public int RetainedViewCount => (units?.RetainedCount ?? 0) + (experience?.RetainedCount ?? 0) + (items?.RetainedCount ?? 0) + (chests?.RetainedCount ?? 0) + (attacks?.RetainedCount ?? 0) + (explosions?.RetainedCount ?? 0) + (projectiles?.RetainedCount ?? 0);
+        public int RetainedViewCount => (units?.RetainedCount ?? 0) + (experience?.RetainedCount ?? 0) + (items?.RetainedCount ?? 0) + (chests?.RetainedCount ?? 0) + (attacks?.RetainedCount ?? 0) + (explosions?.RetainedCount ?? 0) + (projectiles?.RetainedCount ?? 0) + (itemEffects?.RetainedCount ?? 0);
         public IEnumerable<UnitView> UnitViews => units == null ? Array.Empty<UnitView>() : units.ActiveViews;
         public IEnumerable<ExperienceView> ExperienceViews => experience == null ? Array.Empty<ExperienceView>() : experience.ActiveViews;
         public IEnumerable<AttackView> AttackViews => attacks == null ? Array.Empty<AttackView>() : attacks.ActiveViews;
@@ -49,6 +50,7 @@ namespace SsalMuk.Unity
                 experience = new ViewLayer<ExperienceView>(runId, () => { var view = Create<ExperienceView>("Experience"); view.Initialize(catalog); return view; });
                 items = new ViewLayer<PowerupView>(runId, () => { var view = Create<PowerupView>("Item"); view.Initialize(catalog); return view; });
                 chests = new ViewLayer<ChestView>(runId, () => { var view = Create<ChestView>("Chest"); view.Initialize(catalog); return view; });
+                itemEffects = new ViewLayer<ItemEffectView>(runId, () => { var view = Create<ItemEffectView>("ItemEffect"); view.Initialize(catalog); return view; });
                 attacks = new ViewLayer<AttackView>(runId, () => { var view = Create<AttackView>("Attack"); view.Initialize(catalog); return view; });
                 explosions = new ViewLayer<AttackView>(runId, () => { var view = Create<AttackView>("Explosion"); view.Initialize(catalog); return view; });
                 projectiles = new ViewLayer<ProjectileView>(runId, () => { var view = Create<ProjectileView>("Fireball"); view.Initialize(catalog); return view; });
@@ -56,6 +58,7 @@ namespace SsalMuk.Unity
                 terrain.Clear();
             }
             units.BeginFrame(); experience.BeginFrame(); items.BeginFrame(); chests.BeginFrame(); attacks.BeginFrame(); explosions.BeginFrame(); projectiles.BeginFrame(); seenTerrain.Clear();
+            itemEffects.BeginFrame();
         }
         private T Create<T>(string name) where T : PooledView
         { var go = new GameObject(name); go.transform.SetParent(transform, false); return go.AddComponent<T>(); }
@@ -76,6 +79,7 @@ namespace SsalMuk.Unity
         public void ShowUnit(UnitModel unit, DVec2 relativePosition) => units.Show(unit.Id).Show(unit, relativePosition, catalog, frameTime, frameDelta);
         public void ShowItem(PowerupRecord item, DVec2 relative) => items.Show(item.Id).Show(item, relative);
         public void ShowChest(ChestRecord chest, DVec2 relative) => chests.Show(chest.Id).Show(chest, relative);
+        public void ShowItemEffect(ItemEffectVisual effect, DVec2 relative) => itemEffects.Show(effect.Id).Show(effect, relative, frameTime);
         public void ShowChestDirection(DVec2? target) => ChestGuidance.Show(target);
         public void ShowExperience(ExperienceRecord record, ExperienceTier tier, DVec2 relative, double radius)
             => experience.Show(record.Id).Show(record, tier, WorldRenderOrigin.ToVector(relative), radius);
@@ -85,10 +89,11 @@ namespace SsalMuk.Unity
         public void EndFrame(double elapsedSeconds, int enemyCount)
         {
             units.EndFrame(); experience.EndFrame(); items.EndFrame(); chests.EndFrame(); attacks.EndFrame(); explosions.EndFrame(); projectiles.EndFrame();
+            itemEffects.EndFrame();
             terrainReturns.Clear(); foreach (var coord in terrain.Keys) if (!seenTerrain.Contains(coord)) terrainReturns.Add(coord);
             foreach (var coord in terrainReturns) { if (terrain[coord] != null) Destroy(terrain[coord].gameObject); terrain.Remove(coord); }
         }
-        private void ReleasePools() { units?.Dispose(); experience?.Dispose(); items?.Dispose(); chests?.Dispose(); attacks?.Dispose(); explosions?.Dispose(); projectiles?.Dispose(); }
+        private void ReleasePools() { units?.Dispose(); experience?.Dispose(); items?.Dispose(); chests?.Dispose(); attacks?.Dispose(); explosions?.Dispose(); projectiles?.Dispose(); itemEffects?.Dispose(); }
         private void OnDestroy()
         { if (display != null) display.Changed -= ApplyDarkMode; ReleasePools(); }
     }

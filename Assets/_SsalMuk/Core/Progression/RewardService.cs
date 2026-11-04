@@ -13,7 +13,6 @@ namespace SsalMuk.Core
         private bool disposed;
         public OfferSnapshot CurrentOffer { get; private set; }
         public bool HasQueuedChoice => queued.HasValue;
-        public System.Numerics.BigInteger PendingChestChoices => run.ItemRewards.PendingCount;
         public RewardService(RunModel run, IRandomSource random, RewardWeights weights)
         {
             this.run = run ?? throw new ArgumentNullException(nameof(run));

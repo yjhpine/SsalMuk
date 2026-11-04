@@ -29,7 +29,9 @@ namespace SsalMuk.Unity
             { marker.gameObject.SetActive(false); return; }
             var size = ((RectTransform)canvas.transform).rect.size;
             var delta = new Vector2((viewport.x - .5f) * size.x, (viewport.y - .5f) * size.y);
-            float halfX = Mathf.Max(1, size.x / 2 - 66), halfY = Mathf.Max(1, size.y / 2 - (delta.y < 0 ? 245 : 90));
+            // Keep the marker and its label inside the battle area reserved between the
+            // side inventories, top HUD and bottom reward/fusion panels.
+            float halfX = Mathf.Max(1, size.x / 2 - 300), halfY = Mathf.Max(1, size.y / 2 - (delta.y < 0 ? 300 : 160));
             float scale = Mathf.Min(halfX / Mathf.Max(.001f, Mathf.Abs(delta.x)), halfY / Mathf.Max(.001f, Mathf.Abs(delta.y)));
             marker.anchoredPosition = delta * Mathf.Min(1, scale);
             arrow.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);

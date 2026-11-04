@@ -68,17 +68,17 @@ namespace SsalMuk.Tests.ChestExploration
             // AppRoot presents reward UI in LateUpdate; observe it after that phase.
             yield return null; yield return new WaitForEndOfFrame();
             Assert.That(chest.Opened, Is.True); Assert.That(run.Clock.ElapsedSeconds, Is.GreaterThan(before));
-            Assert.That(run.Player.Level, Is.EqualTo(level)); Assert.That(run.CurrentOffer.IsChest, Is.True);
-            Assert.That(app.LevelUp.IsVisible, Is.True); Assert.That(app.LevelUp.Heading.text, Is.EqualTo("상자 보상"));
-            Assert.That(app.LevelUp.Buttons.Count, Is.EqualTo(3));
+            Assert.That(run.Player.Level, Is.EqualTo(level)); Assert.That(run.HasItemChoice, Is.True);
+            Assert.That(app.Items.Rewards.IsVisible, Is.True); Assert.That(app.Items.Rewards.Heading.text, Is.EqualTo("상자 보상"));
+            Assert.That(app.Items.Rewards.Buttons.Count, Is.EqualTo(3));
             Assert.That(world.ChestViews.Any(v => v.ChestId == chest.Id), Is.False);
             ScreenCapture.CaptureScreenshot(Path.Combine(folder, "chest-reward.png")); yield return new WaitForEndOfFrame(); yield return null;
-            app.Coordinator.Pause(); runner.Simulation.Step(.02); yield return null; yield return new WaitForEndOfFrame(); Assert.That(app.LevelUp.IsVisible, Is.False);
+            app.Coordinator.Pause(); runner.Simulation.Step(.02); yield return null; yield return new WaitForEndOfFrame(); Assert.That(app.Items.Rewards.IsVisible, Is.False);
             app.Coordinator.Resume(); yield return null; yield return new WaitForEndOfFrame();
-            var pending = run.Rewards.PendingChestChoices; long offerId = run.CurrentOffer.Id;
-            app.LevelUp.Buttons[0].onClick.Invoke(); app.LevelUp.Buttons[1].onClick.Invoke(); runner.Simulation.Step(.02);
-            Assert.That(run.Rewards.PendingChestChoices, Is.EqualTo(pending - 1));
-            Assert.That(run.Commands.TryQueueChoice(run.Id, offerId, 0), Is.False);
+            var pending = run.ItemRewards.PendingCount; long offerId = run.ItemRewards.CurrentOffer.Id;
+            app.Items.Rewards.Buttons[0].onClick.Invoke(); app.Items.Rewards.Buttons[1].onClick.Invoke(); runner.Simulation.Step(.02);
+            Assert.That(run.ItemRewards.PendingCount, Is.EqualTo(pending - 1));
+            Assert.That(run.ItemRewards.TryQueueChoice(run.Id, offerId, 0), Is.False);
             Assert.That(run.Chests.TryOpen(chest.Id), Is.False);
             TestContext.WriteLine("Chest live evidence: " + folder);
         }

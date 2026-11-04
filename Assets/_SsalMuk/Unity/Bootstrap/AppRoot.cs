@@ -23,6 +23,7 @@ namespace SsalMuk.Unity
         public HudView Hud { get; private set; }
         public ResultsView Results { get; private set; }
         public LevelUpView LevelUp { get; private set; }
+        public ItemUiController Items { get; private set; }
         public DisplaySettings Display { get; private set; }
         public MenuController Menus { get; private set; }
         private Camera runtimeCamera;
@@ -78,6 +79,8 @@ namespace SsalMuk.Unity
             presenter = new MainMenuPresenter(Coordinator, Menu);
             hudPresenter = new HudPresenter(Hud); resultsPresenter = new ResultsPresenter(Coordinator, Results);
             levelUpPresenter = new LevelUpPresenter(LevelUp);
+            var itemUi = new GameObject("ItemUi"); itemUi.transform.SetParent(transform, false);
+            Items = itemUi.AddComponent<ItemUiController>(); Items.Initialize(font, levelUpPresenter.CancelAutomaticSelection);
             Menus = gameObject.AddComponent<MenuController>(); Menus.Initialize(this, font, Display);
         }
         private void ApplyBackground(bool darkMode)
@@ -90,6 +93,7 @@ namespace SsalMuk.Unity
                 mouse.middleButton.wasPressedThisFrame || mouse.forwardButton.wasPressedThisFrame || mouse.backButton.wasPressedThisFrame))
                 levelUpPresenter.CancelAutomaticSelection();
             hudPresenter.Refresh(Coordinator.Run); levelUpPresenter.Refresh(Coordinator.Run);
+            Items.Refresh(Coordinator.Run);
         }
         private void OnDestroy()
         {

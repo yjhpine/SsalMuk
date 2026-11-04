@@ -10,6 +10,21 @@ namespace SsalMuk.Tests
     public sealed class LevelUpPresenterTests
     {
         [Test]
+        public void ChestSuspendsAutoAndNextLevelStartsAFreshFiveSecondWait()
+        {
+            using var rig = RunTestRig.Create(enableAi: false); rig.GrantExperience(5); rig.Advance(.02);
+            using var presenter = new LevelUpPresenter(new View()); presenter.Refresh(rig.Run);
+            rig.Advance(5); presenter.Refresh(rig.Run); rig.Advance(.02);
+            rig.Run.ItemRewards.AddChest(99, ItemRarity.Common); presenter.Refresh(rig.Run);
+            rig.GrantExperience(8); rig.Advance(6); presenter.Refresh(rig.Run);
+            Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.False);
+            var chest = rig.Run.ItemRewards.CurrentOffer;
+            rig.Run.ItemRewards.TryQueueChoice(rig.Run.Id, chest.Id, 0); rig.Advance(.02); presenter.Refresh(rig.Run);
+            Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.False);
+            rig.Advance(4.98); presenter.Refresh(rig.Run); Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.False);
+            rig.Advance(.02); presenter.Refresh(rig.Run); Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.True);
+        }
+        [Test]
         public void PresenterQueuesTheDisplayedOfferAndReleasesItsSubscription()
         {
             using var rig = RunTestRig.Create(enableAi: false); rig.GrantExperience(5); rig.Advance(0.02);

@@ -24,6 +24,7 @@ namespace SsalMuk.Presentation
                 if (effects.InvincibilityUntil > now) active += "무적 " + Math.Ceiling(effects.InvincibilityUntil - now) + "초   ";
                 if (effects.SpeedUntil > now) active += "이속 ×1.5 " + Math.Ceiling(effects.SpeedUntil - now) + "초   ";
                 if (effects.RangeUntil > now) active += "범위 ×3 " + Math.Ceiling(effects.RangeUntil - now) + "초";
+                if (player.ItemBonuses.ShieldCapacity > 0) active += "  보호막 " + player.Shield.ToString("0.#", CultureInfo.InvariantCulture) + " / " + player.ItemBonuses.ShieldCapacity.ToString("0.#", CultureInfo.InvariantCulture);
                 string upgrades = "이속 +" + NumberFormatter.Format(player.Upgrades.GetLevel(SharedUpgradeKind.MoveSpeed) * 10) +
                     "% · 회복 " + player.Upgrades.HealingPerSecond.ToString("0.0", CultureInfo.InvariantCulture) + "/초 · 흡수 +" +
                     NumberFormatter.Format(player.Upgrades.GetLevel(SharedUpgradeKind.PickupRange) * 20) + "% · 경험치 +" +

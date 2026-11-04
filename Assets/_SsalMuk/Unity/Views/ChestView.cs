@@ -8,6 +8,8 @@ namespace SsalMuk.Unity
     {
         private Mesh mesh;
         private MeshRenderer rendererComponent;
+        private List<Color> vertexColors;
+        private ItemRarity? shownRarity;
         public long ChestId { get; private set; }
         public void Initialize(GameCatalog catalog)
         {
@@ -21,6 +23,7 @@ namespace SsalMuk.Unity
             properties.SetVector("unity_SpriteProps", new Vector4(1, 1, -1, 0));
             rendererComponent.SetPropertyBlock(properties);
             var vertices = new List<Vector3>(); var colors = new List<Color>(); var uv = new List<Vector2>(); var indices = new List<int>();
+            vertexColors = colors;
             var edge = new Color32(42, 25, 20, 255); var wood = new Color32(131, 75, 39, 255); var gold = new Color32(238, 191, 83, 255);
             Quad(-.65f, -.3f, 1.3f, .98f, edge);
             Quad(-.59f, -.24f, 1.18f, .55f, wood);
@@ -41,6 +44,13 @@ namespace SsalMuk.Unity
         }
         public void Show(ChestRecord chest, DVec2 relative)
         {
+            if (shownRarity != chest.Rarity)
+            {
+                shownRarity = chest.Rarity; var color = ItemUiStyle.Color(chest.Rarity);
+                for (int i = 12; i < 24; i++) vertexColors[i] = color;
+                for (int i = 28; i < 32; i++) vertexColors[i] = color;
+                mesh.SetColors(vertexColors);
+            }
             ChestId = chest.Id; transform.localPosition = WorldRenderOrigin.ToVector(relative);
             rendererComponent.sortingOrder = 1000 - Mathf.RoundToInt(((float)relative.Y - .3f) * 30);
         }
