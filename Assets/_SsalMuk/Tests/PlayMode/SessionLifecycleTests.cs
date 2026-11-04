@@ -46,7 +46,9 @@ namespace SsalMuk.Tests
             Assert.That(run.Units.Any(unit => positions.TryGetValue(unit.Id, out var old) && old.DistanceTo(unit.Position) > 0.02), Is.True);
             foreach (var unit in run.Units) Assert.That(run.World.Query.IsCircleFree(unit.Position, unit.BodyRadius), Is.True);
             var start = run.Player.Position;
-            long loot = run.World.AddExperience(start.Offset(new DVec2(2, 0)), 100, run.Clock.ElapsedSeconds);
+            // Exercise actual contact payout independently of the random chest/evade route.
+            // Two units is outside the 1.95 base attraction radius and is not a pickup guarantee.
+            long loot = run.World.AddExperience(start, 100, run.Clock.ElapsedSeconds);
             yield return new WaitForSeconds(0.8f);
             Assert.That(run.World.TryGetExperience(loot, out _), Is.False);
             Assert.That(run.Player.Level, Is.EqualTo(new System.Numerics.BigInteger(8)));
