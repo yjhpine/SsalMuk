@@ -1,14 +1,16 @@
 using SsalMuk.Core;
+using SsalMuk.Presentation;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace SsalMuk.Unity
 {
-    public sealed class MenuController : MonoBehaviour
+    public sealed class MenuController : MonoBehaviour, IMenuNavigationView
     {
         private AppRoot app;
         private DisplaySettings display;
+        private MenuNavigationPresenter navigation;
         public PauseMenuView PauseMenu { get; private set; }
         public SettingsView Settings { get; private set; }
         public void Initialize(AppRoot root, Font font, DisplaySettings displaySettings)
@@ -18,10 +20,10 @@ namespace SsalMuk.Unity
             PauseMenu = pause.AddComponent<PauseMenuView>(); PauseMenu.Initialize(font);
             var settings = new GameObject("SettingsMenu"); settings.transform.SetParent(transform, false);
             Settings = settings.AddComponent<SettingsView>(); Settings.Initialize(font);
+            navigation = new MenuNavigationPresenter(app.Coordinator, this);
             app.Menu.SettingsRequested += OpenSettings; app.Menu.QuitRequested += Quit;
             PauseMenu.ResumeRequested += Resume; PauseMenu.SettingsRequested += OpenSettings;
             Settings.BackRequested += CloseSettings; Settings.DarkModeChanged += display.SetDarkMode;
-            app.Coordinator.PhaseChanged += PhaseChanged;
         }
         private void Update()
         {
@@ -30,34 +32,22 @@ namespace SsalMuk.Unity
         public void HandleEscape()
         {
             if (app == null) return;
-            if (Settings.IsVisible) { CloseSettings(); return; }
-            if (app.Coordinator.Phase != RunPhase.Running) return;
-            if (app.Coordinator.Run.IsPaused) { Resume(); return; }
-            if (app.Coordinator.Pause()) { PauseMenu.Show(true); Focus(PauseMenu.ResumeButton.gameObject); }
+            navigation.HandleEscape();
         }
-        private void OpenSettings()
+        private void OpenSettings() => navigation.OpenSettings();
+        private void CloseSettings() => navigation.CloseSettings();
+        private void Resume() => navigation.Resume();
+        bool IMenuNavigationView.IsSettingsVisible => Settings.IsVisible;
+        void IMenuNavigationView.SetMenuBlocked(bool blocked) => app.Menu.SetBlocked(blocked);
+        void IMenuNavigationView.ShowPause(bool visible) => PauseMenu.Show(visible);
+        void IMenuNavigationView.ShowSettings(bool visible) => Settings.Show(visible, display.DarkMode);
+        void IMenuNavigationView.Focus(MenuFocus target)
         {
-            bool inMenu = app.Coordinator.Phase == RunPhase.MainMenu;
-            if (!inMenu && (app.Coordinator.Phase != RunPhase.Running || !app.Coordinator.Run.IsPaused)) return;
-            app.Menu.SetBlocked(true); PauseMenu.Show(false); Settings.Show(true, display.DarkMode);
-            Focus(Settings.DarkModeToggle.gameObject);
-        }
-        private void CloseSettings()
-        {
-            Settings.Show(false, display.DarkMode); app.Menu.SetBlocked(false);
-            bool paused = app.Coordinator.Phase == RunPhase.Running && app.Coordinator.Run.IsPaused;
-            PauseMenu.Show(paused);
-            Focus(paused ? PauseMenu.SettingsButton.gameObject : app.Menu.SettingsButton.gameObject);
-        }
-        private void Resume()
-        {
-            if (!app.Coordinator.Resume()) return;
-            PauseMenu.Show(false); Settings.Show(false, display.DarkMode); app.Menu.SetBlocked(false); Focus(null);
-        }
-        private void PhaseChanged(RunPhase phase)
-        {
-            if (phase == RunPhase.Running) return;
-            PauseMenu.Show(false); Settings.Show(false, display.DarkMode); app.Menu.SetBlocked(false); Focus(null);
+            GameObject selected = target == MenuFocus.PauseResume ? PauseMenu.ResumeButton.gameObject :
+                target == MenuFocus.PauseSettings ? PauseMenu.SettingsButton.gameObject :
+                target == MenuFocus.MainMenuSettings ? app.Menu.SettingsButton.gameObject :
+                target == MenuFocus.DarkMode ? Settings.DarkModeToggle.gameObject : null;
+            Focus(selected);
         }
         private void Quit()
         {
@@ -72,10 +62,10 @@ namespace SsalMuk.Unity
         { if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(selected); }
         private void OnDestroy()
         {
+            navigation?.Dispose();
             if (app != null)
             {
                 if (app.Menu != null) { app.Menu.SettingsRequested -= OpenSettings; app.Menu.QuitRequested -= Quit; }
-                app.Coordinator.PhaseChanged -= PhaseChanged;
             }
             if (PauseMenu != null) { PauseMenu.ResumeRequested -= Resume; PauseMenu.SettingsRequested -= OpenSettings; }
             if (Settings != null) { Settings.BackRequested -= CloseSettings; Settings.DarkModeChanged -= display.SetDarkMode; }
