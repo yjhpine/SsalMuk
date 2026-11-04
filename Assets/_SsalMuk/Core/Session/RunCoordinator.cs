@@ -86,7 +86,10 @@ namespace SsalMuk.Core
                 if (attempt != generation || Phase == RunPhase.Disposed) return;
                 LastError = error.Message; Cleanup();
                 try { await sceneLoader.LoadMainMenuAsync(); }
-                catch (Exception menuError) { LastError += " / " + menuError.Message; }
+                catch (Exception menuError)
+                {
+                    if (attempt == generation && Phase != RunPhase.Disposed) LastError += " / " + menuError.Message;
+                }
                 if (attempt == generation && Phase != RunPhase.Disposed) SetPhase(RunPhase.MainMenu);
             }
         }
