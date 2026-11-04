@@ -14,6 +14,8 @@ namespace SsalMuk.Core
         public PickupSettings PickupSettings { get; }
         public RewardService Rewards { get; }
         public ChestSystem Chests { get; }
+        public ItemInventory Inventory { get; }
+        public FusionService Fusion { get; }
         public IRunCommands Commands => Rewards;
         public OfferSnapshot CurrentOffer => Rewards.CurrentOffer;
         public WorldStore World { get; }
@@ -30,6 +32,7 @@ namespace SsalMuk.Core
             if (Phase != RunPhase.Running || Result != null || Player == null || Player.IsAlive) return;
             Result = new RunResult(Id, Clock.ElapsedSeconds, Kills, Player.Level);
             Player.ResetGrowth();
+            Inventory.Clear(); Fusion.Clear();
             Rewards.Dispose();
             Clock.Stop(); Phase = RunPhase.Results; Completed?.Invoke(Result);
         }
@@ -58,6 +61,7 @@ namespace SsalMuk.Core
             World = new WorldStore(new UnitRegistry(id), generator); Clock = new RunClock(fixedStep);
             Rewards = new RewardService(this, Streams.Reward, rewardWeights ?? RewardWeights.TestDefaults());
             Chests = new ChestSystem(this);
+            Inventory = new ItemInventory(ItemCatalog.Default()); Fusion = new FusionService(this);
         }
         public void SetPlayer(PlayerModel player)
         {
@@ -68,7 +72,7 @@ namespace SsalMuk.Core
         public void Dispose()
         {
             if (Phase == RunPhase.Disposed) return;
-            Clock.Stop(); Phase = RunPhase.Disposed; Completed = null; Rewards.Dispose(); Player?.ResetGrowth(); World.Dispose();
+            Clock.Stop(); Phase = RunPhase.Disposed; Completed = null; Rewards.Dispose(); Fusion.Clear(); Inventory.Clear(); Player?.ResetGrowth(); World.Dispose();
         }
     }
 }
