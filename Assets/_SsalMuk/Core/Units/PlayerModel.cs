@@ -9,7 +9,12 @@ namespace SsalMuk.Core
         public GrowthState Growth { get; private set; } = new GrowthState();
         public SharedUpgradeState Upgrades { get; private set; } = new SharedUpgradeState();
         public PlayerEffects Effects { get; private set; } = new PlayerEffects();
-        public override double MoveSpeed => Definition.MoveSpeed * Upgrades.SpeedMultiplier * Effects.SpeedMultiplier;
+        public ItemInventory Inventory { get; internal set; }
+        public ItemBonuses ItemBonuses => Inventory?.Bonuses ?? default;
+        public override double MoveSpeed => Definition.MoveSpeed * Upgrades.SpeedMultiplier * Effects.SpeedMultiplier * (1 + ItemBonuses.MoveSpeed);
+        public double PickupMultiplier => Upgrades.PickupMultiplier * (1 + ItemBonuses.Pickup);
+        public double HealingPerSecond => Upgrades.HealingPerSecond + ItemBonuses.Regeneration;
+        public BigInteger ExperienceHundredthsFor(BigInteger raw) => Upgrades.ExperienceHundredthsFor(raw) + raw * ItemBonuses.ExperiencePercent;
         public BigInteger Level => Growth.Level;
         public BrainState BrainState { get; internal set; }
         public long? TargetId { get; internal set; }

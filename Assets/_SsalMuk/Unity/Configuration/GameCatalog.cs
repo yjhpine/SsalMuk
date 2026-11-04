@@ -22,6 +22,7 @@ namespace SsalMuk.Unity
         public Sprite SolidSprite => solidSprite;
         public Material WorldMaterial => worldMaterial;
         public DevelopmentDefaults Defaults => unitDefinitions;
+        public ItemCatalog CreateItems() => unitDefinitions.CreateItemCatalog();
         public void ConfigureVisualCatalog(VisualCatalog visuals)
         {
             visuals.Validate(); visualCatalog = visuals;
@@ -37,6 +38,7 @@ namespace SsalMuk.Unity
         public void ValidatePresentation()
         {
             CreateDefinitions();
+            CreateItems();
             if (uiFont == null || solidSprite == null || worldMaterial == null || unitViewPrefab.GetComponent<UnitView>() == null)
                 throw new ArgumentException("Runtime presentation content is incomplete.");
             if (visualCatalog == null) throw new ArgumentException("The final art catalog is missing.");

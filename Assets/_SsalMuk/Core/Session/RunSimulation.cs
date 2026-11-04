@@ -58,6 +58,7 @@ namespace SsalMuk.Core
             {
                 if (!run.Player.IsAlive) { Finish(); break; }
                 run.Rewards.Step();
+                run.ItemRewards.Step(); run.Fusion.Step();
                 double from = run.Clock.ElapsedSeconds; run.Clock.Advance(); double to = run.Clock.ElapsedSeconds;
                 powerups.UpdateEffects(run.Clock.FixedStep);
                 Spawns?.Tick(to, viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
@@ -71,7 +72,7 @@ namespace SsalMuk.Core
                 if (!run.Player.IsAlive) { Finish(); break; }
                 airDepartures.Step(viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
                 Collector.Step(run.Clock.FixedStep);
-                run.Rewards.RefreshOffer();
+                run.ItemRewards.RefreshOffer(); run.Rewards.RefreshOffer();
             }
         }
         private double MeleeEngagementRange()

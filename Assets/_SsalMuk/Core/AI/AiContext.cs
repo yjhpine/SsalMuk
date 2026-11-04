@@ -21,7 +21,7 @@ namespace SsalMuk.Core
         public NavigationService Navigation { get; }
         public AiSettings Settings { get; }
         public PickupSettings PickupSettings { get; }
-        public double PickupRadius => PickupSettings.AttractionRadius * (Actor is PlayerModel player ? player.Upgrades.PickupMultiplier : 1);
+        public double PickupRadius => PickupSettings.AttractionRadius * (Actor is PlayerModel player ? player.PickupMultiplier : 1);
         public IPlayerPosition FollowTarget { get; }
         public IReadOnlyList<UnitModel> Enemies => enemies;
         public UnitModel EngagementTarget { get; private set; }

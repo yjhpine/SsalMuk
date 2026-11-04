@@ -23,6 +23,7 @@ namespace SsalMuk.Tests.ChestExploration
             var chests = rig.Run.Chests.Nearby(rig.Player.Position).ToArray();
             Assert.That(chests.Length, Is.EqualTo(count));
             CollectionAssert.AreEqual(chests.Select(c => c.Position), other.Run.Chests.Nearby(other.Player.Position).Select(c => c.Position));
+            CollectionAssert.AreEqual(chests.Select(c => c.Rarity), other.Run.Chests.Nearby(other.Player.Position).Select(c => c.Rarity));
             foreach (var chest in chests)
             {
                 Assert.That(rig.World.Query.IsCircleFree(chest.Position, rig.Player.BodyRadius), Is.True);
@@ -46,10 +47,10 @@ namespace SsalMuk.Tests.ChestExploration
             Assert.That(rig.Run.Chests.TryOpen(chest.Id), Is.False, "Remote opening must be rejected.");
             rig.World.MoveUnit(rig.Player.Id, chest.Position);
             Assert.That(rig.Run.Chests.TryOpen(chest.Id), Is.True);
-            rig.Advance(.02); var offer = rig.CurrentOffer;
+            rig.Advance(.02); var offer = rig.Run.ItemRewards.CurrentOffer;
             Assert.That(offer, Is.Not.Null); Assert.That(offer.Choices.Count, Is.EqualTo(3));
             Assert.That(rig.Player.Level, Is.EqualTo(level)); Assert.That(rig.Player.Growth.PendingChoices, Is.EqualTo(pending));
-            Assert.That(rig.Choose(offer.Id, 0), Is.True); Assert.That(rig.Choose(offer.Id, 1), Is.False);
+            Assert.That(rig.Run.ItemRewards.TryQueueChoice(rig.Run.Id, offer.Id, 0), Is.True); Assert.That(rig.Run.ItemRewards.TryQueueChoice(rig.Run.Id, offer.Id, 1), Is.False);
             rig.Advance(.02); Assert.That(rig.CurrentOffer, Is.Null);
             Assert.That(rig.Run.Chests.TryOpen(chest.Id), Is.False);
         }
@@ -61,8 +62,8 @@ namespace SsalMuk.Tests.ChestExploration
             rig.World.MoveUnit(rig.Player.Id, chest.Position); rig.Coordinator.Pause();
             Assert.That(rig.Run.Chests.TryOpen(chest.Id), Is.False);
             rig.Coordinator.Resume(); Assert.That(rig.Run.Chests.TryOpen(chest.Id), Is.True); rig.Advance(.02);
-            Assert.That(rig.Choose(rig.CurrentOffer.Id, 0), Is.True); rig.Coordinator.Pause(); rig.Advance(.02);
-            Assert.That(rig.CurrentOffer, Is.Not.Null); rig.Coordinator.Resume();
+            Assert.That(rig.Run.ItemRewards.TryQueueChoice(rig.Run.Id, rig.Run.ItemRewards.CurrentOffer.Id, 0), Is.True); rig.Coordinator.Pause(); rig.Advance(.02);
+            Assert.That(rig.Run.ItemRewards.CurrentOffer, Is.Not.Null); rig.Coordinator.Resume();
             rig.Hit(rig.Player.Id, 1000); rig.Advance(.02); Assert.That(rig.CurrentOffer, Is.Null);
             Assert.That(rig.Run.Chests.TryOpen(chest.Id), Is.False);
             rig.RestartAsync().GetAwaiter().GetResult(); rig.PlacePlayer(new DVec2(16.5, 16.5)); rig.Run.Chests.Enable();
@@ -77,9 +78,9 @@ namespace SsalMuk.Tests.ChestExploration
             Assert.That(rig.Run.Chests.TryOpen(chest.Id), Is.True); rig.Advance(.02);
             Assert.That(rig.CurrentOffer, Is.SameAs(levelOffer));
             rig.Choose(levelOffer.Id, 0); rig.Advance(.02);
-            Assert.That(rig.CurrentOffer, Is.Not.Null); Assert.That(rig.CurrentOffer.Id, Is.GreaterThan(levelOffer.Id));
+            Assert.That(rig.CurrentOffer, Is.Null); Assert.That(rig.Run.ItemRewards.CurrentOffer, Is.Not.Null);
             Assert.That(rig.Player.Growth.PendingChoices.IsZero, Is.True);
-            rig.Choose(rig.CurrentOffer.Id, 0); rig.Advance(.02); Assert.That(rig.CurrentOffer, Is.Null);
+            rig.Run.ItemRewards.TryQueueChoice(rig.Run.Id, rig.Run.ItemRewards.CurrentOffer.Id, 0); rig.Advance(.02); Assert.That(rig.CurrentOffer, Is.Null);
         }
 
         [Test]
@@ -137,8 +138,11 @@ namespace SsalMuk.Tests.ChestExploration
             var view = new View(); using var presenter = new LevelUpPresenter(view);
             presenter.Refresh(rig.Run); rig.Advance(6); presenter.Refresh(rig.Run);
             Assert.That(rig.Run.Rewards.HasQueuedChoice, Is.False);
-            Assert.That(view.Remaining, Does.Contain("직접 선택"));
-            view.Submit(0); rig.Advance(.02); Assert.That(rig.CurrentOffer, Is.Null);
+            Assert.That(rig.Run.ItemRewards.HasQueuedChoice, Is.False);
+            var itemOffer = rig.Run.ItemRewards.CurrentOffer;
+            Assert.That(itemOffer, Is.Not.Null);
+            rig.Run.ItemRewards.TryQueueChoice(rig.Run.Id, itemOffer.Id, 0);
+            rig.Advance(.02); Assert.That(rig.Run.ItemRewards.CurrentOffer, Is.Null);
         }
 
         [Test]

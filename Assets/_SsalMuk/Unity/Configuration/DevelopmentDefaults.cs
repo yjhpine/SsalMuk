@@ -10,6 +10,8 @@ namespace SsalMuk.Unity
     [CreateAssetMenu(menuName = "SsalMuk/Development Defaults")]
     public sealed class DevelopmentDefaults : ScriptableObject
     {
+        [SerializeField] private ItemCatalogSettings items = new ItemCatalogSettings();
+        public ItemCatalog CreateItemCatalog() => items.CreateCatalog();
         [SerializeField] private UnitEntry[] units = CreatePreset();
         [SerializeField] private WeaponEntry[] weapons = WeaponDefinition.DevelopmentPresets().Select(definition => new WeaponEntry(definition)).ToArray();
         [SerializeField, Range(0, 1)] private float obstacleChance = 0.2f;
@@ -97,7 +99,7 @@ namespace SsalMuk.Unity
         {
             get
             {
-                try { CreateCatalog(); CreateGrowthSettings(); CreatePickupSettings(); CreateRewardWeights(); CreateSpawnSettings(); _ = CameraOrthographicSize; return ""; }
+                try { CreateCatalog(); CreateItemCatalog(); CreateGrowthSettings(); CreatePickupSettings(); CreateRewardWeights(); CreateSpawnSettings(); _ = CameraOrthographicSize; return ""; }
                 catch (ArgumentException error) { return error.Message; }
             }
         }

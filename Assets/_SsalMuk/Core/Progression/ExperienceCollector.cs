@@ -21,7 +21,7 @@ namespace SsalMuk.Core
             if (dt <= 0 || double.IsNaN(dt) || double.IsInfinity(dt)) throw new ArgumentOutOfRangeException(nameof(dt));
             if (run.Phase != RunPhase.Running || run.Player == null || !run.Player.IsAlive) return;
             var player = run.Player; var settings = run.PickupSettings; var world = run.World;
-            double attractionRadius = settings.AttractionRadius * player.Upgrades.PickupMultiplier;
+            double attractionRadius = settings.AttractionRadius * player.PickupMultiplier;
             var previous = movement.PreviousPositions.TryGetValue(player.Id, out var position) ? position : player.Position;
             var travel = previous.DisplacementTo(player.Position);
             double to = run.Clock.ElapsedSeconds, from = to - dt;
@@ -49,7 +49,7 @@ namespace SsalMuk.Core
                 var flight = towardPlayer.Normalized * Math.Min(towardPlayer.Length, Math.Max(settings.FlightSpeed, orb.MagnetFlightSpeed) * dt * (1 - fraction));
                 if (CircleContact.Interval(playerAtStart.DisplacementTo(orb.Position), flight - travel * (1 - fraction),
                     player.BodyRadius + settings.OrbRadius, out _, out _) && world.TryCollectExperience(run.Id, id, out var value))
-                    progression.AddExperienceHundredths(player.Upgrades.ExperienceHundredthsFor(value));
+                    progression.AddExperienceHundredths(player.ExperienceHundredthsFor(value));
                 else world.MoveExperience(run.Id, id, orb.Position.Offset(flight));
             }
         }

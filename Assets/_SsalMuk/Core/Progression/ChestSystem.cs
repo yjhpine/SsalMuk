@@ -8,7 +8,8 @@ namespace SsalMuk.Core
         public long Id { get; }
         public WorldPosition Position { get; }
         public bool Opened { get; internal set; }
-        internal ChestRecord(long id, WorldPosition position) { Id = id; Position = position; }
+        public ItemRarity Rarity { get; }
+        internal ChestRecord(long id, WorldPosition position, ItemRarity rarity) { Id = id; Position = position; Rarity = rarity; }
     }
 
     public sealed class ChestSystem
@@ -50,7 +51,8 @@ namespace SsalMuk.Core
                     var position = new WorldPosition(coord, new DVec2(4.5 + (int)(random.NextUnit() * 23), 5.5 + (int)(random.NextUnit() * 21)));
                     if (position.DistanceTo(anchor) < 4 || !run.World.Query.IsCircleFree(anchor, radius) ||
                         !run.World.Query.IsCircleFree(position, radius) || run.World.Query.SweepCircle(anchor, anchor.DisplacementTo(position), radius).HasValue) continue;
-                    chest = new ChestRecord(checked(++nextId), position); byId.Add(chest.Id, chest); break;
+                    var gradeRandom = new SeededRandom(unchecked((int)StableHash.Combine(run.Seed, coord.X, coord.Y, 1, 1105)));
+                    chest = new ChestRecord(checked(++nextId), position, run.Inventory.Catalog.RollRarity(gradeRandom.NextUnit())); byId.Add(chest.Id, chest); break;
                 }
                 byChunk.Add(coord, chest);
             }
@@ -62,7 +64,7 @@ namespace SsalMuk.Core
                 !byId.TryGetValue(id, out var chest) || chest.Opened) return false;
             var delta = run.Player.Position.DisplacementTo(chest.Position);
             if (delta.Length > OpenRadius || run.World.Query.SweepCircle(run.Player.Position, delta, run.Player.BodyRadius).HasValue) return false;
-            if (!run.Rewards.AddChestChoice()) return false;
+            if (!run.ItemRewards.AddChest(chest.Id, chest.Rarity)) return false;
             chest.Opened = true; if (ReferenceEquals(Target, chest)) Target = null; return true;
         }
         public void Step()

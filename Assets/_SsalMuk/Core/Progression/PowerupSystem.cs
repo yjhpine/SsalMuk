@@ -33,7 +33,7 @@ namespace SsalMuk.Core
             if (!(dt > 0) || double.IsInfinity(dt)) throw new ArgumentOutOfRangeException(nameof(dt));
             if (!Active) return;
             run.Player.Effects.Advance(run.Clock.ElapsedSeconds);
-            run.Player.Health = Math.Min(run.Player.Definition.MaxHealth, run.Player.Health + run.Player.Upgrades.HealingPerSecond * dt);
+            run.Player.Health = Math.Min(run.Player.Definition.MaxHealth, run.Player.Health + run.Player.HealingPerSecond * dt);
         }
         public void CollectAfterMovement()
         {
@@ -41,7 +41,7 @@ namespace SsalMuk.Core
             var player = run.Player;
             var previous = movement.PreviousPositions.TryGetValue(player.Id, out var start) ? start : player.Position;
             var travel = previous.DisplacementTo(player.Position);
-            double radius = run.PickupSettings.AttractionRadius * player.Upgrades.PickupMultiplier;
+            double radius = run.PickupSettings.AttractionRadius * player.PickupMultiplier;
             foreach (long id in run.World.QueryItems(player.Position, radius + travel.Length))
             {
                 if (!run.World.TryGetItem(id, out var item) ||
