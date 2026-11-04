@@ -18,6 +18,7 @@ namespace SsalMuk.Core
         public IReadOnlyList<long> QueryCircle(WorldPosition position, double radius) => units.QueryCircle(position, radius);
         public void QueryCircle(WorldPosition position, double radius, List<long> results) => units.QueryCircle(position, radius, results);
         public IReadOnlyList<long> QueryExperienceCircle(WorldPosition position, double radius) => experience.QueryCircle(position, radius);
+        public void QueryExperienceCircle(WorldPosition position, double radius, List<long> results) => experience.QueryCircle(position, radius, results);
         public bool IsCircleFree(WorldPosition position, double radius)
         {
             SpatialIndex.RequireRadius(radius);
