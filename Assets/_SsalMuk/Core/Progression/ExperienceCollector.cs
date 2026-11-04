@@ -10,6 +10,8 @@ namespace SsalMuk.Core
         private readonly ProgressionService progression;
         private readonly HashSet<long> candidateIds = new HashSet<long>();
         private readonly List<long> orderedIds = new List<long>();
+        // Mono's default List.Sort path allocates a comparison for nonempty lists.
+        private static readonly Comparison<long> CompareIds = (a, b) => a.CompareTo(b);
         public ExperienceCollector(RunModel run, MovementSystem movement, ProgressionService progression)
         {
             this.run = run ?? throw new ArgumentNullException(nameof(run));
@@ -31,7 +33,7 @@ namespace SsalMuk.Core
             world.Query.QueryExperienceCircle(player.Position, attractionRadius + travel.Length, orderedIds);
             foreach (long id in orderedIds) candidateIds.Add(id);
             orderedIds.Clear();
-            orderedIds.AddRange(candidateIds); orderedIds.Sort();
+            orderedIds.AddRange(candidateIds); orderedIds.Sort(CompareIds);
             foreach (long id in orderedIds)
             {
                 if (!world.TryGetExperience(id, out var orb) || orb.CreatedAt > to) continue;
