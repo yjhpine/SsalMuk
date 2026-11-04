@@ -10,6 +10,7 @@ namespace SsalMuk.Core
         public SharedUpgradeState Upgrades { get; private set; } = new SharedUpgradeState();
         public PlayerEffects Effects { get; private set; } = new PlayerEffects();
         public ItemInventory Inventory { get; internal set; }
+        public double Shield { get; internal set; }
         public ItemBonuses ItemBonuses => Inventory?.Bonuses ?? default;
         public override double MoveSpeed => Definition.MoveSpeed * Upgrades.SpeedMultiplier * Effects.SpeedMultiplier * (1 + ItemBonuses.MoveSpeed);
         public double PickupMultiplier => Upgrades.PickupMultiplier * (1 + ItemBonuses.Pickup);
@@ -24,6 +25,6 @@ namespace SsalMuk.Core
         internal void InitializeStartingWeapon(WeaponKind kind)
         { Weapons = new WeaponInventory(kind); startingWeapon = kind; }
         internal void ResetGrowth()
-        { Growth = new GrowthState(); Weapons = new WeaponInventory(startingWeapon); Upgrades = new SharedUpgradeState(); Effects = new PlayerEffects(); InvulnerableUntil = 0; }
+        { Growth = new GrowthState(); Weapons = new WeaponInventory(startingWeapon); Upgrades = new SharedUpgradeState(); Effects = new PlayerEffects(); InvulnerableUntil = 0; Shield = 0; }
     }
 }

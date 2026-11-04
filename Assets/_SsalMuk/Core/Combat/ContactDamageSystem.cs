@@ -46,7 +46,7 @@ namespace SsalMuk.Core
                 var direction = -(best.Relative + best.Travel * fraction).Normalized;
                 if (direction == DVec2.Zero) direction = new DVec2(1, 0);
                 var key = new HitKey(run.Id, run.AllocateAttackId(), 0, 0);
-                if (!damage.TryApply(new DamageRequest(key, best.Enemy.Id, player.Id, best.Enemy.Definition.ContactDamage, direction), at)) best.Finished = true;
+                if (!damage.TryApply(new DamageRequest(key, best.Enemy.Id, player.Id, best.Enemy.Definition.ContactDamage, direction, origin: DamageOrigin.Contact), at)) best.Finished = true;
                 damage.CompleteAttack(key.AttackId);
             }
         }

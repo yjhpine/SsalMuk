@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 
 namespace SsalMuk.Core
 {
-    public sealed class RunSimulation : IDisposable, ICombatReadModel
+    public sealed class RunSimulation : IDisposable, ICombatReadModel, IItemCombatReadModel
     {
         private readonly RunModel run;
         private readonly MovementSystem movement;
@@ -30,12 +30,15 @@ namespace SsalMuk.Core
         public IReadOnlyDictionary<WeaponKind, WeaponRuntime> Weapons { get; }
         public ProgressionService Progression { get; }
         public ExperienceCollector Collector { get; }
+        public ItemEffectSystem ItemEffects { get; }
+        public IReadOnlyList<ItemEffectVisual> ItemVisuals => ItemEffects.Visuals;
         public RunSimulation(RunModel run, MovementSystem movement, LowAiController ai, DamageService damage, DeathService death,
             ContactDamageSystem contact, bool scheduledSpawns = false, SpawnSettings spawnSettings = null)
         {
             this.run = run; this.movement = movement; this.ai = ai; this.death = death; this.contact = contact; this.damage = damage;
             Progression = new ProgressionService(run); Collector = new ExperienceCollector(run, movement, Progression);
             powerups = new PowerupSystem(run, movement, death);
+            ItemEffects = new ItemEffectSystem(run, damage);
             var weapons = new Dictionary<WeaponKind, WeaponRuntime>();
             foreach (WeaponKind kind in Enum.GetValues(typeof(WeaponKind))) weapons.Add(kind, new WeaponRuntime(run, kind, movement, damage, aiSettings: ai?.Settings));
             Weapons = new ReadOnlyDictionary<WeaponKind, WeaponRuntime>(weapons); Sword = weapons[WeaponKind.Sword];
@@ -61,6 +64,7 @@ namespace SsalMuk.Core
                 run.ItemRewards.Step(); run.Fusion.Step();
                 double from = run.Clock.ElapsedSeconds; run.Clock.Advance(); double to = run.Clock.ElapsedSeconds;
                 powerups.UpdateEffects(run.Clock.FixedStep);
+                ItemEffects.Tick();
                 Spawns?.Tick(to, viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
                 if (ai != null) { ai.Tick(run.Clock.FixedStep); movement.SetMoveIntent(run.Player.Id, run.Player.MoveIntent); }
                 movement.Step(run.Clock.FixedStep);
@@ -68,6 +72,7 @@ namespace SsalMuk.Core
                 powerups.CollectAfterMovement();
                 Weapons[WeaponKind.Fireball].Projectiles.SetViewBounds(viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
                 foreach (var kind in run.Player.Weapons.Kinds) Weapons[kind].Tick(from, to);
+                ItemEffects.ProcessHits();
                 death.Flush(); contact.Step(from, to);
                 if (!run.Player.IsAlive) { Finish(); break; }
                 airDepartures.Step(viewBounds ?? new WorldRect(run.Player.Position, 16, 9));
@@ -92,6 +97,7 @@ namespace SsalMuk.Core
             Spawns?.Dispose();
             airDepartures.Dispose();
             powerups.Dispose();
+            ItemEffects.Dispose();
             if (ReferenceEquals(run.Combat, this)) run.Combat = null;
             foreach (var weapon in Weapons.Values) weapon.Dispose();
         }

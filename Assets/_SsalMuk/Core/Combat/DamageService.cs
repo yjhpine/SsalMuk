@@ -53,7 +53,7 @@ namespace SsalMuk.Core
         }
         public bool TryApply(DamageRequest request, double now)
         {
-            if (disposed || run.Phase != RunPhase.Running || run.Player == null || !run.Player.IsAlive || request.Key.RunId != run.Id ||
+            if (disposed || run.Phase != RunPhase.Running || run.IsPaused || run.Player == null || !run.Player.IsAlive || request.Key.RunId != run.Id ||
                 request.Key.AttackId <= 0 || request.Key.Copy.Sign < 0 || request.Key.Repeat.Sign < 0 || !Finite(now) || now < 0 ||
                 !Positive(request.Amount) || !Finite(request.KnockbackDistance) || request.KnockbackDistance < 0 || !Positive(request.KnockbackSeconds) ||
                 !Finite(request.KnockbackDistance / request.KnockbackSeconds)) return false;
@@ -71,12 +71,15 @@ namespace SsalMuk.Core
             keys.Add(request.Key);
             if (!hitTargets.TryGetValue(request.Key.AttackId, out var targets)) hitTargets.Add(request.Key.AttackId, targets = new HashSet<long>());
             targets.Add(target.Id);
-            target.Health = Math.Max(0, target.Health - request.Amount);
+            double previousHealth = target.Health, healthDamage = request.Amount;
+            if (target is PlayerModel player)
+            { double absorbed = Math.Min(player.Shield, healthDamage); player.Shield -= absorbed; healthDamage -= absorbed; }
+            target.Health = Math.Max(0, target.Health - healthDamage);
             if (target.Kind == UnitKind.Player) target.InvulnerableUntil = protectedUntil;
             target.LastHitAt = now; target.HitSequence = sequence;
             if (target.IsAlive && request.KnockbackDistance > 0 && request.Direction != DVec2.Zero)
                 movement.AddKnockback(target.Id, request.Direction.Normalized * request.KnockbackDistance, request.KnockbackSeconds);
-            Accepted?.Invoke(new CombatEvent(request, now, target.Health));
+            Accepted?.Invoke(new CombatEvent(request, now, target.Health, previousHealth - target.Health));
             return true;
         }
         private static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
