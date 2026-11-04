@@ -1,6 +1,6 @@
 # Items and synthesis implementation plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 승인된 24종 패시브 아이템, 상자 선택, 18개 레시피 합성과 인벤토리 UI를 실제 전투에 연결한다.
 **Architecture:** 순수 Core가 정의·보유·원자적 명령·효과를 소유하고 기존 런타임 uGUI가 표시와 입력을 담당한다. 레벨업과 상자 선택은 한 번에 하나만 표시하며 기존 바닥 버프는 유지한다.
@@ -31,51 +31,53 @@
 **Files:** create `Core/Items/{ItemDefinition,ItemCatalog,ItemDefaults,ItemInventory,FusionService}.cs`; modify `Core/Session/RunModel.cs`, `Core/Units/PlayerModel.cs`; test `Tests/EditMode/ItemInventoryTests.cs`.
 **Interfaces:** `ItemCatalog.Default()`; `ItemInventory.Items`, `.Version`, `.Bonuses`, `.TryAdd(string)`; `FusionService.Preview(IReadOnlyList<long>)`, `.TryQueue(FusionCommand)`, `.Step()`; command carries run ID, inventory version, three IDs, mode, expected recipe.
 
-- [ ] Write failing behavior tests: three identical materials allowed for random; recipe count/order independent; mixed/duplicate-instance/ultimate/stale requests preserve contents and random stream; successful fusion removes bonuses and appends result exactly once.
-- [ ] Run `validate.ps1 -Mode EditMode -Filter SsalMuk.Tests.ItemInventoryTests`; confirm expected failures before implementation.
-- [ ] Add validated catalog, immutable definitions, cached bonus totals, chronological IDs, preflight atomic replacement and seeded fusion stream. Validate every possible random outcome before consuming randomness.
-- [ ] Run the same filter; require all tests passed and current manifest/receipt/XML.
-- [ ] Commit this independently testable domain.
+- [x] Write failing behavior tests: three identical materials allowed for random; recipe count/order independent; mixed/duplicate-instance/ultimate/stale requests preserve contents and random stream; successful fusion removes bonuses and appends result exactly once.
+- [x] Run `validate.ps1 -Mode EditMode -Filter SsalMuk.Tests.ItemInventoryTests`; confirm expected failures before implementation.
+- [x] Add validated catalog, immutable definitions, cached bonus totals, chronological IDs, preflight atomic replacement and seeded fusion stream. Validate every possible random outcome before consuming randomness.
+- [x] Run the same filter; require all tests passed and current manifest/receipt/XML.
+- [x] Commit this independently testable domain.
 
 ## Task 2: Chest reward tickets and stat integration
 
 **Files:** create `Core/Items/ItemRewardService.cs`, `Unity/Configuration/ItemCatalogSettings.cs`; modify `RunModel`, `RunSimulation`, `RewardService`, `ChestSystem`, `ExperienceCollector`, `PowerupSystem`, AI pickup-radius consumers, `GameCatalog`, `RunScope`; tests `ItemRewardTests`, `ItemStatTests`, existing `ChestExplorationTests`.
 **Interfaces:** `ItemRewardService.CurrentOffer`, `.PendingCount`, `.AddChest(long, ItemRarity)`, `.TryQueueChoice(Guid,long,int)`, `.Step()`; `RunModel.HasItemChoice`; `ChestRecord.Rarity`; `PlayerModel.Inventory` provides cached bonuses.
 
-- [ ] Write failing tests: deterministic chest grade and frozen distinct candidates; current level remains; next chest precedes next level; no extra level granted; paused/stale/duplicate choice denied; award invalidates queued fusion. XP 1 with +5% and +10% gives 115 hundredths; item damage/speed/pickup stack with existing upgrades.
-- [ ] Run exact new test filters and observe missing behavior.
-- [ ] Add independent grade/offer/fusion randomness. Remove old temporary chest-upgrade route. Process level/chest commands then fusion each step, with current-offer arbitration.
-- [ ] Connect tunable catalog data through DevelopmentDefaults/GameCatalog and initialize each run. Apply item multipliers to actual weapon, movement, healing, pickup and exact XP consumers.
-- [ ] Run new filters plus ChestExploration and relevant shared-growth/level-up tests; confirm preserved placement and level rules.
-- [ ] Commit reward/stat integration.
+- [x] Write failing tests: deterministic chest grade and frozen distinct candidates; current level remains; next chest precedes next level; no extra level granted; paused/stale/duplicate choice denied; award invalidates queued fusion. XP 1 with +5% and +10% gives 115 hundredths; item damage/speed/pickup stack with existing upgrades.
+- [x] Run exact new test filters and observe missing behavior.
+- [x] Add independent grade/offer/fusion randomness. Remove old temporary chest-upgrade route. Process level/chest commands then fusion each step, with current-offer arbitration.
+- [x] Connect tunable catalog data through DevelopmentDefaults/GameCatalog and initialize each run. Apply item multipliers to actual weapon, movement, healing, pickup and exact XP consumers.
+- [x] Run new filters plus ChestExploration and relevant shared-growth/level-up tests; confirm preserved placement and level rules.
+- [x] Commit reward/stat integration.
 
 ## Task 3: Combat effects
 
 **Files:** create `Core/Items/ItemEffectSystem.cs`; modify `DamageRequest`, `CombatEvent`, `DamageService`, `RunSimulation`, combat presentation snapshots; test `ItemEffectTests`.
 **Interfaces:** `DamageOrigin` direct/item; `CombatEvent.ActualHealthDamage`; `ItemEffectSystem.Tick()`, `.ProcessHits()`; reusable read-only visual snapshots; shield state on player inventory effect runtime.
 
-- [ ] Write failing tests for actual-damage lifesteal/caps/.5s cooldown; nearest deterministic chain with exclusions; direct kill explosion; derived kills reward without recursion; shield first-fill, absorption/invulnerability/knockback, recharge, atomic fusion and pause/reset.
-- [ ] Run ItemEffectTests and observe expected failures.
-- [ ] Queue accepted direct events before death removal, process one emitter per family with shared timestamps, use DamageService attack lifecycle, apply shield after invulnerability validation.
-- [ ] Use instantaneous proc damage and short pooled visual snapshots; no extra moving projectile or collider.
-- [ ] Run ItemEffectTests plus related damage/death/weapon regression filters; validate evidence.
-- [ ] Commit combat integration.
+- [x] Write failing tests for actual-damage lifesteal/caps/.5s cooldown; nearest deterministic chain with exclusions; direct kill explosion; derived kills reward without recursion; shield first-fill, absorption/invulnerability/knockback, recharge, atomic fusion and pause/reset.
+- [x] Run ItemEffectTests and observe expected failures.
+- [x] Queue accepted direct events before death removal, process one emitter per family with shared timestamps, use DamageService attack lifecycle, apply shield after invulnerability validation.
+- [x] Use instantaneous proc damage and short pooled visual snapshots; no extra moving projectile or collider.
+- [x] Run ItemEffectTests plus related damage/death/weapon regression filters; validate evidence.
+- [x] Commit combat integration.
 
 ## Task 4: Item HUD, choice and fusion UI
 
 **Files:** create `Unity/Views/{ItemUiStyle,ItemTooltip,InventoryView,FusionView,ItemRewardView,UpgradeSummaryView}.cs`; modify `AppRoot`, `LevelUpPresenter`, world chest/effect presentation; tests `Tests/PlayMode/ItemUiTests.cs` and affected presenter tests.
 **Interfaces:** runtime views bind current run, callbacks enqueue Core commands only; visible inventory slots map current instance IDs; one shared tooltip; root orchestrates mutually exclusive choice views.
 
-- [ ] Add tests for level AUTO suspension/reset around chest, fusion ownership/selection after scroll/consume, duplicate clicks, tooltip rarity names and UI ordering. Use real view events and run commands.
-- [ ] Run targeted presenter/UI tests and observe missing behavior.
-- [ ] Build left upgrade summary and right four-column virtualized inventory; chronological individual slots, reusable visible rows, colored names/borders, hover tooltip clamped to canvas.
-- [ ] Build chest three-choice cards and bottom fusion panel; fixed recipe preview/random pool, reasons for disabled actions, selected IDs retained across reward overlays and revalidated. Keep any-click AUTO cancellation.
-- [ ] Color world chests by rarity; pool instantaneous lightning/explosion/shield feedback without per-effect Update.
-- [ ] Run targeted UI/presenter tests and Static. Inspect actual running UI and advancing clock via official Unity connection, restore stopped clean Editor.
-- [ ] Commit UI and update approved spec, planning status and handoff with exact evidence limits.
+- [x] Add tests for level AUTO suspension/reset around chest, fusion ownership/selection after scroll/consume, duplicate clicks, tooltip rarity names and UI ordering. Use real view events and run commands.
+- [x] Run targeted presenter/UI tests and observe missing behavior.
+- [x] Build left upgrade summary and right four-column virtualized inventory; chronological individual slots, reusable visible rows, colored names/borders, hover tooltip clamped to canvas.
+- [x] Build chest three-choice cards and bottom fusion panel; fixed recipe preview/random pool, reasons for disabled actions, selected IDs retained across reward overlays and revalidated. Keep any-click AUTO cancellation.
+- [x] Color world chests by rarity; pool instantaneous lightning/explosion/shield feedback without per-effect Update.
+- [x] Run targeted UI/presenter tests and Static. Inspect actual running UI and advancing clock via official Unity connection, restore stopped clean Editor.
+- [x] Commit UI and update approved spec, planning status and handoff with exact evidence limits.
 
 ## Completion
 
-- [ ] Review changed branch with a fresh reviewer using requesting-code-review; correct important findings and rerun only relevant checks.
-- [ ] Reconcile current source hashes with final Static/EditMode/PlayMode receipts and test counts, inspect git diff and commit task files only.
-- [ ] Report using the user's concise completion convention.
+- [x] Review changed branch with a fresh reviewer using requesting-code-review; correct important findings and rerun only relevant checks.
+- [x] Reconcile current source hashes with final Static/EditMode/PlayMode receipts and test counts, inspect git diff and commit task files only.
+- [x] Report using the user's concise completion convention.
+
+검증·커밋·후속 배정의 실제 증거와 소스 구간은 docs/development/SESSION_INTEGRATION_2026-11-04.md를 따른다. 전체 검사·빌드·장시간 실행은 수행하지 않았다.
