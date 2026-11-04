@@ -7,8 +7,8 @@ namespace SsalMuk.Presentation
     public sealed class WorldPresenter
     {
         private readonly IWorldView view;
-        private readonly HashSet<long> visible = new HashSet<long>(), visibleExperience = new HashSet<long>();
-        private readonly HashSet<long> nextVisible = new HashSet<long>(), nextExperience = new HashSet<long>();
+        private HashSet<long> visible = new HashSet<long>(), visibleExperience = new HashSet<long>();
+        private HashSet<long> nextVisible = new HashSet<long>(), nextExperience = new HashSet<long>();
         private Guid runId;
         public WorldPresenter(IWorldView view) { this.view = view ?? throw new ArgumentNullException(nameof(view)); }
         public void Refresh(IRunReadModel model, double interpolation = 1, double viewRadius = 22)
@@ -91,7 +91,9 @@ namespace SsalMuk.Presentation
                     }
                 }
             }
-            visible.Clear(); visible.UnionWith(nextVisible); visibleExperience.Clear(); visibleExperience.UnionWith(nextExperience);
+            // Commit at the same point as before, retaining the old sets as next frame's scratch buffers.
+            var previousVisible = visible; visible = nextVisible; nextVisible = previousVisible;
+            var previousExperience = visibleExperience; visibleExperience = nextExperience; nextExperience = previousExperience;
             view.EndFrame(model.Clock.ElapsedSeconds, enemies);
         }
         private static WorldPosition Interpolate(UnitModel unit, double alpha)

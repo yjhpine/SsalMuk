@@ -27,7 +27,10 @@ namespace SsalMuk.Core
             double to = run.Clock.ElapsedSeconds, from = to - dt;
             candidateIds.Clear(); orderedIds.Clear();
             foreach (long id in world.AttractingExperienceIds) candidateIds.Add(id);
-            foreach (long id in world.Query.QueryExperienceCircle(player.Position, attractionRadius + travel.Length)) candidateIds.Add(id);
+            // Reuse the processing buffer for the query before forming the final ordered snapshot.
+            world.Query.QueryExperienceCircle(player.Position, attractionRadius + travel.Length, orderedIds);
+            foreach (long id in orderedIds) candidateIds.Add(id);
+            orderedIds.Clear();
             orderedIds.AddRange(candidateIds); orderedIds.Sort();
             foreach (long id in orderedIds)
             {
