@@ -6,6 +6,7 @@ namespace SsalMuk.Core
     // State objects consume an actor and services, not a Unity object or a player-specific view.
     public sealed class AiContext
     {
+        internal const double LibraryWallRoom = 3.5;
         private Dictionary<long, WorldPosition> previous = new Dictionary<long, WorldPosition>();
         private Dictionary<long, WorldPosition> next = new Dictionary<long, WorldPosition>();
         private readonly List<UnitModel> enemies = new List<UnitModel>();
@@ -29,6 +30,7 @@ namespace SsalMuk.Core
         public DVec2 BreakoutDirection { get; internal set; }
         public long? CollectionTargetId { get; internal set; }
         internal bool ApproachingItem { get; set; }
+        internal WorldPosition? MovementWaypoint { get; set; }
         public double EngagementRange { get; internal set; } = 1.6;
 
         public AiContext(UnitModel actor, WorldStore world, NavigationService navigation, AiSettings settings, PickupSettings pickupSettings = null, IPlayerPosition followTarget = null)
@@ -134,16 +136,28 @@ namespace SsalMuk.Core
             return risk;
         }
 
-        public double EscapeRisk(DVec2 direction)
+        public double EscapeRisk(DVec2 direction) => EscapeRisk(direction, out _);
+
+        internal double EscapeRisk(DVec2 direction, out double immediateDanger)
         {
+            immediateDanger = 0;
             double score = RiskAt(direction * (Actor.MoveSpeed * Settings.EmergencyContactSeconds));
             foreach (var threat in threats)
             {
                 double time = ContactTime(threat.Position, threat.Velocity - direction * Actor.MoveSpeed, threat.Radius);
-                if (time <= Settings.EmergencyContactSeconds) score += 50 * (1 + Settings.EmergencyContactSeconds - time);
+                if (time <= Settings.EmergencyContactSeconds)
+                {
+                    double danger = 50 * (1 + Settings.EmergencyContactSeconds - time);
+                    score += danger; immediateDanger += danger;
+                }
             }
             var offset = direction * (Actor.MoveSpeed * Settings.EmergencyContactSeconds);
-            foreach (var lane in chargeLanes) score += 1000 / (.1 + LaneDistance(lane, offset));
+            foreach (var lane in chargeLanes)
+            {
+                double distance = LaneDistance(lane, offset), danger = 1000 / (.1 + distance);
+                score += danger;
+                if (distance <= lane.Radius) immediateDanger += danger;
+            }
             return score;
         }
 
@@ -154,7 +168,7 @@ namespace SsalMuk.Core
             if (at.Chunk.Y != 0) return 100;
             double clearance = Math.Min(at.Local.Y - LibraryChunkGenerator.InteriorBottom,
                 LibraryChunkGenerator.InteriorTop - at.Local.Y) - Actor.BodyRadius;
-            double shortfall = Math.Max(0, 2.5 - clearance);
+            double shortfall = Math.Max(0, LibraryWallRoom - clearance);
             return Math.Min(100, shortfall * shortfall * 4);
         }
 
@@ -163,11 +177,23 @@ namespace SsalMuk.Core
             if (World.Map != MapKind.Library || Actor.Position.Chunk.Y != 0) return intent;
             double bottom = Actor.Position.Local.Y - LibraryChunkGenerator.InteriorBottom - Actor.BodyRadius;
             double top = LibraryChunkGenerator.InteriorTop - Actor.Position.Local.Y - Actor.BodyRadius;
-            // Loot near the wall may still be approached within its magnet radius.
-            double comfort = CollectionTargetId.HasValue || ApproachingItem ? Math.Min(2, PickupRadius * .65) : 2;
+            // Relax room only near a real pickup, not for an entire distant loot route.
+            bool nearbyExperience = CollectionTargetId.HasValue && World.TryGetExperience(CollectionTargetId.Value, out var xp) &&
+                Actor.Position.DistanceTo(xp.Position) <= PickupRadius + LibraryWallRoom;
+            double comfort = nearbyExperience || ApproachingItem ? Math.Min(2, PickupRadius * .65) : LibraryWallRoom;
+            // A verified terrain route may need a narrower passage. Do not make its waypoint unreachable.
+            if (MovementWaypoint.HasValue && MovementWaypoint.Value.Chunk.Y == 0)
+            {
+                double y = MovementWaypoint.Value.Local.Y;
+                double routeRoom = Math.Min(y - LibraryChunkGenerator.InteriorBottom, LibraryChunkGenerator.InteriorTop - y) - Actor.BodyRadius;
+                comfort = Math.Min(comfort, Math.Max(0, routeRoom - .05));
+            }
             double clearance = Math.Min(bottom, top);
-            if (clearance >= comfort) return intent;
-            double inward = Math.Min(1, (comfort - clearance) / .75);
+            double probe = Actor.MoveSpeed * Settings.EmergencyContactSeconds;
+            if (clearance >= comfort + probe) return intent;
+            // Brake an outward approach before the margin; push inward only once inside it.
+            double inward = clearance < comfort ? Math.Min(1, (comfort - clearance) / .75) :
+                -Math.Min(1, (clearance - comfort) / Math.Max(.001, probe));
             var preferred = new DVec2(intent.X, bottom < top ? Math.Max(intent.Y, inward) : Math.Min(intent.Y, -inward));
             if (preferred.Length > 1) preferred = preferred.Normalized;
             return CanMove(preferred, Actor.MoveSpeed * Settings.EmergencyContactSeconds) ? preferred : intent;

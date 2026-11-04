@@ -17,6 +17,8 @@ namespace SsalMuk.Core
         private ExperienceRecord nearbyExperience;
         private double nextExperiencePlan;
         public ChestSeeker(ChestSystem chests) => this.chests = chests;
+        public bool IsNearTarget(AiContext context) => chests.Target != null &&
+            context.Actor.Position.DistanceTo(chests.Target.Position) <= AiContext.LibraryWallRoom + ChestSystem.OpenRadius;
         public bool TrySteer(AiContext context, double dt, out DVec2 intent)
         {
             intent = DVec2.Zero;
@@ -56,6 +58,7 @@ namespace SsalMuk.Core
             var step = context.Actor.Position.DisplacementTo(path.Waypoints[waypoint]);
             if (context.World.Query.SweepCircle(context.Actor.Position, step, context.Actor.BodyRadius).HasValue)
             { path.Cancel(); path = null; return false; }
+            context.MovementWaypoint = path.Waypoints[waypoint];
             intent = ArrivalIntent(context, step, dt); return true;
         }
         public void Interrupt(AiContext context)

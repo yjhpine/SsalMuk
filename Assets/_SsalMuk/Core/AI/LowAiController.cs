@@ -32,8 +32,9 @@ namespace SsalMuk.Core
         public void ConfigureChests(ChestSystem chests) => chestSeeker = new ChestSeeker(chests);
         private void Collect(double dt)
         {
+            context.MovementWaypoint = null;
             if (chestSeeker != null && chestSeeker.TrySteer(context, dt, out var intent))
-            { context.MoveIntent = chestSeeker.GatherAlongRoute(context, intent, dt); context.ApproachingItem = true; }
+            { context.MoveIntent = chestSeeker.GatherAlongRoute(context, intent, dt); context.ApproachingItem = chestSeeker.IsNearTarget(context); }
             else states[(int)BrainState.Collect].Tick(context, dt);
             context.MoveIntent = context.KeepLibraryWallClearance(context.MoveIntent);
         }

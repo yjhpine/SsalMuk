@@ -156,7 +156,12 @@ namespace SsalMuk.Tests.ChestExploration
                 { start = position; target = closest; }
             }
             Assert.That(start.HasValue, Is.True, "Fixture must need navigation around furniture.");
-            rig.World.MoveUnit(rig.Player.Id, start.Value); rig.Advance(12);
+            rig.World.MoveUnit(rig.Player.Id, start.Value);
+            for (int i = 0; i < 600; i++)
+            {
+                rig.Advance(.02);
+                if (i % 100 == 0) TestContext.WriteLine($"Fast chest route: player={rig.Player.Position.Local.X},{rig.Player.Position.Local.Y}; intent={rig.Player.MoveIntent.X},{rig.Player.MoveIntent.Y}; target={rig.Run.Chests.Target?.Position.Local.X},{rig.Run.Chests.Target?.Position.Local.Y}");
+            }
             Assert.That(target.Opened, Is.True, "A fast player must not bounce forever over a path waypoint.");
         }
 

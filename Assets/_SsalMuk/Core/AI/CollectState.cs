@@ -113,19 +113,22 @@ namespace SsalMuk.Core
             {
                 context.CollectionTargetId = remembered.Id;
                 if (recovery.TrySteer(context, out var tactical)) { context.MoveIntent = tactical; return; }
-                if (TryApproach(context, remembered.Id, remembered.Position, out var returning)) { context.MoveIntent = returning; return; }
+                if (TryApproach(context, remembered.Id, remembered.Position, out var returning, true)) { context.MoveIntent = returning; return; }
                 // A remembered area must not suppress reachable alternatives indefinitely.
                 if (approachPending) return;
                 recovery.Clear(); selectedPlan = -1;
             }
             bool invalid = selected != null && !Grounded(context, selected) || selectedItem != null && !context.World.TryGetItem(selectedItem.Id, out _);
             if (selectedPlan != PlanCount || invalid) Select(context);
-            if (selected != null && TryApproach(context, selected.Id, selected.Position, out var intent))
+            if (selected != null && TryApproach(context, selected.Id, selected.Position, out var intent, true))
             { context.CollectionTargetId = selected.Id; context.MoveIntent = intent; recovery.Remember(selected); return; }
             context.CollectionTargetId = null;
             recovery.Clear();
-            if (selectedItem != null && TryApproach(context, -selectedItem.Id, selectedItem.Position, out var itemIntent))
-            { context.ApproachingItem = true; context.MoveIntent = itemIntent; return; }
+            if (selectedItem != null && TryApproach(context, -selectedItem.Id, selectedItem.Position, out var itemIntent, true))
+            {
+                context.ApproachingItem = context.Actor.Position.DistanceTo(selectedItem.Position) <= context.PickupRadius + AiContext.LibraryWallRoom;
+                context.MoveIntent = itemIntent; return;
+            }
             context.MoveIntent = context.EngageNearestEnemy();
         }
 
@@ -167,7 +170,7 @@ namespace SsalMuk.Core
         private static bool Grounded(AiContext context, ExperienceRecord xp) =>
             xp.State == ExperienceState.Grounded && context.World.TryGetExperience(xp.Id, out _);
 
-        private bool TryApproach(AiContext context, long routeId, WorldPosition position, out DVec2 intent)
+        private bool TryApproach(AiContext context, long routeId, WorldPosition position, out DVec2 intent, bool moving = false)
         {
             intent = DVec2.Zero; approachPending = false; var actor = context.Actor;
             var delta = actor.Position.DisplacementTo(position);
@@ -202,6 +205,7 @@ namespace SsalMuk.Core
             var step = actor.Position.DisplacementTo(route.Request.Waypoints[route.Index]);
             if (context.World.Query.SweepCircle(actor.Position, step, actor.BodyRadius).HasValue)
             { route.Request.Cancel(); routes.Remove(routeId); approachPending = true; return false; }
+            if (moving) context.MovementWaypoint = route.Request.Waypoints[route.Index];
             intent = step.Normalized; return true;
         }
         private sealed class Route { public long Revision; public PathRequest Request; public int Index; }
